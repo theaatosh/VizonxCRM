@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,111 +20,117 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Plus, Filter, MoreHorizontal } from "lucide-react";
+import { Search, Plus, Filter, MoreHorizontal, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useLeads, useConvertLeadToStudent } from "@/hooks/useLeads";
+import { LeadFormDialog } from "@/components/leads/LeadFormDialog";
+import { DeleteLeadDialog } from "@/components/leads/DeleteLeadDialog";
+import type { Lead, LeadStatus } from "@/types/lead.types";
 
-const leads = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    email: "sarah.j@email.com",
-    phone: "+1 234 567 890",
-    country: "United Kingdom",
-    status: "Hot",
-    source: "Website",
-    counsellor: "John Smith",
-    followUp: "2024-01-18",
-    createdAt: "2024-01-15",
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    email: "m.chen@email.com",
-    phone: "+1 345 678 901",
-    country: "Canada",
-    status: "Warm",
-    source: "Referral",
-    counsellor: "Emma Wilson",
-    followUp: "2024-01-19",
-    createdAt: "2024-01-14",
-  },
-  {
-    id: 3,
-    name: "Priya Sharma",
-    email: "priya.s@email.com",
-    phone: "+91 98765 43210",
-    country: "Australia",
-    status: "Cold",
-    source: "Social Media",
-    counsellor: "David Brown",
-    followUp: "2024-01-20",
-    createdAt: "2024-01-13",
-  },
-  {
-    id: 4,
-    name: "Ahmed Hassan",
-    email: "ahmed.h@email.com",
-    phone: "+971 50 123 4567",
-    country: "Germany",
-    status: "Hot",
-    source: "Exhibition",
-    counsellor: "John Smith",
-    followUp: "2024-01-17",
-    createdAt: "2024-01-12",
-  },
-  {
-    id: 5,
-    name: "Lisa Wang",
-    email: "lisa.w@email.com",
-    phone: "+86 138 0000 0000",
-    country: "USA",
-    status: "Warm",
-    source: "Website",
-    counsellor: "Emma Wilson",
-    followUp: "2024-01-21",
-    createdAt: "2024-01-11",
-  },
-  {
-    id: 6,
-    name: "Carlos Rodriguez",
-    email: "carlos.r@email.com",
-    phone: "+34 612 345 678",
-    country: "Spain",
-    status: "New",
-    source: "Partner Agency",
-    counsellor: "Unassigned",
-    followUp: "2024-01-22",
-    createdAt: "2024-01-16",
-  },
-  {
-    id: 7,
-    name: "Emma Thompson",
-    email: "emma.t@email.com",
-    phone: "+44 7911 123456",
-    country: "Ireland",
-    status: "Converted",
-    source: "Referral",
-    counsellor: "David Brown",
-    followUp: "-",
-    createdAt: "2024-01-08",
-  },
-];
-
-const statusColors: Record<string, string> = {
-  Hot: "bg-destructive/10 text-destructive border-destructive/20",
-  Warm: "bg-warning/10 text-warning border-warning/20",
-  Cold: "bg-info/10 text-info border-info/20",
+// Map backend status to display colors
+const statusColors: Record<LeadStatus, string> = {
   New: "bg-primary/10 text-primary border-primary/20",
+  Contacted: "bg-warning/10 text-warning border-warning/20",
+  Qualified: "bg-info/10 text-info border-info/20",
   Converted: "bg-success/10 text-success border-success/20",
+};
+
+// Map backend priority to display colors
+const priorityColors: Record<string, string> = {
+  High: "bg-destructive/10 text-destructive border-destructive/20",
+  Medium: "bg-warning/10 text-warning border-warning/20",
+  Low: "bg-muted text-muted-foreground border-muted",
 };
 
 const Leads = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
+
+  // Dialog states
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+
+  // Fetch leads from API
+  const { data, isLoading, isError, error } = useLeads({
+    page,
+    limit: 10,
+    search: searchQuery || undefined,
+    sortOrder: 'desc',
+  });
+
+  const convertToStudent = useConvertLeadToStudent();
+
+  // Filter leads by status locally (after fetching)
+  const filteredLeads = useMemo(() => {
+    if (!data?.data) return [];
+    if (statusFilter === "all") return data.data;
+    return data.data.filter(
+      (lead) => lead.status.toLowerCase() === statusFilter.toLowerCase()
+    );
+  }, [data?.data, statusFilter]);
+
+  // Helper to get initials from name
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
+  };
+
+  // Helper to format full name
+  const getFullName = (lead: Lead) => {
+    return `${lead.firstName} ${lead.lastName}`;
+  };
+
+  // Handlers
+  const handleAddLead = () => {
+    setSelectedLead(null);
+    setFormDialogOpen(true);
+  };
+
+  const handleEditLead = (lead: Lead) => {
+    setSelectedLead(lead);
+    setFormDialogOpen(true);
+  };
+
+  const handleDeleteLead = (lead: Lead) => {
+    setSelectedLead(lead);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConvertLead = (lead: Lead) => {
+    convertToStudent.mutate(lead.id);
+  };
+
+  // Loading skeleton
+  const LoadingSkeleton = () => (
+    <>
+      {[...Array(5)].map((_, i) => (
+        <TableRow key={i}>
+          <TableCell>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-9 w-9 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-[150px]" />
+                <Skeleton className="h-3 w-[120px]" />
+              </div>
+            </div>
+          </TableCell>
+          <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+          <TableCell><Skeleton className="h-5 w-[80px]" /></TableCell>
+          <TableCell><Skeleton className="h-5 w-[60px]" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+          <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
 
   return (
     <DashboardLayout title="Leads" subtitle="Manage and track your leads">
@@ -133,9 +139,11 @@ const Leads = () => {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="text-lg font-semibold">All Leads</CardTitle>
-              <p className="text-sm text-muted-foreground">Total: {leads.length} leads</p>
+              <p className="text-sm text-muted-foreground">
+                Total: {data?.meta?.total || 0} leads
+              </p>
             </div>
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={handleAddLead}>
               <Plus className="h-4 w-4" />
               Add Lead
             </Button>
@@ -149,32 +157,27 @@ const Leads = () => {
               <Input
                 placeholder="Search leads..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1); // Reset to first page on search
+                }}
                 className="pl-9"
               />
             </div>
             <div className="flex gap-2">
-              <Select defaultValue="all">
+              <Select
+                value={statusFilter}
+                onValueChange={(value) => setStatusFilter(value)}
+              >
                 <SelectTrigger className="w-[130px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="hot">Hot</SelectItem>
-                  <SelectItem value="warm">Warm</SelectItem>
-                  <SelectItem value="cold">Cold</SelectItem>
                   <SelectItem value="new">New</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select defaultValue="all">
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Counsellor" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Counsellors</SelectItem>
-                  <SelectItem value="john">John Smith</SelectItem>
-                  <SelectItem value="emma">Emma Wilson</SelectItem>
-                  <SelectItem value="david">David Brown</SelectItem>
+                  <SelectItem value="contacted">Contacted</SelectItem>
+                  <SelectItem value="qualified">Qualified</SelectItem>
+                  <SelectItem value="converted">Converted</SelectItem>
                 </SelectContent>
               </Select>
               <Button variant="outline" size="icon">
@@ -183,71 +186,182 @@ const Leads = () => {
             </div>
           </div>
 
+          {/* Error State */}
+          {isError && (
+            <div className="py-8 text-center">
+              <p className="text-destructive">
+                Failed to load leads: {error?.message || 'Unknown error'}
+              </p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => window.location.reload()}
+              >
+                Retry
+              </Button>
+            </div>
+          )}
+
           {/* Table */}
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>Lead</TableHead>
-                  <TableHead>Country</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Counsellor</TableHead>
-                  <TableHead>Follow-up</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {leads.map((lead) => (
-                  <TableRow key={lead.id} className="cursor-pointer">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${lead.name}`} />
-                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {lead.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-foreground">{lead.name}</p>
-                          <p className="text-xs text-muted-foreground">{lead.email}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{lead.country}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={statusColors[lead.status]}>
-                        {lead.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{lead.source}</TableCell>
-                    <TableCell className="text-muted-foreground">{lead.counsellor}</TableCell>
-                    <TableCell className="text-muted-foreground">{lead.followUp}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Edit Lead</DropdownMenuItem>
-                          <DropdownMenuItem>Schedule Follow-up</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+          {!isError && (
+            <div className="rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead>Lead</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Source</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <LoadingSkeleton />
+                  ) : filteredLeads.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center">
+                        <p className="text-muted-foreground">
+                          {searchQuery || statusFilter !== 'all'
+                            ? 'No leads found matching your criteria.'
+                            : 'No leads yet. Click "Add Lead" to create one.'}
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredLeads.map((lead) => (
+                      <TableRow key={lead.id} className="cursor-pointer">
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9">
+                              <AvatarImage
+                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${getFullName(lead)}`}
+                              />
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                {getInitials(lead.firstName, lead.lastName)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium text-foreground">
+                                {getFullName(lead)}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {lead.email}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {lead.phone || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={statusColors[lead.status]}
+                          >
+                            {lead.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={priorityColors[lead.priority] || ''}
+                          >
+                            {lead.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {lead.source || '-'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {new Date(lead.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditLead(lead)}>
+                                Edit Lead
+                              </DropdownMenuItem>
+                              {lead.status !== 'Converted' && (
+                                <DropdownMenuItem
+                                  onClick={() => handleConvertLead(lead)}
+                                  disabled={convertToStudent.isPending}
+                                >
+                                  {convertToStudent.isPending ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Converting...
+                                    </>
+                                  ) : (
+                                    'Convert to Student'
+                                  )}
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => handleDeleteLead(lead)}
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {data?.meta && data.meta.totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Page {data.meta.page} of {data.meta.totalPages}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1 || isLoading}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page >= data.meta.totalPages || isLoading}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Dialogs */}
+      <LeadFormDialog
+        open={formDialogOpen}
+        onOpenChange={setFormDialogOpen}
+        lead={selectedLead}
+      />
+
+      <DeleteLeadDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        lead={selectedLead}
+      />
     </DashboardLayout>
   );
 };
