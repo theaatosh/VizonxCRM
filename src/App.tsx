@@ -8,7 +8,9 @@ import Leads from "./pages/Leads";
 import Visas from "./pages/Visas";
 import Vacancies from "./pages/Vacancies";
 import Applicants from "./pages/Applicants";
+import ApplicantDetail from "./pages/ApplicantDetail";
 import Countries from "./pages/Countries";
+import CountryDetail from "./pages/CountryDetail";
 import Appointments from "./pages/Appointments";
 import Workflow from "./pages/Workflow";
 import Tasks from "./pages/Tasks";
@@ -31,7 +33,9 @@ const App = () => (
           <Route path="/visas" element={<Visas />} />
           <Route path="/vacancies" element={<Vacancies />} />
           <Route path="/applicants" element={<Applicants />} />
+          <Route path="/applicants/:id" element={<ApplicantDetail />} />
           <Route path="/countries" element={<Countries />} />
+          <Route path="/countries/:id" element={<CountryDetail />} />
           <Route path="/appointments" element={<Appointments />} />
           <Route path="/workflow" element={<Workflow />} />
           <Route path="/tasks" element={<Tasks />} />
