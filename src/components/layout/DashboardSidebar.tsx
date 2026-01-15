@@ -26,7 +26,6 @@ const menuItems = [
   { title: "Overview", icon: LayoutDashboard, path: "/" },
   { title: "Leads", icon: Users, path: "/leads" },
   { title: "Visas", icon: Plane, path: "/visas" },
-  { title: "Vacancies", icon: Briefcase, path: "/vacancies" },
   { title: "Applicants", icon: GraduationCap, path: "/applicants" },
   { title: "Countries", icon: Globe, path: "/countries" },
   { title: "Appointments", icon: Calendar, path: "/appointments" },

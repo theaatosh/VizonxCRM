@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -5,7 +6,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, Plane, Clock, CheckCircle, XCircle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, Plus, Plane, Clock, CheckCircle, XCircle, Globe, FileX, Loader2 } from "lucide-react";
+import { useVisaTypes, useDeleteVisaType } from "@/hooks/useVisaTypes";
+import { VisaTypeCard } from "@/components/visaTypes/VisaTypeCard";
+import { CreateVisaTypeDialog } from "@/components/visaTypes/CreateVisaTypeDialog";
+import { EditVisaTypeDialog } from "@/components/visaTypes/EditVisaTypeDialog";
+import { VisaTypeDetailModal } from "@/components/visaTypes/VisaTypeDetailModal";
+import { VisaType } from "@/types/visaType.types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
+import countryService from "@/services/country.service";
 
 const visaApplications = [
   {
@@ -88,8 +105,66 @@ const statusIcons: Record<string, React.ReactNode> = {
 };
 
 const Visas = () => {
+  // Visa Types state
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [countryFilter, setCountryFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedVisaType, setSelectedVisaType] = useState<VisaType | null>(null);
+  const [editVisaType, setEditVisaType] = useState<VisaType | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
+  const limit = 12;
+
+  const { data, isLoading, isError, error } = useVisaTypes({
+    page,
+    limit,
+    search: search || undefined,
+    sortBy: "createdAt",
+    sortOrder: "desc",
+  });
+
+  const deleteVisaTypeMutation = useDeleteVisaType();
+
+  // Fetch countries for filter
+  const { data: countries = [] } = useQuery({
+    queryKey: ['countries', 'active'],
+    queryFn: () => countryService.getActiveCountries(),
+  });
+
+  // Filter visa types
+  const visaTypes = data?.data || [];
+  let filteredVisaTypes = visaTypes;
+
+  if (countryFilter !== "all") {
+    filteredVisaTypes = filteredVisaTypes.filter(vt => vt.countryId === countryFilter);
+  }
+
+  if (statusFilter !== "all") {
+    filteredVisaTypes = filteredVisaTypes.filter(vt =>
+      statusFilter === "active" ? vt.isActive : !vt.isActive
+    );
+  }
+
+  const totalPages = Math.ceil((data?.totalPages || 0));
+
+  const handleViewVisaType = (visaType: VisaType) => {
+    setSelectedVisaType(visaType);
+    setDetailModalOpen(true);
+  };
+
+  const handleEditVisaType = (visaType: VisaType) => {
+    setEditVisaType(visaType);
+    setEditModalOpen(true);
+  };
+
+  const handleDeleteVisaType = (id: string) => {
+    deleteVisaTypeMutation.mutate(id);
+  };
+
   return (
-    <DashboardLayout title="Visas" subtitle="Track visa applications and status">
+    <DashboardLayout title="Visas" subtitle="Manage visa types and track applications">
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4 mb-6">
         <Card className="shadow-card">
@@ -146,12 +221,153 @@ const Visas = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="applications" className="space-y-6">
+      <Tabs defaultValue="visaTypes" className="space-y-6">
         <TabsList>
+          <TabsTrigger value="visaTypes">Visa Types</TabsTrigger>
           <TabsTrigger value="applications">Applications</TabsTrigger>
           <TabsTrigger value="countries">By Country</TabsTrigger>
         </TabsList>
 
+        {/* Visa Types Tab */}
+        <TabsContent value="visaTypes">
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+              <div className="flex-1 w-full sm:max-w-md">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search visa types..."
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setPage(1);
+                    }}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+              <CreateVisaTypeDialog />
+            </div>
+
+            {/* Filters */}
+            <div className="flex gap-2">
+              <Select value={countryFilter} onValueChange={setCountryFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Filter by country" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Countries</SelectItem>
+                  {countries.map((country: any) => (
+                    <SelectItem key={country.id} value={country.id}>
+                      {country.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active Only</SelectItem>
+                  <SelectItem value="inactive">Inactive Only</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Loading State */}
+          {isLoading && (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="border rounded-lg p-6">
+                  <Skeleton className="h-10 w-10 rounded-lg mb-4" />
+                  <Skeleton className="h-6 w-3/4 mb-2" />
+                  <Skeleton className="h-4 w-full mb-4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Error State */}
+          {isError && (
+            <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-lg bg-muted/20">
+              <FileX className="h-12 w-12 text-destructive mb-3" />
+              <p className="text-sm text-muted-foreground">
+                Failed to load visa types: {(error as any)?.message || "Unknown error"}
+              </p>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!isLoading && !isError && filteredVisaTypes.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed rounded-lg bg-muted/20">
+              <Globe className="h-12 w-12 text-muted-foreground mb-3" />
+              <p className="text-sm text-muted-foreground mb-4">
+                {search || countryFilter !== "all" || statusFilter !== "all"
+                  ? "No visa types match your filters"
+                  : "No visa types created yet"}
+              </p>
+              {!search && countryFilter === "all" && statusFilter === "all" && (
+                <CreateVisaTypeDialog />
+              )}
+            </div>
+          )}
+
+          {/* Visa Types Grid */}
+          {!isLoading && !isError && filteredVisaTypes.length > 0 && (
+            <>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {filteredVisaTypes.map((visaType) => (
+                  <VisaTypeCard
+                    key={visaType.id}
+                    visaType={visaType}
+                    onView={handleViewVisaType}
+                    onEdit={handleEditVisaType}
+                    onDelete={handleDeleteVisaType}
+                  />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-8">
+                  <Button
+                    variant="outline"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    Previous
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <Button
+                        key={pageNum}
+                        variant={page === pageNum ? "default" : "outline"}
+                        onClick={() => setPage(pageNum)}
+                        className="w-10 h-10 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    ))}
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </TabsContent>
+
+        {/* Applications Tab */}
         <TabsContent value="applications">
           <Card className="shadow-card">
             <CardHeader className="pb-4">
@@ -210,6 +426,7 @@ const Visas = () => {
           </Card>
         </TabsContent>
 
+        {/* By Country Tab */}
         <TabsContent value="countries">
           <Card className="shadow-card">
             <CardHeader>
@@ -249,8 +466,21 @@ const Visas = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Modals */}
+      <VisaTypeDetailModal
+        visaType={selectedVisaType}
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
+      />
+      <EditVisaTypeDialog
+        visaType={editVisaType}
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+      />
     </DashboardLayout>
   );
 };
 
 export default Visas;
+

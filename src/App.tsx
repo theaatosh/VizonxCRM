@@ -31,7 +31,6 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/leads" element={<Leads />} />
           <Route path="/visas" element={<Visas />} />
-          <Route path="/vacancies" element={<Vacancies />} />
           <Route path="/applicants" element={<Applicants />} />
           <Route path="/applicants/:id" element={<ApplicantDetail />} />
           <Route path="/countries" element={<Countries />} />
