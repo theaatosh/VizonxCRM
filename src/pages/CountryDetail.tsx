@@ -6,21 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     ArrowLeft,
@@ -31,17 +16,15 @@ import {
     Search,
     Edit,
     Trash2,
-    MoreHorizontal,
-    ExternalLink,
     CheckCircle,
     XCircle,
 } from 'lucide-react';
 import { useCountry, useCountryUniversities, useCountryVisaTypes } from '@/hooks/useCountries';
-import { useDeleteUniversity, useUniversityCourses } from '@/hooks/useUniversities';
+import { useDeleteUniversity } from '@/hooks/useUniversities';
 import { CountryFormDialog } from '@/components/countries/CountryFormDialog';
 import { DeleteCountryDialog } from '@/components/countries/DeleteCountryDialog';
 import { UniversityFormDialog } from '@/components/countries/UniversityFormDialog';
-import { UniversityCoursesDialog } from '@/components/countries/UniversityCoursesDialog';
+import { UniversityCard, UniversityCardSkeleton } from '@/components/countries/UniversityCard';
 import type { University } from '@/types/university.types';
 
 const CountryDetail = () => {
@@ -55,7 +38,6 @@ const CountryDetail = () => {
     const [editCountryDialogOpen, setEditCountryDialogOpen] = useState(false);
     const [deleteCountryDialogOpen, setDeleteCountryDialogOpen] = useState(false);
     const [universityDialogOpen, setUniversityDialogOpen] = useState(false);
-    const [coursesDialogOpen, setCoursesDialogOpen] = useState(false);
     const [selectedUniversity, setSelectedUniversity] = useState<University | null>(null);
 
     // Fetch data
@@ -242,12 +224,16 @@ const CountryDetail = () => {
 
                 {/* Universities Tab */}
                 <TabsContent value="universities">
-                    <Card className="shadow-card">
+                    {/* Universities Header */}
+                    <Card className="shadow-card mb-6">
                         <CardHeader className="pb-4">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <CardTitle className="text-lg">Universities</CardTitle>
-                                    <p className="text-sm text-muted-foreground">
+                                    <CardTitle className="text-lg flex items-center gap-2">
+                                        <Building2 className="h-5 w-5 text-primary" />
+                                        Universities
+                                    </CardTitle>
+                                    <p className="text-sm text-muted-foreground mt-1">
                                         {universitiesData?.meta?.total || 0} universities in {country.name}
                                     </p>
                                 </div>
@@ -271,143 +257,80 @@ const CountryDetail = () => {
                                 </div>
                             </div>
                         </CardHeader>
-                        <CardContent>
-                            <div className="rounded-lg border">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="hover:bg-transparent">
-                                            <TableHead>University</TableHead>
-                                            <TableHead>Ranking</TableHead>
-                                            <TableHead>Website</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead className="w-[50px]"></TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {uniLoading ? (
-                                            [...Array(5)].map((_, i) => (
-                                                <TableRow key={i}>
-                                                    <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                                                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
-                                                </TableRow>
-                                            ))
-                                        ) : !universitiesData?.data?.length ? (
-                                            <TableRow>
-                                                <TableCell colSpan={5} className="h-24 text-center">
-                                                    <p className="text-muted-foreground">
-                                                        No universities found. Click "Add University" to create one.
-                                                    </p>
-                                                </TableCell>
-                                            </TableRow>
-                                        ) : (
-                                            universitiesData.data.map((uni) => (
-                                                <TableRow key={uni.id}>
-                                                    <TableCell>
-                                                        <div>
-                                                            <p className="font-medium">{uni.name}</p>
-                                                            {uni.description && (
-                                                                <p className="text-xs text-muted-foreground truncate max-w-[300px]">
-                                                                    {uni.description}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {uni.ranking ? (
-                                                            <Badge variant="outline">#{uni.ranking}</Badge>
-                                                        ) : (
-                                                            <span className="text-muted-foreground">-</span>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {uni.website ? (
-                                                            <a
-                                                                href={uni.website}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-primary hover:underline flex items-center gap-1"
-                                                            >
-                                                                Visit <ExternalLink className="h-3 w-3" />
-                                                            </a>
-                                                        ) : (
-                                                            <span className="text-muted-foreground">-</span>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge
-                                                            variant="outline"
-                                                            className={uni.isActive
-                                                                ? 'bg-success/10 text-success border-success/20'
-                                                                : 'bg-muted text-muted-foreground'
-                                                            }
-                                                        >
-                                                            {uni.isActive ? 'Active' : 'Inactive'}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                                    <MoreHorizontal className="h-4 w-4" />
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem onClick={() => handleEditUniversity(uni)}>
-                                                                    Edit
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => {
-                                                                    setSelectedUniversity(uni);
-                                                                    setCoursesDialogOpen(true);
-                                                                }}>
-                                                                    Manage Courses
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem
-                                                                    className="text-destructive"
-                                                                    onClick={() => handleDeleteUniversity(uni)}
-                                                                >
-                                                                    Delete
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </div>
-
-                            {/* Pagination */}
-                            {universitiesData?.meta && universitiesData.meta.totalPages > 1 && (
-                                <div className="mt-4 flex items-center justify-between">
-                                    <p className="text-sm text-muted-foreground">
-                                        Page {universitiesData.meta.page} of {universitiesData.meta.totalPages}
-                                    </p>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setUniPage((p) => Math.max(1, p - 1))}
-                                            disabled={uniPage === 1 || uniLoading}
-                                        >
-                                            Previous
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setUniPage((p) => p + 1)}
-                                            disabled={uniPage >= universitiesData.meta.totalPages || uniLoading}
-                                        >
-                                            Next
-                                        </Button>
-                                    </div>
-                                </div>
-                            )}
-                        </CardContent>
                     </Card>
+
+                    {/* Universities Grid */}
+                    <div className="space-y-4">
+                        {uniLoading ? (
+                            // Loading skeletons
+                            [...Array(3)].map((_, i) => (
+                                <UniversityCardSkeleton key={i} />
+                            ))
+                        ) : !universitiesData?.data?.length ? (
+                            // Empty state
+                            <Card className="shadow-card">
+                                <CardContent className="py-16 text-center">
+                                    <div className="flex flex-col items-center gap-4">
+                                        <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+                                            <Building2 className="h-8 w-8 text-primary" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <h3 className="font-semibold text-lg">No Universities Yet</h3>
+                                            <p className="text-muted-foreground text-sm max-w-sm">
+                                                {searchQuery
+                                                    ? `No universities found matching "${searchQuery}"`
+                                                    : 'Start building your university catalog by adding the first university.'
+                                                }
+                                            </p>
+                                        </div>
+                                        {!searchQuery && (
+                                            <Button className="gap-2 mt-2" onClick={handleAddUniversity}>
+                                                <Plus className="h-4 w-4" />
+                                                Add First University
+                                            </Button>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            // University cards
+                            universitiesData.data.map((uni) => (
+                                <UniversityCard
+                                    key={uni.id}
+                                    university={uni}
+                                    onEdit={handleEditUniversity}
+                                    onDelete={handleDeleteUniversity}
+                                />
+                            ))
+                        )}
+                    </div>
+
+                    {/* Pagination */}
+                    {universitiesData?.meta && universitiesData.meta.totalPages > 1 && (
+                        <div className="mt-6 flex items-center justify-between">
+                            <p className="text-sm text-muted-foreground">
+                                Page {universitiesData.meta.page} of {universitiesData.meta.totalPages}
+                            </p>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setUniPage((p) => Math.max(1, p - 1))}
+                                    disabled={uniPage === 1 || uniLoading}
+                                >
+                                    Previous
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setUniPage((p) => p + 1)}
+                                    disabled={uniPage >= universitiesData.meta.totalPages || uniLoading}
+                                >
+                                    Next
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </TabsContent>
 
                 {/* Visa Types Tab */}
@@ -468,12 +391,6 @@ const CountryDetail = () => {
                 onOpenChange={setUniversityDialogOpen}
                 university={selectedUniversity}
                 countryId={country.id}
-            />
-
-            <UniversityCoursesDialog
-                open={coursesDialogOpen}
-                onOpenChange={setCoursesDialogOpen}
-                university={selectedUniversity}
             />
         </DashboardLayout>
     );

@@ -17,22 +17,17 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
-    FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { useCreateUniversity, useUpdateUniversity } from '@/hooks/useUniversities';
 import type { University, CreateUniversityDto, UpdateUniversityDto } from '@/types/university.types';
 
-// Validation schema
+// Validation schema - only fields supported by backend
 const universityFormSchema = z.object({
     name: z.string().min(1, 'University name is required'),
     description: z.string().optional(),
-    website: z.string().url('Please enter a valid URL').optional().or(z.literal('')),
-    ranking: z.coerce.number().positive().optional().or(z.literal('')),
-    isActive: z.boolean().default(true),
 });
 
 type UniversityFormValues = z.infer<typeof universityFormSchema>;
@@ -60,9 +55,6 @@ export function UniversityFormDialog({
         defaultValues: {
             name: '',
             description: '',
-            website: '',
-            ranking: '',
-            isActive: true,
         },
     });
 
@@ -72,17 +64,11 @@ export function UniversityFormDialog({
             form.reset({
                 name: university.name,
                 description: university.description || '',
-                website: university.website || '',
-                ranking: university.ranking || '',
-                isActive: university.isActive,
             });
         } else if (open && !university) {
             form.reset({
                 name: '',
                 description: '',
-                website: '',
-                ranking: '',
-                isActive: true,
             });
         }
     }, [open, university, form]);
@@ -93,9 +79,6 @@ export function UniversityFormDialog({
                 const updateData: UpdateUniversityDto = {
                     name: values.name,
                     description: values.description || undefined,
-                    website: values.website || undefined,
-                    ranking: values.ranking ? Number(values.ranking) : undefined,
-                    isActive: values.isActive,
                 };
                 await updateUniversity.mutateAsync({ id: university.id, data: updateData });
             } else {
@@ -103,9 +86,6 @@ export function UniversityFormDialog({
                     name: values.name,
                     countryId,
                     description: values.description || undefined,
-                    website: values.website || undefined,
-                    ranking: values.ranking ? Number(values.ranking) : undefined,
-                    isActive: values.isActive,
                 };
                 await createUniversity.mutateAsync(createData);
             }
@@ -119,7 +99,7 @@ export function UniversityFormDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[450px]">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Edit University' : 'Add New University'}</DialogTitle>
                     <DialogDescription>
@@ -155,66 +135,11 @@ export function UniversityFormDialog({
                                         <Textarea
                                             placeholder="Brief description of the university..."
                                             className="resize-none"
+                                            rows={3}
                                             {...field}
                                         />
                                     </FormControl>
                                     <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="website"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Website</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="https://www.ox.ac.uk" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="ranking"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Global Ranking</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                type="number"
-                                                placeholder="1"
-                                                {...field}
-                                                onChange={(e) => field.onChange(e.target.value)}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
-                        <FormField
-                            control={form.control}
-                            name="isActive"
-                            render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                    <div className="space-y-0.5">
-                                        <FormLabel className="text-base">Active Status</FormLabel>
-                                        <FormDescription>
-                                            Enable this university for selection
-                                        </FormDescription>
-                                    </div>
-                                    <FormControl>
-                                        <Switch
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
-                                        />
-                                    </FormControl>
                                 </FormItem>
                             )}
                         />

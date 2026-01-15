@@ -21,20 +21,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { useCreateCourse, useUpdateCourse } from '@/hooks/useUniversities';
 import type { Course, CreateCourseDto, UpdateCourseDto } from '@/types/university.types';
 
-// Validation schema
+// Validation schema - matches backend API
 const courseFormSchema = z.object({
     name: z.string().min(1, 'Course name is required'),
-    description: z.string().optional(),
+    fees: z.coerce.number().min(0, 'Fees must be a positive number'),
     duration: z.string().optional(),
-    tuitionFee: z.coerce.number().positive().optional().or(z.literal('')),
-    currency: z.string().default('USD'),
-    level: z.string().optional(),
-    department: z.string().optional(),
-    isActive: z.boolean().default(true),
+    requirements: z.string().optional(),
+    intakePeriods: z.string().optional(),
+    deadlines: z.string().optional(),
 });
 
 type CourseFormValues = z.infer<typeof courseFormSchema>;
@@ -61,13 +58,11 @@ export function CourseFormDialog({
         resolver: zodResolver(courseFormSchema),
         defaultValues: {
             name: '',
-            description: '',
+            fees: 0,
             duration: '',
-            tuitionFee: '',
-            currency: 'USD',
-            level: '',
-            department: '',
-            isActive: true,
+            requirements: '',
+            intakePeriods: '',
+            deadlines: '',
         },
     });
 
@@ -76,24 +71,20 @@ export function CourseFormDialog({
         if (open && course) {
             form.reset({
                 name: course.name,
-                description: course.description || '',
+                fees: typeof course.fees === 'string' ? parseFloat(course.fees) : course.fees,
                 duration: course.duration || '',
-                tuitionFee: course.tuitionFee || '',
-                currency: course.currency || 'USD',
-                level: course.level || '',
-                department: course.department || '',
-                isActive: course.isActive,
+                requirements: course.requirements || '',
+                intakePeriods: course.intakePeriods || '',
+                deadlines: course.deadlines || '',
             });
         } else if (open && !course) {
             form.reset({
                 name: '',
-                description: '',
+                fees: 0,
                 duration: '',
-                tuitionFee: '',
-                currency: 'USD',
-                level: '',
-                department: '',
-                isActive: true,
+                requirements: '',
+                intakePeriods: '',
+                deadlines: '',
             });
         }
     }, [open, course, form]);
@@ -103,13 +94,11 @@ export function CourseFormDialog({
             if (isEditing && course) {
                 const updateData: UpdateCourseDto = {
                     name: values.name,
-                    description: values.description || undefined,
+                    fees: values.fees,
                     duration: values.duration || undefined,
-                    tuitionFee: values.tuitionFee ? Number(values.tuitionFee) : undefined,
-                    currency: values.currency,
-                    level: values.level || undefined,
-                    department: values.department || undefined,
-                    isActive: values.isActive,
+                    requirements: values.requirements || undefined,
+                    intakePeriods: values.intakePeriods || undefined,
+                    deadlines: values.deadlines || undefined,
                 };
                 await updateCourse.mutateAsync({
                     universityId,
@@ -119,13 +108,11 @@ export function CourseFormDialog({
             } else {
                 const createData: CreateCourseDto = {
                     name: values.name,
-                    description: values.description || undefined,
+                    fees: values.fees,
                     duration: values.duration || undefined,
-                    tuitionFee: values.tuitionFee ? Number(values.tuitionFee) : undefined,
-                    currency: values.currency,
-                    level: values.level || undefined,
-                    department: values.department || undefined,
-                    isActive: values.isActive,
+                    requirements: values.requirements || undefined,
+                    intakePeriods: values.intakePeriods || undefined,
+                    deadlines: values.deadlines || undefined,
                 };
                 await createCourse.mutateAsync({
                     universityId,
@@ -168,33 +155,19 @@ export function CourseFormDialog({
                             )}
                         />
 
-                        <FormField
-                            control={form.control}
-                            name="description"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Description</FormLabel>
-                                    <FormControl>
-                                        <Textarea
-                                            placeholder="Brief description of the course..."
-                                            className="resize-none"
-                                            {...field}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
-                                name="level"
+                                name="fees"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Level</FormLabel>
+                                        <FormLabel>Fees (USD) *</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Undergraduate" {...field} />
+                                            <Input
+                                                type="number"
+                                                placeholder="15000"
+                                                {...field}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -208,42 +181,7 @@ export function CourseFormDialog({
                                     <FormItem>
                                         <FormLabel>Duration</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="3-4 Years" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="tuitionFee"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Tuition Fee</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                type="number"
-                                                placeholder="15000"
-                                                {...field}
-                                                onChange={(e) => field.onChange(e.target.value)}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="currency"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Currency</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="USD" {...field} />
+                                            <Input placeholder="4 Years" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -253,21 +191,52 @@ export function CourseFormDialog({
 
                         <FormField
                             control={form.control}
-                            name="isActive"
+                            name="requirements"
                             render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                    <div className="space-y-0.5">
-                                        <FormLabel className="text-base">Active Status</FormLabel>
-                                    </div>
+                                <FormItem>
+                                    <FormLabel>Requirements</FormLabel>
                                     <FormControl>
-                                        <Switch
-                                            checked={field.value}
-                                            onCheckedChange={field.onChange}
+                                        <Textarea
+                                            placeholder="Entry requirements for this course..."
+                                            className="resize-none"
+                                            rows={2}
+                                            {...field}
                                         />
                                     </FormControl>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="intakePeriods"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Intake Periods</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Fall, Spring" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="deadlines"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Deadlines</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="March 15, October 1" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
                         <DialogFooter>
                             <Button

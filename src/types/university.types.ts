@@ -13,25 +13,23 @@ export interface University {
         code: string;
     };
     description?: string;
-    website?: string;
-    ranking?: number;
-    isActive: boolean;
     createdAt: string;
     updatedAt: string;
+    _count?: {
+        courses: number;
+    };
 }
 
-// Course entity from backend
+// Course entity from backend - matches actual API response
 export interface Course {
     id: string;
     universityId: string;
     name: string;
-    description?: string;
+    fees: number | string;  // Decimal from backend
     duration?: string;
-    tuitionFee?: number;
-    currency?: string;
-    level?: string;
-    department?: string;
-    isActive: boolean;
+    requirements?: string;
+    intakePeriods?: string;
+    deadlines?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -41,9 +39,6 @@ export interface CreateUniversityDto {
     name: string;
     countryId: string;
     description?: string;
-    website?: string;
-    ranking?: number;
-    isActive?: boolean;
 }
 
 // DTO for updating a university
@@ -51,33 +46,26 @@ export interface UpdateUniversityDto {
     name?: string;
     countryId?: string;
     description?: string;
-    website?: string;
-    ranking?: number;
-    isActive?: boolean;
 }
 
-// DTO for creating a course
+// DTO for creating a course - matches actual API requirements
 export interface CreateCourseDto {
     name: string;
-    description?: string;
+    fees: number;  // Required field
     duration?: string;
-    tuitionFee?: number;
-    currency?: string;
-    level?: string;
-    department?: string;
-    isActive?: boolean;
+    requirements?: string;
+    intakePeriods?: string;
+    deadlines?: string;
 }
 
 // DTO for updating a course
 export interface UpdateCourseDto {
     name?: string;
-    description?: string;
+    fees?: number;
     duration?: string;
-    tuitionFee?: number;
-    currency?: string;
-    level?: string;
-    department?: string;
-    isActive?: boolean;
+    requirements?: string;
+    intakePeriods?: string;
+    deadlines?: string;
 }
 
 // Re-export for convenience
