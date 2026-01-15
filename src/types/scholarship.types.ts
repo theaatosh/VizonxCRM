@@ -6,13 +6,14 @@ export interface Scholarship {
     slug: string;
     description: string;
     eligibility: string;
-    amount: number;
+    amount: string;
     currency: string;
     deadline: string;
     applicationUrl?: string;
     universityName?: string;
     countryName?: string;
-    isPublished: boolean;
+    status: 'Draft' | 'Published';
+    publishedAt: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -44,13 +45,15 @@ export interface UpdateScholarshipDto {
     countryName?: string;
 }
 
-// Response types - matches actual API response
+// Response types - matches actual API response with meta
 export interface ScholarshipsResponse {
     data: Scholarship[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
+    meta: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    };
 }
 
 // Query parameters

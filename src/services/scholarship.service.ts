@@ -64,8 +64,8 @@ class ScholarshipService {
     /**
      * Publish or unpublish a scholarship
      */
-    async togglePublish(id: string, isPublished: boolean): Promise<Scholarship> {
-        const response = await api.patch<Scholarship>(`${this.baseUrl}/${id}/publish`, { isPublished });
+    async togglePublish(id: string, publish: boolean): Promise<Scholarship> {
+        const response = await api.patch<Scholarship>(`${this.baseUrl}/${id}/publish`, { publish });
         return response.data;
     }
 

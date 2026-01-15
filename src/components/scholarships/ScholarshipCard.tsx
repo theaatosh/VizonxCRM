@@ -36,13 +36,18 @@ interface ScholarshipCardProps {
 }
 
 export const ScholarshipCard = ({ scholarship, onView, onEdit, onDelete, onTogglePublish }: ScholarshipCardProps) => {
-    const formatCurrency = (amount: number, currency: string = 'USD') => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(amount);
+    const formatCurrency = (amount: string | number, currency: string = 'USD') => {
+        const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+        try {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: currency,
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+            }).format(numAmount);
+        } catch {
+            return `${currency} ${numAmount}`;
+        }
     };
 
     const formatDate = (dateString: string) => {
@@ -68,10 +73,10 @@ export const ScholarshipCard = ({ scholarship, onView, onEdit, onDelete, onToggl
                         </div>
                         <div className="flex gap-2 flex-wrap">
                             <Badge
-                                variant={scholarship.isPublished ? "default" : "secondary"}
+                                variant={scholarship.status === 'Published' ? "default" : "secondary"}
                                 className="flex items-center gap-1 w-fit"
                             >
-                                {scholarship.isPublished ? (
+                                {scholarship.status === 'Published' ? (
                                     <>
                                         <CheckCircle2 className="h-3 w-3" />
                                         Published
@@ -141,9 +146,9 @@ export const ScholarshipCard = ({ scholarship, onView, onEdit, onDelete, onToggl
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => onTogglePublish(scholarship.id, !scholarship.isPublished)}
+                        onClick={() => onTogglePublish(scholarship.id, scholarship.status !== 'Published')}
                     >
-                        {scholarship.isPublished ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                        {scholarship.status === 'Published' ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
                     </Button>
                     <AlertDialog>
                         <AlertDialogTrigger asChild>

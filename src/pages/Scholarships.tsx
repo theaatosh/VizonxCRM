@@ -44,9 +44,9 @@ const Scholarships = () => {
   const scholarships = data?.data || [];
   const filteredScholarships = statusFilter === "all"
     ? scholarships
-    : scholarships.filter(s => statusFilter === "published" ? s.isPublished : !s.isPublished);
+    : scholarships.filter(s => statusFilter === "published" ? s.status === 'Published' : s.status === 'Draft');
 
-  const totalPages = Math.ceil((data?.totalPages || 0));
+  const totalPages = data?.meta?.totalPages || 0;
 
   const handleViewScholarship = (scholarship: Scholarship) => {
     setSelectedScholarship(scholarship);

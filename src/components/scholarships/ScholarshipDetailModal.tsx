@@ -28,13 +28,18 @@ interface ScholarshipDetailModalProps {
 export const ScholarshipDetailModal = ({ scholarship, open, onOpenChange }: ScholarshipDetailModalProps) => {
     if (!scholarship) return null;
 
-    const formatCurrency = (amount: number, currency: string = 'USD') => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: currency,
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(amount);
+    const formatCurrency = (amount: string | number, currency: string = 'USD') => {
+        const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+        try {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: currency,
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+            }).format(numAmount);
+        } catch {
+            return `${currency} ${numAmount}`;
+        }
     };
 
     const formatDate = (dateString: string) => {
@@ -58,8 +63,8 @@ export const ScholarshipDetailModal = ({ scholarship, open, onOpenChange }: Scho
                         <div className="flex-1">
                             <DialogTitle className="text-2xl mb-2">{scholarship.title}</DialogTitle>
                             <div className="flex gap-2 flex-wrap">
-                                <Badge variant={scholarship.isPublished ? "default" : "secondary"}>
-                                    {scholarship.isPublished ? (
+                                <Badge variant={scholarship.status === 'Published' ? "default" : "secondary"}>
+                                    {scholarship.status === 'Published' ? (
                                         <>
                                             <CheckCircle2 className="h-3 w-3 mr-1" />
                                             Published
