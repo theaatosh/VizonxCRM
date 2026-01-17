@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown } from "lucide-react";
 
@@ -10,6 +11,7 @@ interface KPICardProps {
   changeLabel?: string;
   icon: ReactNode;
   iconColor?: "primary" | "success" | "warning" | "info";
+  isLoading?: boolean;
 }
 
 const iconColorClasses = {
@@ -19,9 +21,34 @@ const iconColorClasses = {
   info: "bg-info/10 text-info",
 };
 
-export function KPICard({ title, value, change, changeLabel, icon, iconColor = "primary" }: KPICardProps) {
+export function KPICard({
+  title,
+  value,
+  change,
+  changeLabel,
+  icon,
+  iconColor = "primary",
+  isLoading = false
+}: KPICardProps) {
   const isPositive = change && change > 0;
   const isNegative = change && change < 0;
+
+  if (isLoading) {
+    return (
+      <Card className="shadow-card">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <Skeleton className="h-12 w-12 rounded-xl" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="shadow-card hover:shadow-card-hover transition-shadow duration-300">
