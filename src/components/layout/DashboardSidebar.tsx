@@ -12,6 +12,7 @@ import {
   CheckSquare,
   Award,
   Wrench,
+  FileText,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -33,6 +34,7 @@ const menuItems = [
   { title: "Tasks", icon: CheckSquare, path: "/tasks" },
   { title: "Scholarships", icon: Award, path: "/scholarships" },
   { title: "Services", icon: Wrench, path: "/services" },
+  { title: "Content Management", icon: FileText, path: "/content-management" },
   { title: "Settings", icon: Settings, path: "/settings" },
 ];
 

@@ -17,6 +17,7 @@ import Tasks from "./pages/Tasks";
 import Scholarships from "./pages/Scholarships";
 import Services from "./pages/Services";
 import Settings from "./pages/Settings";
+import ContentManagement from "./pages/ContentManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/scholarships" element={<Scholarships />} />
           <Route path="/services" element={<Services />} />
+          <Route path="/content-management" element={<ContentManagement />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
