@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
-import { Bell, Search, ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Bell, Search, ChevronDown, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import authService from "@/services/auth.service";
 
 interface DashboardHeaderProps {
   title: string;
@@ -20,6 +22,13 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProps) {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate("/login", { replace: true });
+  };
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       {/* Left - Title */}
@@ -93,7 +102,10 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem>Team</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">Log out</DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive cursor-pointer" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Log out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
