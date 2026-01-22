@@ -1,84 +1,99 @@
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { 
-  GraduationCap, 
-  FileText, 
-  Users, 
-  BookOpen, 
-  Plane, 
-  Building, 
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  GraduationCap,
+  Users,
   Plus,
   Settings,
-  DollarSign
+  DollarSign,
+  Package,
+  AlertCircle,
+  MoreVertical,
+  Pencil,
+  Trash2
 } from "lucide-react";
-
-const services = [
-  {
-    id: 1,
-    name: "University Counseling",
-    description: "One-on-one guidance for university selection and applications",
-    icon: GraduationCap,
-    price: "$150",
-    duration: "1 hour",
-    status: "Active",
-    bookings: 45,
-  },
-  {
-    id: 2,
-    name: "Visa Filing Assistance",
-    description: "Complete visa application preparation and submission support",
-    icon: FileText,
-    price: "$200",
-    duration: "Full service",
-    status: "Active",
-    bookings: 78,
-  },
-  {
-    id: 3,
-    name: "IELTS Preparation",
-    description: "Comprehensive IELTS coaching with practice tests",
-    icon: BookOpen,
-    price: "$300",
-    duration: "4 weeks",
-    status: "Active",
-    bookings: 32,
-  },
-  {
-    id: 4,
-    name: "Interview Preparation",
-    description: "Mock interviews and visa interview coaching",
-    icon: Users,
-    price: "$100",
-    duration: "2 sessions",
-    status: "Active",
-    bookings: 28,
-  },
-  {
-    id: 5,
-    name: "Pre-Departure Briefing",
-    description: "Orientation session for students traveling abroad",
-    icon: Plane,
-    price: "$50",
-    duration: "2 hours",
-    status: "Active",
-    bookings: 56,
-  },
-  {
-    id: 6,
-    name: "Accommodation Assistance",
-    description: "Help finding and securing student accommodation",
-    icon: Building,
-    price: "$100",
-    duration: "Consultation",
-    status: "Inactive",
-    bookings: 15,
-  },
-];
+import { useServices } from "@/hooks/useServices";
+import { ServiceFormDialog } from "@/components/services/ServiceFormDialog";
+import { DeleteServiceDialog } from "@/components/services/DeleteServiceDialog";
+import type { Service } from "@/types/service.types";
 
 const Services = () => {
+  const { data, isLoading, isError } = useServices({ limit: 20 });
+
+  const services = data?.data || [];
+  const totalServices = data?.meta?.total || 0;
+
+  // Dialog states
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+
+  // Format price with currency
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+    }).format(price);
+  };
+
+  // Handle add new service
+  const handleAddService = () => {
+    setSelectedService(null);
+    setFormDialogOpen(true);
+  };
+
+  // Handle edit service
+  const handleEditService = (service: Service) => {
+    setSelectedService(service);
+    setFormDialogOpen(true);
+  };
+
+  // Handle delete service
+  const handleDeleteService = (service: Service) => {
+    setSelectedService(service);
+    setDeleteDialogOpen(true);
+  };
+
+  // Loading skeleton for stats
+  const StatSkeleton = () => (
+    <Skeleton className="h-8 w-16 mb-1" />
+  );
+
+  // Loading skeleton for service cards
+  const ServiceCardSkeleton = () => (
+    <Card className="border border-border">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-12 w-12 rounded-xl" />
+            <div>
+              <Skeleton className="h-5 w-32 mb-2" />
+              <Skeleton className="h-5 w-16" />
+            </div>
+          </div>
+          <Skeleton className="h-8 w-8" />
+        </div>
+        <Skeleton className="h-4 w-full mb-2" />
+        <Skeleton className="h-4 w-3/4 mb-4" />
+        <div className="flex items-center justify-between pt-4 border-t border-border">
+          <Skeleton className="h-5 w-16" />
+          <Skeleton className="h-5 w-20" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <DashboardLayout title="Services" subtitle="Manage consultancy services">
       {/* Stats */}
@@ -87,7 +102,9 @@ const Services = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold">{services.length}</p>
+                {isLoading ? <StatSkeleton /> : (
+                  <p className="text-2xl font-bold">{totalServices}</p>
+                )}
                 <p className="text-sm text-muted-foreground">Total Services</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -100,7 +117,9 @@ const Services = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold">{services.filter((s) => s.status === "Active").length}</p>
+                {isLoading ? <StatSkeleton /> : (
+                  <p className="text-2xl font-bold">{services.length}</p>
+                )}
                 <p className="text-sm text-muted-foreground">Active Services</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-success/10 flex items-center justify-center">
@@ -113,8 +132,14 @@ const Services = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold">{services.reduce((acc, s) => acc + s.bookings, 0)}</p>
-                <p className="text-sm text-muted-foreground">Total Bookings</p>
+                {isLoading ? <StatSkeleton /> : (
+                  <p className="text-2xl font-bold">
+                    {services.reduce((acc, s) => acc + s.price, 0) > 0
+                      ? formatPrice(services.reduce((acc, s) => acc + s.price, 0))
+                      : '$0'}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground">Total Value</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-info/10 flex items-center justify-center">
                 <Users className="h-5 w-5 text-info" />
@@ -131,58 +156,125 @@ const Services = () => {
               <CardTitle className="text-lg font-semibold">Service Catalog</CardTitle>
               <p className="text-sm text-muted-foreground">Manage your consultancy offerings</p>
             </div>
-            <Button className="gap-2">
+            <Button className="gap-2" onClick={handleAddService}>
               <Plus className="h-4 w-4" />
               Add Service
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {services.map((service) => {
-              const Icon = service.icon;
-              return (
-                <Card key={service.id} className="border border-border">
+          {/* Error State */}
+          {isError && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Failed to load services</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                An error occurred while fetching services
+              </p>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {isLoading && (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <ServiceCardSkeleton key={i} />
+              ))}
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!isLoading && !isError && services.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Package className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No services found</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Get started by creating your first service
+              </p>
+              <Button className="gap-2" onClick={handleAddService}>
+                <Plus className="h-4 w-4" />
+                Add Service
+              </Button>
+            </div>
+          )}
+
+          {/* Services Grid */}
+          {!isLoading && !isError && services.length > 0 && (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {services.map((service: Service) => (
+                <Card key={service.id} className="border border-border hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                          <Icon className="h-6 w-6 text-primary" />
+                          <Package className="h-6 w-6 text-primary" />
                         </div>
                         <div>
                           <h3 className="font-semibold">{service.name}</h3>
                           <Badge
                             variant="outline"
-                            className={
-                              service.status === "Active"
-                                ? "bg-success/10 text-success border-success/20"
-                                : "bg-muted text-muted-foreground"
-                            }
+                            className="bg-success/10 text-success border-success/20"
                           >
-                            {service.status}
+                            Active
                           </Badge>
                         </div>
                       </div>
-                      <Switch checked={service.status === "Active"} />
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditService(service)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteService(service)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-4">{service.description}</p>
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                      {service.description || "No description provided"}
+                    </p>
                     <div className="flex items-center justify-between pt-4 border-t border-border">
-                      <div className="flex items-center gap-4 text-sm">
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4 text-success" />
-                          <span className="font-medium">{service.price}</span>
-                        </div>
-                        <span className="text-muted-foreground">{service.duration}</span>
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="h-4 w-4 text-success" />
+                        <span className="font-medium">{formatPrice(service.price)}</span>
                       </div>
-                      <Badge variant="secondary">{service.bookings} bookings</Badge>
+                      <Badge variant="secondary">
+                        {new Date(service.createdAt).toLocaleDateString()}
+                      </Badge>
                     </div>
                   </CardContent>
                 </Card>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Dialogs */}
+      <ServiceFormDialog
+        open={formDialogOpen}
+        onOpenChange={setFormDialogOpen}
+        service={selectedService}
+      />
+      <DeleteServiceDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        service={selectedService}
+      />
     </DashboardLayout>
   );
 };
