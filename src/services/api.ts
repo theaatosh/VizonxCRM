@@ -14,10 +14,10 @@ const api = axios.create({
 // Request interceptor - Add auth token
 api.interceptors.request.use(
     (config) => {
-        // const token = localStorage.getItem('accessToken');
-        // if (token) {
-        config.headers.Authorization = `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzNDUwZGFhNy0xZTQzLTQ1YzMtYjMyZS00YjM2ODg3MjJhNWYiLCJlbWFpbCI6ImNybWFwaUBleGFtcGxlLmNvbSIsInRlbmFudElkIjoiYjIyNDllMWQtZDUyZS00YzZiLTk1MzAtODEzNzg0NDNkNzJiIiwicm9sZUlkIjoiMTAyODUwZTEtOWY2ZS00OTUwLTgwM2QtZGVlYWIzNWY0NjA2Iiwicm9sZU5hbWUiOiJBZG1pbiIsImlzUGxhdGZvcm1BZG1pbiI6ZmFsc2UsImlhdCI6MTc2ODc0Nzk0NCwiZXhwIjoxNzY4ODM0MzQ0fQ.WEFzLMjBRrluk0mo4vyXD9rhQQgd0viHFRtQe_gxQ64`;
-        // }
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
         return config;
     },
     (error) => {

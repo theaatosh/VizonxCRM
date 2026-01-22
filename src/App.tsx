@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Leads from "./pages/Leads";
 import Visas from "./pages/Visas";
@@ -18,6 +19,7 @@ import Scholarships from "./pages/Scholarships";
 import Services from "./pages/Services";
 import Settings from "./pages/Settings";
 import ContentManagement from "./pages/ContentManagement";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,20 +31,26 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/leads" element={<Leads />} />
-          <Route path="/visas" element={<Visas />} />
-          <Route path="/applicants" element={<Applicants />} />
-          <Route path="/applicants/:id" element={<ApplicantDetail />} />
-          <Route path="/countries" element={<Countries />} />
-          <Route path="/countries/:id" element={<CountryDetail />} />
-          <Route path="/appointments" element={<Appointments />} />
-          <Route path="/workflow" element={<Workflow />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/scholarships" element={<Scholarships />} />
-          <Route path="/services" element={<Services />} />
-          <Route path="/content-management" element={<ContentManagement />} />
-          <Route path="/settings" element={<Settings />} />
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+
+          {/* Protected Routes */}
+          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
+          <Route path="/visas" element={<ProtectedRoute><Visas /></ProtectedRoute>} />
+          <Route path="/applicants" element={<ProtectedRoute><Applicants /></ProtectedRoute>} />
+          <Route path="/applicants/:id" element={<ProtectedRoute><ApplicantDetail /></ProtectedRoute>} />
+          <Route path="/countries" element={<ProtectedRoute><Countries /></ProtectedRoute>} />
+          <Route path="/countries/:id" element={<ProtectedRoute><CountryDetail /></ProtectedRoute>} />
+          <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
+          <Route path="/workflow" element={<ProtectedRoute><Workflow /></ProtectedRoute>} />
+          <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+          <Route path="/scholarships" element={<ProtectedRoute><Scholarships /></ProtectedRoute>} />
+          <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
+          <Route path="/content-management" element={<ProtectedRoute><ContentManagement /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+
+          {/* 404 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
