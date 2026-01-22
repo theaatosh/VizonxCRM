@@ -23,12 +23,14 @@ import {
   Trash2
 } from "lucide-react";
 import { useServices } from "@/hooks/useServices";
+import { usePermissions } from "@/contexts/PermissionContext";
 import { ServiceFormDialog } from "@/components/services/ServiceFormDialog";
 import { DeleteServiceDialog } from "@/components/services/DeleteServiceDialog";
 import type { Service } from "@/types/service.types";
 
 const Services = () => {
   const { data, isLoading, isError } = useServices({ limit: 20 });
+  const { canCreate, canUpdate, canDelete } = usePermissions();
 
   const services = data?.data || [];
   const totalServices = data?.meta?.total || 0;
@@ -156,10 +158,12 @@ const Services = () => {
               <CardTitle className="text-lg font-semibold">Service Catalog</CardTitle>
               <p className="text-sm text-muted-foreground">Manage your consultancy offerings</p>
             </div>
-            <Button className="gap-2" onClick={handleAddService}>
-              <Plus className="h-4 w-4" />
-              Add Service
-            </Button>
+            {canCreate('services') && (
+              <Button className="gap-2" onClick={handleAddService}>
+                <Plus className="h-4 w-4" />
+                Add Service
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -194,10 +198,12 @@ const Services = () => {
               <p className="text-sm text-muted-foreground mb-4">
                 Get started by creating your first service
               </p>
-              <Button className="gap-2" onClick={handleAddService}>
-                <Plus className="h-4 w-4" />
-                Add Service
-              </Button>
+              {canCreate('services') && (
+                <Button className="gap-2" onClick={handleAddService}>
+                  <Plus className="h-4 w-4" />
+                  Add Service
+                </Button>
+              )}
             </div>
           )}
 
@@ -222,27 +228,33 @@ const Services = () => {
                           </Badge>
                         </div>
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                            <span className="sr-only">Open menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditService(service)}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDeleteService(service)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {(canUpdate('services') || canDelete('services')) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {canUpdate('services') && (
+                              <DropdownMenuItem onClick={() => handleEditService(service)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
+                            {canDelete('services') && (
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteService(service)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                       {service.description || "No description provided"}

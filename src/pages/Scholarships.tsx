@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Search, Award, FileX } from "lucide-react";
 import { useScholarships, useDeleteScholarship, useTogglePublish } from "@/hooks/useScholarships";
+import { usePermissions } from "@/contexts/PermissionContext";
 import { ScholarshipCard } from "@/components/scholarships/ScholarshipCard";
 import { CreateScholarshipDialog } from "@/components/scholarships/CreateScholarshipDialog";
 import { EditScholarshipDialog } from "@/components/scholarships/EditScholarshipDialog";
@@ -39,6 +40,7 @@ const Scholarships = () => {
 
   const deleteScholarshipMutation = useDeleteScholarship();
   const togglePublishMutation = useTogglePublish();
+  const { canCreate, canUpdate, canDelete, hasPermission } = usePermissions();
 
   // Filter by status on client side
   const scholarships = data?.data || [];
@@ -84,7 +86,7 @@ const Scholarships = () => {
               />
             </div>
           </div>
-          <CreateScholarshipDialog />
+          {canCreate('scholarships') && <CreateScholarshipDialog />}
         </div>
 
         {/* Filters */}
@@ -135,7 +137,7 @@ const Scholarships = () => {
               ? "No scholarships match your filters"
               : "No scholarships created yet"}
           </p>
-          {!search && statusFilter === "all" && (
+          {!search && statusFilter === "all" && canCreate('scholarships') && (
             <CreateScholarshipDialog />
           )}
         </div>

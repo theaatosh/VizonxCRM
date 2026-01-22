@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLeads, useConvertLeadToStudent } from "@/hooks/useLeads";
+import { usePermissions } from "@/contexts/PermissionContext";
 import { LeadFormDialog } from "@/components/leads/LeadFormDialog";
 import { DeleteLeadDialog } from "@/components/leads/DeleteLeadDialog";
 import type { Lead, LeadStatus } from "@/types/lead.types";
@@ -67,6 +68,7 @@ const Leads = () => {
   });
 
   const convertToStudent = useConvertLeadToStudent();
+  const { canCreate, canUpdate, canDelete, hasPermission } = usePermissions();
 
   // Filter leads by status locally (after fetching)
   const filteredLeads = useMemo(() => {
@@ -143,10 +145,12 @@ const Leads = () => {
                 Total: {data?.meta?.total || 0} leads
               </p>
             </div>
-            <Button className="gap-2" onClick={handleAddLead}>
-              <Plus className="h-4 w-4" />
-              Add Lead
-            </Button>
+            {canCreate('leads') && (
+              <Button className="gap-2" onClick={handleAddLead}>
+                <Plus className="h-4 w-4" />
+                Add Lead
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -279,39 +283,45 @@ const Leads = () => {
                           {new Date(lead.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEditLead(lead)}>
-                                Edit Lead
-                              </DropdownMenuItem>
-                              {lead.status !== 'Converted' && (
-                                <DropdownMenuItem
-                                  onClick={() => handleConvertLead(lead)}
-                                  disabled={convertToStudent.isPending}
-                                >
-                                  {convertToStudent.isPending ? (
-                                    <>
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                      Converting...
-                                    </>
-                                  ) : (
-                                    'Convert to Student'
-                                  )}
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => handleDeleteLead(lead)}
-                              >
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          {(canUpdate('leads') || canDelete('leads') || hasPermission('leads', 'convert')) && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {canUpdate('leads') && (
+                                  <DropdownMenuItem onClick={() => handleEditLead(lead)}>
+                                    Edit Lead
+                                  </DropdownMenuItem>
+                                )}
+                                {hasPermission('leads', 'convert') && lead.status !== 'Converted' && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleConvertLead(lead)}
+                                    disabled={convertToStudent.isPending}
+                                  >
+                                    {convertToStudent.isPending ? (
+                                      <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Converting...
+                                      </>
+                                    ) : (
+                                      'Convert to Student'
+                                    )}
+                                  </DropdownMenuItem>
+                                )}
+                                {canDelete('leads') && (
+                                  <DropdownMenuItem
+                                    className="text-destructive"
+                                    onClick={() => handleDeleteLead(lead)}
+                                  >
+                                    Delete
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))

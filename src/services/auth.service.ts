@@ -1,4 +1,6 @@
 import axios from 'axios';
+import api from './api';
+import type { CurrentUser } from '@/types/permission.types';
 
 // API Base URL
 const API_BASE_URL = 'http://crmapi.vizon-x.com/api/v1';
@@ -16,6 +18,7 @@ export interface User {
     tenantId?: string;
     roleId?: string;
     roleName?: string;
+    permissions?: string[];
 }
 
 export interface AuthResponse {
@@ -38,6 +41,14 @@ const authService = {
                 },
             }
         );
+        return response.data;
+    },
+
+    /**
+     * Get current user info with permissions
+     */
+    async getCurrentUser(): Promise<CurrentUser> {
+        const response = await api.get<CurrentUser>('/auth/me');
         return response.data;
     },
 
@@ -94,3 +105,4 @@ const authService = {
 };
 
 export default authService;
+

@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Search, Plus, Mail, Phone, MoreVertical } from 'lucide-react';
 import { useStudents } from '@/hooks/useStudents';
+import { usePermissions } from '@/contexts/PermissionContext';
 import { ApplicantFormDialog } from '@/components/applicants/ApplicantFormDialog';
 import { DeleteApplicantDialog } from '@/components/applicants/DeleteApplicantDialog';
 import type { Student, StudentStatus, StudentPriority } from '@/types/student.types';
@@ -58,6 +59,8 @@ const Applicants = () => {
     search: searchQuery || undefined,
     sortOrder: 'desc',
   });
+
+  const { canCreate, canUpdate, canDelete } = usePermissions();
 
   // Filter by status locally
   const filteredApplicants = useMemo(() => {
@@ -158,10 +161,12 @@ const Applicants = () => {
                   <SelectItem value="alumni">Alumni</SelectItem>
                 </SelectContent>
               </Select>
-              <Button className="gap-2" onClick={handleAddApplicant}>
-                <Plus className="h-4 w-4" />
-                Add Applicant
-              </Button>
+              {canCreate('students') && (
+                <Button className="gap-2" onClick={handleAddApplicant}>
+                  <Plus className="h-4 w-4" />
+                  Add Applicant
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -230,27 +235,33 @@ const Applicants = () => {
                                   </Badge>
                                 </div>
                               </div>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleViewProfile(applicant)}>
-                                    View Profile
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleEditApplicant(applicant)}>
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onClick={() => handleDeleteApplicant(applicant)}
-                                  >
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              {(canUpdate('students') || canDelete('students')) && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleViewProfile(applicant)}>
+                                      View Profile
+                                    </DropdownMenuItem>
+                                    {canUpdate('students') && (
+                                      <DropdownMenuItem onClick={() => handleEditApplicant(applicant)}>
+                                        Edit
+                                      </DropdownMenuItem>
+                                    )}
+                                    {canDelete('students') && (
+                                      <DropdownMenuItem
+                                        className="text-destructive"
+                                        onClick={() => handleDeleteApplicant(applicant)}
+                                      >
+                                        Delete
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
                             </div>
                           </div>
                         </div>

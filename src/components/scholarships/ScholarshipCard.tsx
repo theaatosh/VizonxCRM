@@ -26,6 +26,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { usePermissions } from "@/contexts/PermissionContext";
 
 interface ScholarshipCardProps {
     scholarship: Scholarship;
@@ -57,6 +58,8 @@ export const ScholarshipCard = ({ scholarship, onView, onEdit, onDelete, onToggl
             day: 'numeric',
         });
     };
+
+    const { canUpdate, canDelete, hasPermission } = usePermissions();
 
     const isDeadlinePassed = new Date(scholarship.deadline) < new Date();
 
@@ -136,44 +139,50 @@ export const ScholarshipCard = ({ scholarship, onView, onEdit, onDelete, onToggl
                         <Eye className="h-4 w-4 mr-1" />
                         View
                     </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onEdit(scholarship)}
-                    >
-                        <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onTogglePublish(scholarship.id, scholarship.status !== 'Published')}
-                    >
-                        {scholarship.status === 'Published' ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-                    </Button>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Scholarship</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Are you sure you want to delete "{scholarship.title}"? This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={() => onDelete(scholarship.id)}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                    Delete
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                    {canUpdate('scholarships') && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onEdit(scholarship)}
+                        >
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                    )}
+                    {hasPermission('scholarships', 'publish') && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onTogglePublish(scholarship.id, scholarship.status !== 'Published')}
+                        >
+                            {scholarship.status === 'Published' ? <XCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                        </Button>
+                    )}
+                    {canDelete('scholarships') && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Scholarship</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to delete "{scholarship.title}"? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={() => onDelete(scholarship.id)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                        Delete
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
                 </div>
             </CardContent>
         </Card>

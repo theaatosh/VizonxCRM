@@ -20,6 +20,7 @@ import {
   Trash2
 } from "lucide-react";
 import { useTasks, useDeleteTask, useUpdateTask } from "@/hooks/useTasks";
+import { usePermissions } from "@/contexts/PermissionContext";
 import { Task, TaskPriority, TaskStatus, RelatedEntityType } from "@/types/task.types";
 import { TaskFormDialog } from "@/components/tasks/TaskFormDialog";
 import { format } from "date-fns";
@@ -44,6 +45,7 @@ const Tasks = () => {
 
   const deleteTask = useDeleteTask();
   const updateTask = useUpdateTask();
+  const { canCreate, canUpdate, canDelete, hasPermission } = usePermissions();
 
   const tasks = tasksResponse?.data || [];
 
@@ -118,12 +120,16 @@ const Tasks = () => {
             )}
             {/* Edit/Delete Actions */}
             <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleEdit(task)}>
-                <Edit className="h-3 w-3" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDelete(task.id)}>
-                <Trash2 className="h-3 w-3" />
-              </Button>
+              {canUpdate('tasks') && (
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleEdit(task)}>
+                  <Edit className="h-3 w-3" />
+                </Button>
+              )}
+              {canDelete('tasks') && (
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDelete(task.id)}>
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -239,10 +245,12 @@ const Tasks = () => {
             <Button variant="outline" size="icon">
               <Filter className="h-4 w-4" />
             </Button>
-            <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
-              <Plus className="h-4 w-4" />
-              Add Task
-            </Button>
+            {canCreate('tasks') && (
+              <Button className="gap-2" onClick={() => setIsCreateOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Add Task
+              </Button>
+            )}
           </div>
         </div>
 

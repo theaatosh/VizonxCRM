@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { PermissionProvider } from "./contexts/PermissionContext";
 import Index from "./pages/Index";
 import Leads from "./pages/Leads";
 import Visas from "./pages/Visas";
@@ -30,29 +31,31 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/login" element={<Login />} />
+        <PermissionProvider>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/login" element={<Login />} />
 
-          {/* Protected Routes */}
-          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-          <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
-          <Route path="/visas" element={<ProtectedRoute><Visas /></ProtectedRoute>} />
-          <Route path="/applicants" element={<ProtectedRoute><Applicants /></ProtectedRoute>} />
-          <Route path="/applicants/:id" element={<ProtectedRoute><ApplicantDetail /></ProtectedRoute>} />
-          <Route path="/countries" element={<ProtectedRoute><Countries /></ProtectedRoute>} />
-          <Route path="/countries/:id" element={<ProtectedRoute><CountryDetail /></ProtectedRoute>} />
-          <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
-          <Route path="/workflow" element={<ProtectedRoute><Workflow /></ProtectedRoute>} />
-          <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-          <Route path="/scholarships" element={<ProtectedRoute><Scholarships /></ProtectedRoute>} />
-          <Route path="/services" element={<ProtectedRoute><Services /></ProtectedRoute>} />
-          <Route path="/content-management" element={<ProtectedRoute><ContentManagement /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            {/* Protected Routes with Module Permissions */}
+            <Route path="/" element={<ProtectedRoute module="dashboard"><Index /></ProtectedRoute>} />
+            <Route path="/leads" element={<ProtectedRoute module="leads"><Leads /></ProtectedRoute>} />
+            <Route path="/visas" element={<ProtectedRoute module="visa-types"><Visas /></ProtectedRoute>} />
+            <Route path="/applicants" element={<ProtectedRoute module="students"><Applicants /></ProtectedRoute>} />
+            <Route path="/applicants/:id" element={<ProtectedRoute module="students"><ApplicantDetail /></ProtectedRoute>} />
+            <Route path="/countries" element={<ProtectedRoute module="countries"><Countries /></ProtectedRoute>} />
+            <Route path="/countries/:id" element={<ProtectedRoute module="countries"><CountryDetail /></ProtectedRoute>} />
+            <Route path="/appointments" element={<ProtectedRoute module="appointments"><Appointments /></ProtectedRoute>} />
+            <Route path="/workflow" element={<ProtectedRoute module="workflows"><Workflow /></ProtectedRoute>} />
+            <Route path="/tasks" element={<ProtectedRoute module="tasks"><Tasks /></ProtectedRoute>} />
+            <Route path="/scholarships" element={<ProtectedRoute module="scholarships"><Scholarships /></ProtectedRoute>} />
+            <Route path="/services" element={<ProtectedRoute module="services"><Services /></ProtectedRoute>} />
+            <Route path="/content-management" element={<ProtectedRoute module="blogs"><ContentManagement /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
-          {/* 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </PermissionProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

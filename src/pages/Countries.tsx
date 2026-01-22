@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Search, Plus, Globe, Building2, MoreVertical, CheckCircle, XCircle } from 'lucide-react';
 import { useCountries } from '@/hooks/useCountries';
+import { usePermissions } from '@/contexts/PermissionContext';
 import { CountryFormDialog } from '@/components/countries/CountryFormDialog';
 import { DeleteCountryDialog } from '@/components/countries/DeleteCountryDialog';
 import type { Country } from '@/types/country.types';
@@ -36,6 +37,8 @@ const Countries = () => {
     sortOrder: 'asc',
     sortBy: 'name',
   });
+
+  const { canCreate, canUpdate, canDelete } = usePermissions();
 
   // Handlers
   const handleAddCountry = () => {
@@ -114,10 +117,12 @@ const Countries = () => {
                   }}
                 />
               </div>
-              <Button className="gap-2" onClick={handleAddCountry}>
-                <Plus className="h-4 w-4" />
-                Add Country
-              </Button>
+              {canCreate('countries') && (
+                <Button className="gap-2" onClick={handleAddCountry}>
+                  <Plus className="h-4 w-4" />
+                  Add Country
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -177,36 +182,42 @@ const Countries = () => {
                         </Badge>
                       </div>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewDetails(country);
-                        }}>
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditCountry(country);
-                        }}>
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={(e) => {
+                    {(canUpdate('countries') || canDelete('countries')) && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => {
                             e.stopPropagation();
-                            handleDeleteCountry(country);
-                          }}
-                        >
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                            handleViewDetails(country);
+                          }}>
+                            View Details
+                          </DropdownMenuItem>
+                          {canUpdate('countries') && (
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditCountry(country);
+                            }}>
+                              Edit
+                            </DropdownMenuItem>
+                          )}
+                          {canDelete('countries') && (
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteCountry(country);
+                              }}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="pt-4 space-y-4">
