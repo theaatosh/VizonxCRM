@@ -28,7 +28,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useLeads, useConvertLeadToStudent } from "@/hooks/useLeads";
+import { useLeads, useConvertLeadToStudent, useUpdateLead } from "@/hooks/useLeads";
+
 import { usePermissions } from "@/contexts/PermissionContext";
 import { LeadFormDialog } from "@/components/leads/LeadFormDialog";
 import { DeleteLeadDialog } from "@/components/leads/DeleteLeadDialog";
@@ -68,6 +69,7 @@ const Leads = () => {
   });
 
   const convertToStudent = useConvertLeadToStudent();
+  const updateLead = useUpdateLead();
   const { canCreate, canUpdate, canDelete, hasPermission } = usePermissions();
 
   // Filter leads by status locally (after fetching)
@@ -107,6 +109,10 @@ const Leads = () => {
 
   const handleConvertLead = (lead: Lead) => {
     convertToStudent.mutate(lead.id);
+  };
+
+  const handleConvertToContacted = (lead: Lead) => {
+    updateLead.mutate({ id: lead.id, data: { status: 'Contacted' } });
   };
 
   // Loading skeleton
@@ -180,7 +186,6 @@ const Leads = () => {
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="new">New</SelectItem>
                   <SelectItem value="contacted">Contacted</SelectItem>
-                  <SelectItem value="qualified">Qualified</SelectItem>
                   <SelectItem value="converted">Converted</SelectItem>
                 </SelectContent>
               </Select>
@@ -294,6 +299,21 @@ const Leads = () => {
                                 {canUpdate('leads') && (
                                   <DropdownMenuItem onClick={() => handleEditLead(lead)}>
                                     Edit Lead
+                                  </DropdownMenuItem>
+                                )}
+                                {canUpdate('leads') && lead.status === 'New' && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleConvertToContacted(lead)}
+                                    disabled={updateLead.isPending}
+                                  >
+                                    {updateLead.isPending && selectedLead?.id === lead.id ? (
+                                      <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Updating...
+                                      </>
+                                    ) : (
+                                      'Convert to Contacted'
+                                    )}
                                   </DropdownMenuItem>
                                 )}
                                 {hasPermission('leads', 'convert') && lead.status !== 'Converted' && (
