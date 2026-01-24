@@ -1,4 +1,5 @@
-import { ReactNode } from "react";
+
+import { ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bell, Search, ChevronDown, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import authService from "@/services/auth.service";
+import notificationService, { Notification } from "@/services/notification.service";
+import { useNotificationStream } from "@/hooks/useNotificationStream";
 
 interface DashboardHeaderProps {
   title: string;
@@ -23,6 +26,64 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProps) {
   const navigate = useNavigate();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  // Real-time notifications
+  const { notifications: newNotifications } = useNotificationStream();
+
+  // Merge new real-time notifications
+  useEffect(() => {
+    if (newNotifications.length > 0) {
+      setNotifications(prev => {
+        // Avoid duplicates
+        const existingIds = new Set(prev.map(n => n.id));
+        const uniqueNew = newNotifications.filter(n => !existingIds.has(n.id));
+        return [...uniqueNew, ...prev];
+      });
+      setUnreadCount(prev => prev + newNotifications.length);
+    }
+  }, [newNotifications]);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const { count } = await notificationService.getUnreadCount();
+      setUnreadCount(count);
+    } catch (error) {
+      console.error("Failed to fetch unread count:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchUnreadCount();
+    // Optional: Setup polling or SSE here
+    const interval = setInterval(fetchUnreadCount, 60000); // Poll every minute
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleMarkRead = async (id: string) => {
+    try {
+      await notificationService.markAsRead(id);
+      // Update local state
+      setNotifications(prev => prev.map(n =>
+        n.id === id ? { ...n, readAt: new Date().toISOString() } : n
+      ));
+      fetchUnreadCount();
+    } catch (error) {
+      console.error("Failed to mark as read:", error);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, readAt: new Date().toISOString() })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error("Failed to mark all as read:", error);
+    }
+  };
 
   const handleLogout = () => {
     authService.logout();
@@ -53,30 +114,81 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
         </div>
 
         {/* Notifications */}
-        <DropdownMenu>
+        <DropdownMenu onOpenChange={(open) => {
+          if (open) {
+            setLoading(true);
+            notificationService.getAllNotifications({ limit: 5 })
+              .then((res) => {
+                // Handle both paginated and array responses
+                const notifs = Array.isArray(res) ? res : res.data;
+                setNotifications(notifs);
+              })
+              .catch(console.error)
+              .finally(() => setLoading(false));
+          }
+        }}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5 text-muted-foreground" />
-              <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center bg-primary">
-                3
-              </Badge>
+              {unreadCount > 0 && (
+                <Badge className="absolute -right-1 -top-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center bg-primary">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Badge>
+              )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+            <div className="flex items-center justify-between p-2">
+              <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
+              {unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto text-xs text-muted-foreground hover:text-primary p-0"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleMarkAllRead();
+                  }}
+                >
+                  Mark all as read
+                </Button>
+              )}
+            </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
-              <span className="font-medium">New lead assigned</span>
-              <span className="text-xs text-muted-foreground">John Doe was assigned to you</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
-              <span className="font-medium">Visa approved</span>
-              <span className="text-xs text-muted-foreground">Sarah's UK visa has been approved</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
-              <span className="font-medium">Appointment reminder</span>
-              <span className="text-xs text-muted-foreground">Meeting with Mike in 30 minutes</span>
-            </DropdownMenuItem>
+            <div className="max-h-[300px] overflow-y-auto">
+              {loading ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>
+              ) : notifications.length === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">No notifications</div>
+              ) : (
+                notifications.map((notification) => (
+                  <DropdownMenuItem
+                    key={notification.id}
+                    className={`flex flex-col items-start gap-1 p-3 cursor-pointer ${notification.readAt ? 'opacity-60' : 'bg-muted/30'}`}
+                    onClick={() => handleMarkRead(notification.id)}
+                  >
+                    <div className="flex w-full justify-between items-start">
+                      <span className="font-medium text-sm">{notification.type || 'Notification'}</span>
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
+                        {new Date(notification.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground line-clamp-2">{notification.message}</span>
+                  </DropdownMenuItem>
+                ))
+              )}
+            </div>
+            {notifications.length > 0 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="justify-center text-center text-xs text-primary cursor-pointer"
+                  onClick={() => navigate('/notifications')}
+                >
+                  View all notifications
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 

@@ -22,6 +22,7 @@ import Settings from "./pages/Settings";
 import ContentManagement from "./pages/ContentManagement";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import NotificationsPage from "./pages/notifications/NotificationsPage";
 
 const queryClient = new QueryClient();
 
@@ -50,7 +51,9 @@ const App = () => (
             <Route path="/scholarships" element={<ProtectedRoute module="scholarships"><Scholarships /></ProtectedRoute>} />
             <Route path="/services" element={<ProtectedRoute module="services"><Services /></ProtectedRoute>} />
             <Route path="/content-management" element={<ProtectedRoute module="blogs"><ContentManagement /></ProtectedRoute>} />
+            <Route path="/content-management" element={<ProtectedRoute module="blogs"><ContentManagement /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
 
             {/* 404 */}
             <Route path="*" element={<NotFound />} />
