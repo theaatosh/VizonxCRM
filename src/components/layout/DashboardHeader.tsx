@@ -29,9 +29,24 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  // Track mount time to filter out buffered/history notifications
+  const mountTime = useState(new Date().getTime())[0];
 
   // Real-time notifications
-  const { notifications: newNotifications } = useNotificationStream();
+  const { notifications: newNotifications } = useNotificationStream((notification) => {
+    const createdAt = new Date(notification.createdAt).getTime();
+    // Only count if it's new (created after mount) and unread
+    // Adding a small buffer (e.g. 5 seonds) to account for slight clock skews if needed, 
+    // but strictly > mountTime is safer to avoid double counting history.
+    // However, if the notification was created *just* now but we fetched count *before* it, we might miss it?
+    // Actually, fetchUnreadCount is async. 
+    // Safer approach: If it's very recent (e.g. within last 10 seconds), we might count it?
+    // But simplest fix for "starts from 4" (which sounds like history) is strict time check.
+
+    if (!notification.readAt && createdAt > mountTime) {
+      setUnreadCount(prev => prev + 1);
+    }
+  });
 
   // Merge new real-time notifications
   useEffect(() => {
@@ -42,7 +57,6 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
         const uniqueNew = newNotifications.filter(n => !existingIds.has(n.id));
         return [...uniqueNew, ...prev];
       });
-      setUnreadCount(prev => prev + newNotifications.length);
     }
   }, [newNotifications]);
 
