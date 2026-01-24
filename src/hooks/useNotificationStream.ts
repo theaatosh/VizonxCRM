@@ -16,14 +16,6 @@ export function useNotificationStream(onNotification?: (notification: Notificati
                     if (onNotification) {
                         onNotification(newNotification);
                     }
-
-                    // Show toast notification
-
-                    // Show toast notification
-                    toast({
-                        title: newNotification.type || "New Notification",
-                        description: newNotification.message,
-                    });
                 },
                 (error) => {
                     console.error("Notification stream error:", error);

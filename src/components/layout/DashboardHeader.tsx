@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import authService from "@/services/auth.service";
 import notificationService, { Notification } from "@/services/notification.service";
-import { useNotificationStream } from "@/hooks/useNotificationStream";
+import { useNotificationContext } from "@/contexts/NotificationContext";
 
 interface DashboardHeaderProps {
   title: string;
@@ -26,64 +26,31 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProps) {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [localNotifications, setLocalNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
-  // Track mount time to filter out buffered/history notifications
-  const mountTime = useState(new Date().getTime())[0];
 
-  // Real-time notifications
-  const { notifications: newNotifications } = useNotificationStream((notification) => {
-    const createdAt = new Date(notification.createdAt).getTime();
-    // Only count if it's new (created after mount) and unread
-    // Adding a small buffer (e.g. 5 seonds) to account for slight clock skews if needed, 
-    // but strictly > mountTime is safer to avoid double counting history.
-    // However, if the notification was created *just* now but we fetched count *before* it, we might miss it?
-    // Actually, fetchUnreadCount is async. 
-    // Safer approach: If it's very recent (e.g. within last 10 seconds), we might count it?
-    // But simplest fix for "starts from 4" (which sounds like history) is strict time check.
+  // Use Global Notification Context
+  const { unreadCount, notifications: liveNotifications, refreshUnreadCount } = useNotificationContext();
 
-    if (!notification.readAt && createdAt > mountTime) {
-      setUnreadCount(prev => prev + 1);
-    }
-  });
-
-  // Merge new real-time notifications
+  // Handle local state for the dropdown (merging historical and live)
   useEffect(() => {
-    if (newNotifications.length > 0) {
-      setNotifications(prev => {
-        // Avoid duplicates
+    if (liveNotifications.length > 0) {
+      setLocalNotifications(prev => {
         const existingIds = new Set(prev.map(n => n.id));
-        const uniqueNew = newNotifications.filter(n => !existingIds.has(n.id));
+        const uniqueNew = liveNotifications.filter(n => !existingIds.has(n.id));
         return [...uniqueNew, ...prev];
       });
     }
-  }, [newNotifications]);
-
-  const fetchUnreadCount = async () => {
-    try {
-      const { count } = await notificationService.getUnreadCount();
-      setUnreadCount(count);
-    } catch (error) {
-      console.error("Failed to fetch unread count:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchUnreadCount();
-    // Optional: Setup polling or SSE here
-    const interval = setInterval(fetchUnreadCount, 60000); // Poll every minute
-    return () => clearInterval(interval);
-  }, []);
+  }, [liveNotifications]);
 
   const handleMarkRead = async (id: string) => {
     try {
       await notificationService.markAsRead(id);
-      // Update local state
-      setNotifications(prev => prev.map(n =>
+      // Update local dropdown state
+      setLocalNotifications(prev => prev.map(n =>
         n.id === id ? { ...n, readAt: new Date().toISOString() } : n
       ));
-      fetchUnreadCount();
+      refreshUnreadCount();
     } catch (error) {
       console.error("Failed to mark as read:", error);
     }
@@ -92,8 +59,9 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
   const handleMarkAllRead = async () => {
     try {
       await notificationService.markAllAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, readAt: new Date().toISOString() })));
-      setUnreadCount(0);
+      setLocalNotifications(prev => prev.map(n => ({ ...n, readAt: new Date().toISOString() })));
+      // refreshUnreadCount handled by setting zero manually or re-fetching
+      refreshUnreadCount();
     } catch (error) {
       console.error("Failed to mark all as read:", error);
     }
@@ -133,9 +101,8 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
             setLoading(true);
             notificationService.getAllNotifications({ limit: 5 })
               .then((res) => {
-                // Handle both paginated and array responses
                 const notifs = Array.isArray(res) ? res : res.data;
-                setNotifications(notifs);
+                setLocalNotifications(notifs);
               })
               .catch(console.error)
               .finally(() => setLoading(false));
@@ -172,10 +139,10 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
             <div className="max-h-[300px] overflow-y-auto">
               {loading ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">Loading...</div>
-              ) : notifications.length === 0 ? (
+              ) : localNotifications.length === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">No notifications</div>
               ) : (
-                notifications.map((notification) => (
+                localNotifications.map((notification) => (
                   <DropdownMenuItem
                     key={notification.id}
                     className={`flex flex-col items-start gap-1 p-3 cursor-pointer ${notification.readAt ? 'opacity-60' : 'bg-muted/30'}`}
@@ -192,7 +159,7 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
                 ))
               )}
             </div>
-            {notifications.length > 0 && (
+            {localNotifications.length > 0 && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
