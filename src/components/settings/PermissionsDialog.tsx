@@ -84,12 +84,112 @@ export function PermissionsDialog({
     const selectedCount = selectedPermissions.length;
     const modules = Object.keys(groupedPermissions).sort();
 
+    // Helper to find dependent permissions
+    const getDependentPermissions = (permissionId: string, allPermissions: Permission[]): string[] => {
+        const targetPerm = allPermissions.find(p => p.id === permissionId);
+        if (!targetPerm) return [];
+
+        const dependencies: string[] = [];
+        const parts = targetPerm.name.split('.');
+        // Assuming format is "module.action" or similar. 
+        // We look for the action part.
+
+        // 1. Standard CRUD Dependency: Create/Update/Delete requires Read
+        const action = parts[parts.length - 1].toLowerCase();
+        const moduleName = targetPerm.module; // We should trust the module property we enriched
+
+        if (['create', 'update', 'delete', 'convert', 'assign', 'publish', 'send', 'execute'].some(a => action.includes(a))) {
+            // Find the read permission for this module
+            const readPerm = allPermissions.find(p =>
+                p.module === moduleName &&
+                (p.name.includes('read') || p.name.includes('view') || p.name.includes('get'))
+            );
+            if (readPerm && readPerm.id !== permissionId) {
+                dependencies.push(readPerm.id);
+            }
+        }
+
+        // 2. Specific Business Logic Dependency: Lead to Student Conversion
+        // Case: leads.convert (or similar) -> students.create, applicants.create
+        if (moduleName === 'leads' && (action.includes('convert') || action.includes('update'))) {
+            // Find students.create
+            const studentCreate = allPermissions.find(p =>
+                p.module === 'students' && p.name.includes('create')
+            );
+            if (studentCreate) dependencies.push(studentCreate.id);
+
+            // Find applicants.create
+            const applicantCreate = allPermissions.find(p =>
+                (p.module === 'applicants' || p.module === 'applications') && p.name.includes('create')
+            );
+            if (applicantCreate) dependencies.push(applicantCreate.id);
+        }
+
+        return dependencies;
+    };
+
+    // Check if a permission is required by any other currently selected permissions
+    const isPermissionRequiredByOthers = (permissionId: string, currentSelectedIds: string[]): { required: boolean, protectedBy: string[] } => {
+        const protectingPermissions: string[] = [];
+
+        // Check every other selected permission to see if it requires the target permission
+        for (const selectedId of currentSelectedIds) {
+            if (selectedId === permissionId) continue;
+
+            const deps = getDependentPermissions(selectedId, permissions);
+            if (deps.includes(permissionId)) {
+                // Find the name of the permission shielding this one
+                const protector = permissions.find(p => p.id === selectedId);
+                if (protector) {
+                    protectingPermissions.push(protector.description || protector.name);
+                }
+            }
+        }
+
+        return {
+            required: protectingPermissions.length > 0,
+            protectedBy: protectingPermissions
+        };
+    };
+
     const togglePermission = (permissionId: string) => {
-        setSelectedPermissions((prev) =>
-            prev.includes(permissionId)
-                ? prev.filter((id) => id !== permissionId)
-                : [...prev, permissionId]
-        );
+        setSelectedPermissions((prev) => {
+            const isSelected = prev.includes(permissionId);
+
+            if (isSelected) {
+                // Deselecting: Check if this permission is required by others
+                const { required, protectedBy } = isPermissionRequiredByOthers(permissionId, prev);
+
+                if (required) {
+                    // Start: Show a toast or alert - for now using standard alert to ensure visibility
+                    // In a refined UI, use the toast hook
+                    alert(`Cannot remove this permission because it is required by:\n- ${protectedBy.slice(0, 3).join('\n- ')}${protectedBy.length > 3 ? '\n...and others' : ''}`);
+                    // End: Alert logic
+                    return prev;
+                }
+
+                return prev.filter((id) => id !== permissionId);
+            } else {
+                // Selecting: Add this one AND all recursive dependencies
+                const toAdd = new Set<string>([permissionId]);
+
+                // Breadth-first search for dependencies
+                const queue = [permissionId];
+                while (queue.length > 0) {
+                    const currentId = queue.shift()!;
+                    const deps = getDependentPermissions(currentId, permissions);
+
+                    deps.forEach(depId => {
+                        if (!toAdd.has(depId) && !prev.includes(depId)) {
+                            toAdd.add(depId);
+                            queue.push(depId);
+                        }
+                    });
+                }
+
+                return [...prev, ...Array.from(toAdd)];
+            }
+        });
     };
 
     const toggleModule = (module: string, e: React.MouseEvent) => {
