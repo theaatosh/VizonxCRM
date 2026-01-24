@@ -1,3 +1,4 @@
+import { fetchEventSource, EventStreamContentType } from '@microsoft/fetch-event-source';
 import api from './api';
 
 export interface Notification {
@@ -67,13 +68,53 @@ const notificationService = {
     /**
      * Get real-time notification stream
      */
-    getStream(): EventSource {
+    getStream(
+        onMessage: (data: Notification) => void,
+        onError: (err: any) => void
+    ): () => void {
         const token = localStorage.getItem('accessToken');
-        const url = new URL('http://crmapi.vizon-x.com/api/v1/notifications/stream');
-        if (token) {
-            url.searchParams.append('token', token);
-        }
-        return new EventSource(url.toString());
+        const ctrl = new AbortController();
+
+        fetchEventSource('http://crmapi.vizon-x.com/api/v1/notifications/stream', {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            signal: ctrl.signal,
+            async onopen(response) {
+                if (response.ok && response.headers.get('content-type') === EventStreamContentType) {
+                    return; // everything is good
+                } else if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+                    // client-side errors are usually non-retriable:
+                    throw new Error(`Failed to establish SSE connection: ${response.statusText}`);
+                } else {
+                    // rethrow to keep alive
+                    // throw new Error(`Failed to establish SSE connection: ${response.statusText}`);
+                }
+            },
+            onmessage(msg) {
+                if (msg.event === 'close') {
+                    // handle close event if needed
+                } else if (msg.data) {
+                    try {
+                        const data = JSON.parse(msg.data);
+                        onMessage(data);
+                    } catch (e) {
+                        // console.error('Failed to parse SSE message', e);
+                    }
+                }
+            },
+            onerror(err) {
+                if (err instanceof Error) {
+                    onError(err);
+                    throw err; // rethrow to stop the operation
+                }
+            }
+        }).catch(err => {
+            onError(err);
+        });
+
+        return () => ctrl.abort();
     }
 };
 

@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/contexts/PermissionContext";
+
 import authService from "@/services/auth.service";
 
 // Validation schema
@@ -26,6 +28,7 @@ const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
 
+    const { refetch } = usePermissions();
     const {
         register,
         handleSubmit,
@@ -49,6 +52,9 @@ const Login = () => {
             // Store tokens and user data
             authService.setTokens(response.accessToken);
             authService.setUser(response.user);
+
+            // Fetch permissions immediately
+            await refetch();
 
             toast({
                 title: "Welcome back!",
