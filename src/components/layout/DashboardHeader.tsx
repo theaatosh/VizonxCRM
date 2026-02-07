@@ -151,7 +151,9 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
                     <div className="flex w-full justify-between items-start">
                       <span className="font-medium text-sm">{notification.type || 'Notification'}</span>
                       <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
-                        {new Date(notification.createdAt).toLocaleDateString()}
+                        {notification.createdAt && !isNaN(new Date(notification.createdAt).getTime())
+                          ? new Date(notification.createdAt).toLocaleDateString()
+                          : ''}
                       </span>
                     </div>
                     <span className="text-xs text-muted-foreground line-clamp-2">{notification.message}</span>

@@ -38,25 +38,29 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
         // SSE setup - started only once on mount
         const cleanup = notificationService.getStream(
             (newNotification) => {
+                // STRICT FILTERING: Only process real notifications with IDs and valid content
+                // Skip connection established messages, technical status updates, or empty messages
+                const isSystemMessage =
+                    !newNotification.id ||
+                    newNotification.type?.toLowerCase().includes('connection') ||
+                    newNotification.message?.toLowerCase().includes('connected') ||
+                    newNotification.message?.toLowerCase().includes('established') ||
+                    newNotification.message?.toLowerCase() === 'success';
+
+                if (isSystemMessage) {
+                    return; // Completely ignore these messages
+                }
+
                 setNotifications((prev) => [newNotification, ...prev]);
 
                 if (!newNotification.readAt) {
                     setUnreadCount(prev => prev + 1);
                 }
 
-                // Only show toast for actual content-rich notifications
-                const isConnectionMsg =
-                    newNotification.type?.toLowerCase().includes('connection') ||
-                    newNotification.message?.toLowerCase().includes('connected') ||
-                    newNotification.message?.toLowerCase().includes('established') ||
-                    newNotification.message?.toLowerCase().includes('success');
-
-                if (!isConnectionMsg) {
-                    toast({
-                        title: newNotification.type || "New Notification",
-                        description: newNotification.message,
-                    });
-                }
+                toast({
+                    title: newNotification.type || "New Notification",
+                    description: newNotification.message,
+                });
             },
             (error) => {
                 console.error("Notification stream error:", error);
