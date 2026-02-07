@@ -63,8 +63,13 @@ export function RecentLeadsTable({ leads, isLoading = false }: RecentLeadsTableP
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffTime = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    // Normalize both dates to midnight for accurate day-by-day comparison
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    const diffTime = startOfToday.getTime() - startOfDate.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
@@ -72,7 +77,8 @@ export function RecentLeadsTable({ leads, isLoading = false }: RecentLeadsTableP
 
     return date.toLocaleDateString('en-US', {
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
     });
   };
 
