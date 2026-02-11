@@ -11,6 +11,13 @@ export const useTasks = (params?: PaginationParams) => {
     });
 };
 
+export const useOverdueTasks = (params?: PaginationParams) => {
+    return useQuery({
+        queryKey: ['overdue-tasks', params],
+        queryFn: () => taskService.getOverdueTasks(params),
+    });
+};
+
 export const useTaskStats = () => {
     return useQuery({
         queryKey: ['task-stats'],

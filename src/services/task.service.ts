@@ -76,5 +76,10 @@ export const taskService = {
             totalDueToday: tasks.filter(t => t.dueDate?.startsWith(today) && t.status !== 'Completed').length,
             totalCompleted: tasks.filter(t => t.status === 'Completed').length
         };
+    },
+
+    getOverdueTasks: async (params?: PaginationParams) => {
+        const response = await api.get<TasksResponse>('/tasks/overdue', { params });
+        return response.data;
     }
 };

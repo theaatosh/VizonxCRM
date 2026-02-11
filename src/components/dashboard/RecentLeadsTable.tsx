@@ -22,6 +22,8 @@ const statusColors: Record<string, string> = {
   Contacted: "bg-primary/10 text-primary border-primary/20",
   Qualified: "bg-warning/10 text-warning border-warning/20",
   Converted: "bg-success/10 text-success border-success/20",
+  NotInterested: "bg-muted text-muted-foreground border-muted",
+  NotReachable: "bg-destructive/10 text-destructive border-destructive/20",
 };
 
 function TableSkeleton() {

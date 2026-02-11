@@ -259,6 +259,7 @@ export function TaskFormDialog({
                                                 <SelectItem value={TaskStatus.PENDING}>Pending</SelectItem>
                                                 <SelectItem value={TaskStatus.IN_PROGRESS}>In Progress</SelectItem>
                                                 <SelectItem value={TaskStatus.COMPLETED}>Completed</SelectItem>
+                                                <SelectItem value={TaskStatus.CANCELLED}>Cancelled</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />

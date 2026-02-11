@@ -2,8 +2,9 @@ import { PaginationParams, PaginatedResponse } from './country.types';
 
 export enum TaskStatus {
     PENDING = 'Pending',
+    IN_PROGRESS = 'InProgress',
     COMPLETED = 'Completed',
-    IN_PROGRESS = 'inProgress' // Adding In Progress as a common status, though API returned Pending/Completed
+    CANCELLED = 'Cancelled'
 }
 
 export enum TaskPriority {

@@ -1,6 +1,6 @@
 // Lead Types - Based on backend API schema
 
-export type LeadStatus = 'New' | 'Contacted' | 'Qualified' | 'Converted';
+export type LeadStatus = 'New' | 'Contacted' | 'Qualified' | 'Converted' | 'NotInterested' | 'NotReachable';
 export type LeadPriority = 'High' | 'Medium' | 'Low';
 
 // Lead entity from backend

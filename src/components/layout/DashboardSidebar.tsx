@@ -12,6 +12,7 @@ import {
   Award,
   Wrench,
   FileText,
+  MessageSquare,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -43,6 +44,7 @@ const menuItems: MenuItem[] = [
   { title: "Scholarships", icon: Award, path: "/scholarships", module: "scholarships" },
   { title: "Services", icon: Wrench, path: "/services", module: "services" },
   { title: "Content Management", icon: FileText, path: "/content-management", module: "blogs" },
+  { title: "Messaging", icon: MessageSquare, path: "/messaging" },
   { title: "Settings", icon: Settings, path: "/settings" },
 ];
 

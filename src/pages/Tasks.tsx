@@ -17,9 +17,10 @@ import {
   Briefcase,
   GraduationCap,
   Edit,
-  Trash2
+  Trash2,
+  AlertCircle
 } from "lucide-react";
-import { useTasks, useDeleteTask, useUpdateTask } from "@/hooks/useTasks";
+import { useTasks, useDeleteTask, useUpdateTask, useOverdueTasks } from "@/hooks/useTasks";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { Task, TaskPriority, TaskStatus, RelatedEntityType } from "@/types/task.types";
 import { TaskFormDialog } from "@/components/tasks/TaskFormDialog";
@@ -43,11 +44,26 @@ const Tasks = () => {
     sortOrder: 'desc'
   });
 
+  const { data: overdueTasksResponse, isLoading: isLoadingOverdue } = useOverdueTasks({
+    limit: 100,
+    sortBy: 'dueDate',
+    sortOrder: 'asc'
+  });
+
   const deleteTask = useDeleteTask();
   const updateTask = useUpdateTask();
   const { canCreate, canUpdate, canDelete, hasPermission } = usePermissions();
 
   const tasks = tasksResponse?.data || [];
+  const overdueTasks = overdueTasksResponse?.data || [];
+
+  // Helper function to check if a task is overdue
+  const isTaskOverdue = (task: Task) => {
+    if (!task.dueDate || task.status === TaskStatus.COMPLETED || task.status === TaskStatus.CANCELLED) {
+      return false;
+    }
+    return new Date(task.dueDate) < new Date();
+  };
 
   // Filter tasks based on search
   const filteredTasks = tasks.filter(t =>
@@ -55,7 +71,16 @@ const Tasks = () => {
     t.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const pendingTasks = filteredTasks.filter((t) => t.status !== TaskStatus.COMPLETED);
+  const filteredOverdueTasks = overdueTasks.filter(t =>
+    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    t.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const pendingTasks = filteredTasks.filter((t) => 
+    t.status !== TaskStatus.COMPLETED && 
+    t.status !== TaskStatus.CANCELLED &&
+    !isTaskOverdue(t)
+  );
   const completedTasks = filteredTasks.filter((t) => t.status === TaskStatus.COMPLETED);
 
   // Stats Calculation from ALL fetched tasks (not filtered by search for accurate stats)
@@ -63,10 +88,23 @@ const Tasks = () => {
   const today = new Date().toISOString().split('T')[0];
 
   const stats = {
-    pending: allTasks.filter(t => t.status !== TaskStatus.COMPLETED).length,
-    highPriority: allTasks.filter(t => t.priority === TaskPriority.HIGH && t.status !== TaskStatus.COMPLETED).length,
-    dueToday: allTasks.filter(t => t.dueDate?.startsWith(today) && t.status !== TaskStatus.COMPLETED).length,
-    completed: allTasks.filter(t => t.status === TaskStatus.COMPLETED).length
+    pending: allTasks.filter(t => 
+      t.status !== TaskStatus.COMPLETED && 
+      t.status !== TaskStatus.CANCELLED && 
+      !isTaskOverdue(t)
+    ).length,
+    highPriority: allTasks.filter(t => 
+      t.priority === TaskPriority.HIGH && 
+      t.status !== TaskStatus.COMPLETED && 
+      t.status !== TaskStatus.CANCELLED
+    ).length,
+    dueToday: allTasks.filter(t => 
+      t.dueDate?.startsWith(today) && 
+      t.status !== TaskStatus.COMPLETED && 
+      t.status !== TaskStatus.CANCELLED
+    ).length,
+    completed: allTasks.filter(t => t.status === TaskStatus.COMPLETED).length,
+    overdue: overdueTasks.length
   };
 
   const handleEdit = (task: Task) => {
@@ -94,12 +132,16 @@ const Tasks = () => {
     if (!open) setEditingTask(null);
   };
 
-  const renderTaskItem = (task: Task, isCompleted: boolean = false) => (
+  const renderTaskItem = (task: Task, isCompleted: boolean = false) => {
+    const isOverdue = isTaskOverdue(task);
+    
+    return (
     <div
       key={task.id}
       className={cn(
         "flex items-start gap-4 rounded-lg border border-border p-4 transition-colors hover:bg-muted/50 group",
-        isCompleted && "opacity-60"
+        isCompleted && "opacity-60",
+        isOverdue && "border-destructive/50 bg-destructive/5"
       )}
     >
       <Checkbox
@@ -109,11 +151,24 @@ const Tasks = () => {
       />
       <div className="flex-1 space-y-2">
         <div className="flex items-start justify-between gap-4">
-          <p className={cn("font-medium text-foreground", isCompleted && "line-through")}>
-            {task.title}
-          </p>
           <div className="flex items-center gap-2">
-            {!isCompleted && (
+            <p className={cn("font-medium text-foreground", isCompleted && "line-through")}>
+              {task.title}
+            </p>
+            {isOverdue && (
+              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
+                <AlertCircle className="mr-1 h-3 w-3" />
+                Overdue
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {!isCompleted && !isOverdue && (
+              <Badge variant="outline" className={priorityColors[task.priority]}>
+                {task.priority}
+              </Badge>
+            )}
+            {!isCompleted && isOverdue && (
               <Badge variant="outline" className={priorityColors[task.priority]}>
                 {task.priority}
               </Badge>
@@ -135,7 +190,7 @@ const Tasks = () => {
         </div>
         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
           {task.dueDate && (
-            <div className="flex items-center gap-1">
+            <div className={cn("flex items-center gap-1", isOverdue && "text-destructive font-medium")}>
               <Calendar className="h-4 w-4" />
               {format(new Date(task.dueDate), "MMM d, yyyy")}
             </div>
@@ -156,6 +211,7 @@ const Tasks = () => {
       </div>
     </div>
   );
+  };
 
   if (isLoading) {
     return (
@@ -171,7 +227,7 @@ const Tasks = () => {
   return (
     <DashboardLayout title="Tasks" subtitle="Manage team tasks and deadlines">
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4 mb-6">
+      <div className="grid gap-4 md:grid-cols-5 mb-6">
         <Card className="shadow-card">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -194,6 +250,19 @@ const Tasks = () => {
               </div>
               <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
                 <Calendar className="h-5 w-5 text-destructive" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="shadow-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold">{stats.overdue}</p>
+                <p className="text-sm text-muted-foreground">Overdue</p>
+              </div>
+              <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-destructive" />
               </div>
             </div>
           </CardContent>
@@ -230,6 +299,9 @@ const Tasks = () => {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <TabsList>
             <TabsTrigger value="pending">Pending ({pendingTasks.length})</TabsTrigger>
+            <TabsTrigger value="overdue">
+              Overdue ({filteredOverdueTasks.length})
+            </TabsTrigger>
             <TabsTrigger value="completed">Completed ({completedTasks.length})</TabsTrigger>
           </TabsList>
           <div className="flex gap-2">
@@ -263,6 +335,33 @@ const Tasks = () => {
                 </div>
               ) : (
                 pendingTasks.map((task) => renderTaskItem(task, false))
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="overdue">
+          <Card className="shadow-card border-destructive/20">
+            <CardContent className="p-4 space-y-3">
+              {isLoadingOverdue ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Loading overdue tasks...
+                </div>
+              ) : filteredOverdueTasks.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertCircle className="h-12 w-12 mx-auto mb-2 text-success" />
+                  <p>No overdue tasks! Great job!</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-lg border border-destructive/20 mb-3">
+                    <AlertCircle className="h-5 w-5 text-destructive" />
+                    <p className="text-sm text-destructive font-medium">
+                      {filteredOverdueTasks.length} {filteredOverdueTasks.length === 1 ? 'task is' : 'tasks are'} overdue and need{filteredOverdueTasks.length === 1 ? 's' : ''} immediate attention
+                    </p>
+                  </div>
+                  {filteredOverdueTasks.map((task) => renderTaskItem(task, false))}
+                </>
               )}
             </CardContent>
           </Card>

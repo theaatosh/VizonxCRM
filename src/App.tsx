@@ -21,6 +21,7 @@ import Scholarships from "./pages/Scholarships";
 import Services from "./pages/Services";
 import Settings from "./pages/Settings";
 import ContentManagement from "./pages/ContentManagement";
+import Messaging from "./pages/Messaging";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import NotificationsPage from "./pages/notifications/NotificationsPage";
@@ -53,7 +54,7 @@ const App = () => (
               <Route path="/scholarships" element={<ProtectedRoute module="scholarships"><Scholarships /></ProtectedRoute>} />
               <Route path="/services" element={<ProtectedRoute module="services"><Services /></ProtectedRoute>} />
               <Route path="/content-management" element={<ProtectedRoute module="blogs"><ContentManagement /></ProtectedRoute>} />
-              <Route path="/content-management" element={<ProtectedRoute module="blogs"><ContentManagement /></ProtectedRoute>} />
+              <Route path="/messaging" element={<ProtectedRoute><Messaging /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
 
