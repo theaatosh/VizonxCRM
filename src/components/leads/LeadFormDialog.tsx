@@ -39,6 +39,7 @@ const leadFormSchema = z.object({
     phone: z.string().optional(),
     academicBackground: z.string().optional(),
     studyInterests: z.string().optional(),
+    status: z.enum(['New', 'Contacted', 'Qualified', 'Converted', 'NotInterested', 'NotReachable']).optional(),
     priority: z.enum(['High', 'Medium', 'Low']).optional(),
     source: z.string().optional(),
 });
@@ -66,6 +67,7 @@ export function LeadFormDialog({ open, onOpenChange, lead }: LeadFormDialogProps
             phone: '',
             academicBackground: '',
             studyInterests: '',
+            status: undefined,
             priority: undefined,
             source: '',
         },
@@ -81,6 +83,7 @@ export function LeadFormDialog({ open, onOpenChange, lead }: LeadFormDialogProps
                 phone: lead.phone || '',
                 academicBackground: lead.academicBackground || '',
                 studyInterests: lead.studyInterests || '',
+                status: lead.status,
                 priority: lead.priority,
                 source: lead.source || '',
             });
@@ -92,6 +95,7 @@ export function LeadFormDialog({ open, onOpenChange, lead }: LeadFormDialogProps
                 phone: '',
                 academicBackground: '',
                 studyInterests: '',
+                status: undefined,
                 priority: undefined,
                 source: '',
             });
@@ -108,6 +112,7 @@ export function LeadFormDialog({ open, onOpenChange, lead }: LeadFormDialogProps
                     phone: values.phone || undefined,
                     academicBackground: values.academicBackground || undefined,
                     studyInterests: values.studyInterests || undefined,
+                    status: values.status,
                     priority: values.priority,
                 };
                 await updateLead.mutateAsync({ id: lead.id, data: updateData });
@@ -205,6 +210,34 @@ export function LeadFormDialog({ open, onOpenChange, lead }: LeadFormDialogProps
                         />
 
                         <div className="grid grid-cols-2 gap-4">
+                            {isEditing && (
+                                <FormField
+                                    control={form.control}
+                                    name="status"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Status</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select status" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="New">New</SelectItem>
+                                                    <SelectItem value="Contacted">Contacted</SelectItem>
+                                                    <SelectItem value="Qualified">Qualified</SelectItem>
+                                                    <SelectItem value="Converted">Converted</SelectItem>
+                                                    <SelectItem value="NotInterested">Not Interested</SelectItem>
+                                                    <SelectItem value="NotReachable">Not Reachable</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
+
                             <FormField
                                 control={form.control}
                                 name="priority"
@@ -228,6 +261,24 @@ export function LeadFormDialog({ open, onOpenChange, lead }: LeadFormDialogProps
                                 )}
                             />
 
+                            {!isEditing && (
+                                <FormField
+                                    control={form.control}
+                                    name="source"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Source</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="Website, Referral, etc." {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
+                        </div>
+
+                        {isEditing && (
                             <FormField
                                 control={form.control}
                                 name="source"
@@ -241,7 +292,7 @@ export function LeadFormDialog({ open, onOpenChange, lead }: LeadFormDialogProps
                                     </FormItem>
                                 )}
                             />
-                        </div>
+                        )}
 
                         <FormField
                             control={form.control}

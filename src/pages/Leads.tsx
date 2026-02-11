@@ -26,6 +26,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLeads, useConvertLeadToStudent, useUpdateLead } from "@/hooks/useLeads";
@@ -113,8 +117,21 @@ const Leads = () => {
     convertToStudent.mutate(lead.id);
   };
 
-  const handleConvertToContacted = (lead: Lead) => {
-    updateLead.mutate({ id: lead.id, data: { status: 'Contacted' } });
+  const handleChangeStatus = (lead: Lead, newStatus: LeadStatus) => {
+    updateLead.mutate({ id: lead.id, data: { status: newStatus } });
+  };
+
+  // Get available status transitions for a lead
+  const getAvailableStatuses = (currentStatus: LeadStatus): LeadStatus[] => {
+    const allStatuses: LeadStatus[] = ['New', 'Contacted', 'Qualified', 'Converted', 'NotInterested', 'NotReachable'];
+    return allStatuses.filter(status => status !== currentStatus);
+  };
+
+  // Format status display name
+  const formatStatusName = (status: LeadStatus): string => {
+    if (status === 'NotInterested') return 'Not Interested';
+    if (status === 'NotReachable') return 'Not Reachable';
+    return status;
   };
 
   // Loading skeleton
@@ -181,14 +198,17 @@ const Leads = () => {
                 value={statusFilter}
                 onValueChange={(value) => setStatusFilter(value)}
               >
-                <SelectTrigger className="w-[130px]">
+                <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="new">New</SelectItem>
                   <SelectItem value="contacted">Contacted</SelectItem>
+                  <SelectItem value="qualified">Qualified</SelectItem>
                   <SelectItem value="converted">Converted</SelectItem>
+                  <SelectItem value="notinterested">Not Interested</SelectItem>
+                  <SelectItem value="notreachable">Not Reachable</SelectItem>
                 </SelectContent>
               </Select>
               <Button variant="outline" size="icon">
@@ -297,49 +317,68 @@ const Leads = () => {
                                   <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
+                              <DropdownMenuContent align="end" className="w-56">
                                 {canUpdate('leads') && (
                                   <DropdownMenuItem onClick={() => handleEditLead(lead)}>
                                     Edit Lead
                                   </DropdownMenuItem>
                                 )}
-                                {canUpdate('leads') && lead.status === 'New' && (
-                                  <DropdownMenuItem
-                                    onClick={() => handleConvertToContacted(lead)}
-                                    disabled={updateLead.isPending}
-                                  >
-                                    {updateLead.isPending && selectedLead?.id === lead.id ? (
-                                      <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Updating...
-                                      </>
-                                    ) : (
-                                      'Convert to Contacted'
-                                    )}
-                                  </DropdownMenuItem>
+                                {canUpdate('leads') && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuSub>
+                                      <DropdownMenuSubTrigger>
+                                        Change Status
+                                      </DropdownMenuSubTrigger>
+                                      <DropdownMenuSubContent className="w-48">
+                                        {getAvailableStatuses(lead.status).map((status) => (
+                                          <DropdownMenuItem
+                                            key={status}
+                                            onClick={() => handleChangeStatus(lead, status)}
+                                            disabled={updateLead.isPending}
+                                          >
+                                            {updateLead.isPending && selectedLead?.id === lead.id ? (
+                                              <>
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Updating...
+                                              </>
+                                            ) : (
+                                              `Mark as ${formatStatusName(status)}`
+                                            )}
+                                          </DropdownMenuItem>
+                                        ))}
+                                      </DropdownMenuSubContent>
+                                    </DropdownMenuSub>
+                                  </>
                                 )}
                                 {hasPermission('leads', 'convert') && lead.status !== 'Converted' && (
-                                  <DropdownMenuItem
-                                    onClick={() => handleConvertLead(lead)}
-                                    disabled={convertToStudent.isPending}
-                                  >
-                                    {convertToStudent.isPending ? (
-                                      <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                        Converting...
-                                      </>
-                                    ) : (
-                                      'Convert to Student'
-                                    )}
-                                  </DropdownMenuItem>
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => handleConvertLead(lead)}
+                                      disabled={convertToStudent.isPending}
+                                    >
+                                      {convertToStudent.isPending ? (
+                                        <>
+                                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                          Converting...
+                                        </>
+                                      ) : (
+                                        'Convert to Student'
+                                      )}
+                                    </DropdownMenuItem>
+                                  </>
                                 )}
                                 {canDelete('leads') && (
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onClick={() => handleDeleteLead(lead)}
-                                  >
-                                    Delete
-                                  </DropdownMenuItem>
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-destructive"
+                                      onClick={() => handleDeleteLead(lead)}
+                                    >
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </>
                                 )}
                               </DropdownMenuContent>
                             </DropdownMenu>
