@@ -306,8 +306,12 @@ const Leads = () => {
                         <TableCell className="text-muted-foreground">
                           {lead.source || '-'}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {new Date(lead.createdAt).toLocaleDateString()}
+                        <TableCell className="text-muted-foreground whitespace-nowrap">
+                          {new Date(lead.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
                         </TableCell>
                         <TableCell>
                           {(canUpdate('leads') || canDelete('leads') || hasPermission('leads', 'convert')) && (

@@ -17,6 +17,7 @@ import {
 import authService from "@/services/auth.service";
 import notificationService, { Notification } from "@/services/notification.service";
 import { useNotificationContext } from "@/contexts/NotificationContext";
+import { usePermissions } from "@/contexts/PermissionContext";
 
 interface DashboardHeaderProps {
   title: string;
@@ -29,8 +30,9 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
   const [localNotifications, setLocalNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Use Global Notification Context
+  // Use Global Contexts
   const { unreadCount, notifications: liveNotifications, refreshUnreadCount } = useNotificationContext();
+  const { user } = usePermissions();
 
   // Handle local state for the dropdown (merging historical and live)
   useEffect(() => {
@@ -151,7 +153,9 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
                     <div className="flex w-full justify-between items-start">
                       <span className="font-medium text-sm">{notification.type || 'Notification'}</span>
                       <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
-                        {new Date(notification.createdAt).toLocaleDateString()}
+                        {notification.createdAt && !isNaN(new Date(notification.createdAt).getTime())
+                          ? new Date(notification.createdAt).toLocaleDateString()
+                          : ''}
                       </span>
                     </div>
                     <span className="text-xs text-muted-foreground line-clamp-2">{notification.message}</span>
@@ -178,12 +182,14 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 px-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=admin" />
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm">AD</AvatarFallback>
+                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name || 'user'}`} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                </AvatarFallback>
               </Avatar>
               <div className="hidden text-left md:block">
-                <p className="text-sm font-medium">Admin User</p>
-                <p className="text-xs text-muted-foreground">admin@eduvisa.com</p>
+                <p className="text-sm font-medium">{user?.name || 'User'}</p>
+                <p className="text-xs text-muted-foreground">{user?.email || 'user@example.com'}</p>
               </div>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </Button>

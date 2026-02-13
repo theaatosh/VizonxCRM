@@ -33,10 +33,21 @@ import type { Lead, CreateLeadDto, UpdateLeadDto } from '@/types/lead.types';
 
 // Validation schema
 const leadFormSchema = z.object({
-    firstName: z.string().min(1, 'First name is required'),
-    lastName: z.string().min(1, 'Last name is required'),
+    firstName: z
+        .string()
+        .trim()
+        .min(1, 'First name is required')
+        .regex(/^[^\d]+$/, 'Numbers are not allowed in name'),
+    lastName: z
+        .string()
+        .trim()
+        .min(1, 'Last name is required')
+        .regex(/^[^\d]+$/, 'Numbers are not allowed in name'),
     email: z.string().email('Invalid email address'),
-    phone: z.string().optional(),
+    phone: z
+        .string()
+        .min(1, 'Phone number is required')
+        .regex(/^\d{10}$/, 'Phone number must be exactly 10 digits'),
     academicBackground: z.string().optional(),
     studyInterests: z.string().optional(),
     status: z.enum(['New', 'Contacted', 'Qualified', 'Converted', 'NotInterested', 'NotReachable']).optional(),
@@ -200,9 +211,9 @@ export function LeadFormDialog({ open, onOpenChange, lead }: LeadFormDialogProps
                             name="phone"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Phone</FormLabel>
+                                    <FormLabel>Phone *</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="+1 234 567 890" {...field} />
+                                        <Input placeholder="1234567890" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
