@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,11 +30,18 @@ import { DeleteServiceDialog } from "@/components/services/DeleteServiceDialog";
 import type { Service } from "@/types/service.types";
 
 const Services = () => {
-  const { data, isLoading, isError } = useServices({ limit: 20 });
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const { data, isLoading, isError } = useServices({
+    page,
+    limit,
+    sortBy: 'name',
+    sortOrder: 'asc'
+  });
   const { canCreate, canUpdate, canDelete } = usePermissions();
 
   const services = data?.data || [];
-  const totalServices = data?.meta?.total || 0;
+  const totalServices = data?.total || 0;
 
   // Dialog states
   const [formDialogOpen, setFormDialogOpen] = useState(false);
@@ -272,6 +280,21 @@ const Services = () => {
                 </Card>
               ))}
             </div>
+          )}
+
+          {/* Pagination */}
+          {data && (
+            <DataTablePagination
+              pageIndex={page}
+              pageSize={limit}
+              totalItems={data.total}
+              totalPages={data.totalPages}
+              onPageChange={setPage}
+              onPageSizeChange={(newLimit) => {
+                setLimit(newLimit);
+                setPage(1);
+              }}
+            />
           )}
         </CardContent>
       </Card>

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +47,7 @@ const Applicants = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   // Dialog states
   const [formDialogOpen, setFormDialogOpen] = useState(false);
@@ -55,7 +57,7 @@ const Applicants = () => {
   // Fetch applicants from API
   const { data, isLoading, isError, error } = useStudents({
     page,
-    limit: 10,
+    limit,
     search: searchQuery || undefined,
     sortOrder: 'desc',
   });
@@ -134,7 +136,7 @@ const Applicants = () => {
             <div>
               <CardTitle className="text-lg font-semibold">All Applicants</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Total: {data?.meta?.total || 0} applicants
+                Total: {data?.total || 0} applicants
               </p>
             </div>
             <div className="flex gap-2">
@@ -303,30 +305,18 @@ const Applicants = () => {
           )}
 
           {/* Pagination */}
-          {data?.meta && data.meta.totalPages > 1 && (
-            <div className="mt-6 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Page {data.meta.page} of {data.meta.totalPages}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1 || isLoading}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= data.meta.totalPages || isLoading}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
+          {data && (
+            <DataTablePagination
+              pageIndex={page}
+              pageSize={limit}
+              totalItems={data.total}
+              totalPages={data.totalPages}
+              onPageChange={setPage}
+              onPageSizeChange={(newLimit) => {
+                setLimit(newLimit);
+                setPage(1);
+              }}
+            />
           )}
         </CardContent>
       </Card>

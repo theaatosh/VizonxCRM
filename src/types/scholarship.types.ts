@@ -48,12 +48,10 @@ export interface UpdateScholarshipDto {
 // Response types - matches actual API response with meta
 export interface ScholarshipsResponse {
     data: Scholarship[];
-    meta: {
-        total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
-    };
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
 }
 
 // Query parameters

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -106,16 +107,16 @@ const statusIcons: Record<string, React.ReactNode> = {
 
 const Visas = () => {
   // Visa Types state
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(12);
+  const [search, setSearch] = useState("");
   const [selectedVisaType, setSelectedVisaType] = useState<VisaType | null>(null);
   const [editVisaType, setEditVisaType] = useState<VisaType | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
-  const limit = 12;
 
   const { data, isLoading, isError, error } = useVisaTypes({
     page,
@@ -333,35 +334,19 @@ const Visas = () => {
               </div>
 
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-8">
-                  <Button
-                    variant="outline"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                  >
-                    Previous
-                  </Button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                      <Button
-                        key={pageNum}
-                        variant={page === pageNum ? "default" : "outline"}
-                        onClick={() => setPage(pageNum)}
-                        className="w-10 h-10 p-0"
-                      >
-                        {pageNum}
-                      </Button>
-                    ))}
-                  </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                  >
-                    Next
-                  </Button>
-                </div>
+              {data && (
+                <DataTablePagination
+                  pageIndex={page}
+                  pageSize={limit}
+                  totalItems={data.total}
+                  totalPages={data.totalPages}
+                  onPageChange={setPage}
+                  onPageSizeChange={(newLimit) => {
+                    setLimit(newLimit);
+                    setPage(1);
+                  }}
+                  pageSizeOptions={[12, 24, 48, 96]}
+                />
               )}
             </>
           )}

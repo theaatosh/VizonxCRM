@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DataTablePagination } from "@/components/shared/DataTablePagination";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -21,14 +22,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const Scholarships = () => {
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(12);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedScholarship, setSelectedScholarship] = useState<Scholarship | null>(null);
   const [editScholarship, setEditScholarship] = useState<Scholarship | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
-
-  const limit = 12;
 
   const { data, isLoading, isError, error } = useScholarships({
     page,
@@ -48,7 +48,7 @@ const Scholarships = () => {
     ? scholarships
     : scholarships.filter(s => statusFilter === "published" ? s.status === 'Published' : s.status === 'Draft');
 
-  const totalPages = data?.meta?.totalPages || 0;
+  const totalPages = data?.totalPages || 0;
 
   const handleViewScholarship = (scholarship: Scholarship) => {
     setSelectedScholarship(scholarship);
@@ -160,35 +160,19 @@ const Scholarships = () => {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-8">
-              <Button
-                variant="outline"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Previous
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-                  <Button
-                    key={pageNum}
-                    variant={page === pageNum ? "default" : "outline"}
-                    onClick={() => setPage(pageNum)}
-                    className="w-10 h-10 p-0"
-                  >
-                    {pageNum}
-                  </Button>
-                ))}
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-              >
-                Next
-              </Button>
-            </div>
+          {data && (
+            <DataTablePagination
+              pageIndex={page}
+              pageSize={limit}
+              totalItems={data.total}
+              totalPages={data.totalPages}
+              onPageChange={setPage}
+              onPageSizeChange={(newLimit) => {
+                setLimit(newLimit);
+                setPage(1);
+              }}
+              pageSizeOptions={[12, 24, 48, 96]}
+            />
           )}
         </>
       )}

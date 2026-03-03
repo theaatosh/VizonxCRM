@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLeads, useConvertLeadToStudent, useUpdateLead } from "@/hooks/useLeads";
+import { DataTablePagination } from "@/components/shared/DataTablePagination";
 
 import { usePermissions } from "@/contexts/PermissionContext";
 import { LeadFormDialog } from "@/components/leads/LeadFormDialog";
@@ -60,32 +61,28 @@ const Leads = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   // Dialog states
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
-  // Fetch leads from API
   const { data, isLoading, isError, error } = useLeads({
     page,
-    limit: 10,
+    limit,
     search: searchQuery || undefined,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
     sortOrder: 'desc',
   });
-
   const convertToStudent = useConvertLeadToStudent();
   const updateLead = useUpdateLead();
   const { canCreate, canUpdate, canDelete, hasPermission } = usePermissions();
 
-  // Filter leads by status locally (after fetching)
+  // Use data directly since filtering is now handled by the backend
   const filteredLeads = useMemo(() => {
-    if (!data?.data) return [];
-    if (statusFilter === "all") return data.data;
-    return data.data.filter(
-      (lead) => lead.status.toLowerCase() === statusFilter.toLowerCase()
-    );
-  }, [data?.data, statusFilter]);
+    return data?.data || [];
+  }, [data?.data]);
 
   // Helper to get initials from name
   const getInitials = (firstName: string, lastName: string) => {
@@ -167,7 +164,7 @@ const Leads = () => {
             <div>
               <CardTitle className="text-lg font-semibold">All Leads</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Total: {data?.meta?.total || 0} leads
+                Total: {data?.total || 0} leads
               </p>
             </div>
             {canCreate('leads') && (
@@ -397,30 +394,18 @@ const Leads = () => {
           )}
 
           {/* Pagination */}
-          {data?.meta && data.meta.totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Page {data.meta.page} of {data.meta.totalPages}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1 || isLoading}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={page >= data.meta.totalPages || isLoading}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
+          {data && (
+            <DataTablePagination
+              pageIndex={page}
+              pageSize={limit}
+              totalItems={data.total}
+              totalPages={data.totalPages}
+              onPageChange={setPage}
+              onPageSizeChange={(newLimit) => {
+                setLimit(newLimit);
+                setPage(1); // Reset to first page when limit changes
+              }}
+            />
           )}
         </CardContent>
       </Card>

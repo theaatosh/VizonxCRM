@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { AppointmentsTable } from "@/components/appointments/AppointmentsTable";
@@ -8,10 +9,13 @@ import { useAppointments } from "@/hooks/useAppointments";
 
 const Appointments = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   // Fetch appointments
   const { data: appointmentsResponse, isLoading } = useAppointments({
-    limit: 100,
+    page,
+    limit,
     sortOrder: 'desc',
     sortBy: 'scheduledAt'
   });
@@ -37,6 +41,21 @@ const Appointments = () => {
           appointments={appointments}
           isLoading={isLoading}
         />
+
+        {/* Pagination */}
+        {appointmentsResponse && (
+          <DataTablePagination
+            pageIndex={page}
+            pageSize={limit}
+            totalItems={appointmentsResponse.total}
+            totalPages={appointmentsResponse.totalPages}
+            onPageChange={setPage}
+            onPageSizeChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+          />
+        )}
 
         {/* Create Dialog */}
         <AppointmentFormDialog

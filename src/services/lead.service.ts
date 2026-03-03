@@ -25,6 +25,7 @@ export const leadService = {
                 sortBy: params?.sortBy,
                 sortOrder: params?.sortOrder || 'desc',
                 search: params?.search,
+                status: params?.status,
             },
         });
         return response.data;

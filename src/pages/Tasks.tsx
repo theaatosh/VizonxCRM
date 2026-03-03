@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ import {
   Trash2,
   AlertCircle
 } from "lucide-react";
-import { useTasks, useDeleteTask, useUpdateTask, useOverdueTasks } from "@/hooks/useTasks";
+import { useTasks, useDeleteTask, useUpdateTask, useOverdueTasks, useTaskStats } from "@/hooks/useTasks";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { Task, TaskPriority, TaskStatus, RelatedEntityType } from "@/types/task.types";
 import { TaskFormDialog } from "@/components/tasks/TaskFormDialog";
@@ -37,18 +38,39 @@ const Tasks = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [activeTab, setActiveTab] = useState("pending");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+
+  const getStatusFromTab = (tab: string) => {
+    switch (tab) {
+      case 'pending': return TaskStatus.PENDING;
+      case 'completed': return TaskStatus.COMPLETED;
+      case 'all': return undefined;
+      default: return undefined;
+    }
+  };
 
   const { data: tasksResponse, isLoading } = useTasks({
-    limit: 100,
+    page,
+    limit,
     sortBy: 'createdAt',
-    sortOrder: 'desc'
+    sortOrder: 'desc',
+    search: searchTerm || undefined,
+    status: getStatusFromTab(activeTab)
   });
 
-  const { data: overdueTasksResponse, isLoading: isLoadingOverdue } = useOverdueTasks({
-    limit: 100,
-    sortBy: 'dueDate',
-    sortOrder: 'asc'
-  });
+  const { data: overdueTasksResponse, isLoading: isLoadingOverdue } = useOverdueTasks(
+    activeTab === 'overdue' ? {
+      page,
+      limit,
+      sortBy: 'dueDate',
+      sortOrder: 'asc',
+      search: searchTerm || undefined
+    } : { limit: 1 } // Minimal fetch if not on tab
+  );
+
+  const { data: statsData } = useTaskStats();
 
   const deleteTask = useDeleteTask();
   const updateTask = useUpdateTask();
@@ -56,6 +78,7 @@ const Tasks = () => {
 
   const tasks = tasksResponse?.data || [];
   const overdueTasks = overdueTasksResponse?.data || [];
+  const activeResponse = activeTab === 'overdue' ? overdueTasksResponse : tasksResponse;
 
   // Helper function to check if a task is overdue
   const isTaskOverdue = (task: Task) => {
@@ -65,46 +88,17 @@ const Tasks = () => {
     return new Date(task.dueDate) < new Date();
   };
 
-  // Filter tasks based on search
-  const filteredTasks = tasks.filter(t =>
-    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // No local filtering needed anymore as we use backend status filtering
+  const displayTasks = tasks;
+  const displayOverdueTasks = overdueTasks;
 
-  const filteredOverdueTasks = overdueTasks.filter(t =>
-    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const pendingTasks = filteredTasks.filter((t) => 
-    t.status !== TaskStatus.COMPLETED && 
-    t.status !== TaskStatus.CANCELLED &&
-    !isTaskOverdue(t)
-  );
-  const completedTasks = filteredTasks.filter((t) => t.status === TaskStatus.COMPLETED);
-
-  // Stats Calculation from ALL fetched tasks (not filtered by search for accurate stats)
-  const allTasks = tasks;
-  const today = new Date().toISOString().split('T')[0];
-
+  // Stats from the useTaskStats hook for global accuracy
   const stats = {
-    pending: allTasks.filter(t => 
-      t.status !== TaskStatus.COMPLETED && 
-      t.status !== TaskStatus.CANCELLED && 
-      !isTaskOverdue(t)
-    ).length,
-    highPriority: allTasks.filter(t => 
-      t.priority === TaskPriority.HIGH && 
-      t.status !== TaskStatus.COMPLETED && 
-      t.status !== TaskStatus.CANCELLED
-    ).length,
-    dueToday: allTasks.filter(t => 
-      t.dueDate?.startsWith(today) && 
-      t.status !== TaskStatus.COMPLETED && 
-      t.status !== TaskStatus.CANCELLED
-    ).length,
-    completed: allTasks.filter(t => t.status === TaskStatus.COMPLETED).length,
-    overdue: overdueTasks.length
+    pending: statsData?.totalPending || 0,
+    highPriority: statsData?.totalHighPriority || 0,
+    dueToday: statsData?.totalDueToday || 0,
+    completed: statsData?.totalCompleted || 0,
+    overdue: overdueTasksResponse?.total || 0 // Overdue total from the response
   };
 
   const handleEdit = (task: Task) => {
@@ -134,83 +128,83 @@ const Tasks = () => {
 
   const renderTaskItem = (task: Task, isCompleted: boolean = false) => {
     const isOverdue = isTaskOverdue(task);
-    
+
     return (
-    <div
-      key={task.id}
-      className={cn(
-        "flex items-start gap-4 rounded-lg border border-border p-4 transition-colors hover:bg-muted/50 group",
-        isCompleted && "opacity-60",
-        isOverdue && "border-destructive/50 bg-destructive/5"
-      )}
-    >
-      <Checkbox
-        checked={isCompleted}
-        onCheckedChange={(checked) => handleToggleComplete(task, checked as boolean)}
-        className="mt-1"
-      />
-      <div className="flex-1 space-y-2">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <p className={cn("font-medium text-foreground", isCompleted && "line-through")}>
-              {task.title}
-            </p>
-            {isOverdue && (
-              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
-                <AlertCircle className="mr-1 h-3 w-3" />
-                Overdue
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {!isCompleted && !isOverdue && (
-              <Badge variant="outline" className={priorityColors[task.priority]}>
-                {task.priority}
-              </Badge>
-            )}
-            {!isCompleted && isOverdue && (
-              <Badge variant="outline" className={priorityColors[task.priority]}>
-                {task.priority}
-              </Badge>
-            )}
-            {/* Edit/Delete Actions */}
-            <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
-              {canUpdate('tasks') && (
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleEdit(task)}>
-                  <Edit className="h-3 w-3" />
-                </Button>
-              )}
-              {canDelete('tasks') && (
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDelete(task.id)}>
-                  <Trash2 className="h-3 w-3" />
-                </Button>
+      <div
+        key={task.id}
+        className={cn(
+          "flex items-start gap-4 rounded-lg border border-border p-4 transition-colors hover:bg-muted/50 group",
+          isCompleted && "opacity-60",
+          isOverdue && "border-destructive/50 bg-destructive/5"
+        )}
+      >
+        <Checkbox
+          checked={isCompleted}
+          onCheckedChange={(checked) => handleToggleComplete(task, checked as boolean)}
+          className="mt-1"
+        />
+        <div className="flex-1 space-y-2">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <p className={cn("font-medium text-foreground", isCompleted && "line-through")}>
+                {task.title}
+              </p>
+              {isOverdue && (
+                <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
+                  <AlertCircle className="mr-1 h-3 w-3" />
+                  Overdue
+                </Badge>
               )}
             </div>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-          {task.dueDate && (
-            <div className={cn("flex items-center gap-1", isOverdue && "text-destructive font-medium")}>
-              <Calendar className="h-4 w-4" />
-              {format(new Date(task.dueDate), "MMM d, yyyy")}
+            <div className="flex items-center gap-2">
+              {!isCompleted && !isOverdue && (
+                <Badge variant="outline" className={priorityColors[task.priority]}>
+                  {task.priority}
+                </Badge>
+              )}
+              {!isCompleted && isOverdue && (
+                <Badge variant="outline" className={priorityColors[task.priority]}>
+                  {task.priority}
+                </Badge>
+              )}
+              {/* Edit/Delete Actions */}
+              <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+                {canUpdate('tasks') && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleEdit(task)}>
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                )}
+                {canDelete('tasks') && (
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => handleDelete(task.id)}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
             </div>
-          )}
-          <div className="flex items-center gap-1">
-            <User className="h-4 w-4" />
-            {task.assignedUser?.name || "Unassigned"}
           </div>
-          <Badge variant="secondary" className="bg-primary/5 text-primary">
-            {task.relatedEntityType === RelatedEntityType.LEAD ? (
-              <Briefcase className="mr-1 h-3 w-3" />
-            ) : (
-              <GraduationCap className="mr-1 h-3 w-3" />
+          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+            {task.dueDate && (
+              <div className={cn("flex items-center gap-1", isOverdue && "text-destructive font-medium")}>
+                <Calendar className="h-4 w-4" />
+                {format(new Date(task.dueDate), "MMM d, yyyy")}
+              </div>
             )}
-            {task.relatedEntityType}
-          </Badge>
+            <div className="flex items-center gap-1">
+              <User className="h-4 w-4" />
+              {task.assignedUser?.name || "Unassigned"}
+            </div>
+            <Badge variant="secondary" className="bg-primary/5 text-primary">
+              {task.relatedEntityType === RelatedEntityType.LEAD ? (
+                <Briefcase className="mr-1 h-3 w-3" />
+              ) : (
+                <GraduationCap className="mr-1 h-3 w-3" />
+              )}
+              {task.relatedEntityType}
+            </Badge>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
   };
 
   if (isLoading) {
@@ -295,14 +289,22 @@ const Tasks = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="pending" className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          setActiveTab(value);
+          setPage(1); // Reset page on tab shift
+        }}
+        className="space-y-4"
+      >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <TabsList>
-            <TabsTrigger value="pending">Pending ({pendingTasks.length})</TabsTrigger>
+            <TabsTrigger value="pending">Pending ({stats.pending})</TabsTrigger>
             <TabsTrigger value="overdue">
-              Overdue ({filteredOverdueTasks.length})
+              Overdue ({stats.overdue})
             </TabsTrigger>
-            <TabsTrigger value="completed">Completed ({completedTasks.length})</TabsTrigger>
+            <TabsTrigger value="completed">Completed ({stats.completed})</TabsTrigger>
+            <TabsTrigger value="all">All Tasks</TabsTrigger>
           </TabsList>
           <div className="flex gap-2">
             <div className="relative">
@@ -329,12 +331,12 @@ const Tasks = () => {
         <TabsContent value="pending">
           <Card className="shadow-card">
             <CardContent className="p-4 space-y-3">
-              {pendingTasks.length === 0 ? (
+              {displayTasks.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No pending tasks found.
                 </div>
               ) : (
-                pendingTasks.map((task) => renderTaskItem(task, false))
+                displayTasks.map((task) => renderTaskItem(task, false))
               )}
             </CardContent>
           </Card>
@@ -347,7 +349,7 @@ const Tasks = () => {
                 <div className="text-center py-8 text-muted-foreground">
                   Loading overdue tasks...
                 </div>
-              ) : filteredOverdueTasks.length === 0 ? (
+              ) : displayOverdueTasks.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <AlertCircle className="h-12 w-12 mx-auto mb-2 text-success" />
                   <p>No overdue tasks! Great job!</p>
@@ -357,10 +359,10 @@ const Tasks = () => {
                   <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-lg border border-destructive/20 mb-3">
                     <AlertCircle className="h-5 w-5 text-destructive" />
                     <p className="text-sm text-destructive font-medium">
-                      {filteredOverdueTasks.length} {filteredOverdueTasks.length === 1 ? 'task is' : 'tasks are'} overdue and need{filteredOverdueTasks.length === 1 ? 's' : ''} immediate attention
+                      {overdueTasksResponse?.total} {overdueTasksResponse?.total === 1 ? 'task is' : 'tasks are'} overdue and need{overdueTasksResponse?.total === 1 ? 's' : ''} immediate attention
                     </p>
                   </div>
-                  {filteredOverdueTasks.map((task) => renderTaskItem(task, false))}
+                  {displayOverdueTasks.map((task) => renderTaskItem(task, false))}
                 </>
               )}
             </CardContent>
@@ -370,17 +372,47 @@ const Tasks = () => {
         <TabsContent value="completed">
           <Card className="shadow-card">
             <CardContent className="p-4 space-y-3">
-              {completedTasks.length === 0 ? (
+              {displayTasks.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No completed tasks found.
                 </div>
               ) : (
-                completedTasks.map((task) => renderTaskItem(task, true))
+                displayTasks.map((task) => renderTaskItem(task, true))
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="all">
+          <Card className="shadow-card">
+            <CardContent className="p-4 space-y-3">
+              {displayTasks.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No tasks found.
+                </div>
+              ) : (
+                displayTasks.map((task) => renderTaskItem(task, task.status === TaskStatus.COMPLETED))
               )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Pagination */}
+      {activeResponse && (
+        <DataTablePagination
+          pageIndex={page}
+          pageSize={limit}
+          totalItems={activeResponse.total}
+          totalPages={activeResponse.totalPages}
+          onPageChange={setPage}
+          onPageSizeChange={(newLimit) => {
+            setLimit(newLimit);
+            setPage(1);
+          }}
+          className="mt-6"
+        />
+      )}
 
       <TaskFormDialog
         open={isCreateOpen}
