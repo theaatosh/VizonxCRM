@@ -105,3 +105,23 @@ export function useDeleteStudent() {
         },
     });
 }
+
+/**
+ * Hook to assign a counselor to a student
+ */
+export function useAssignCounselor() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ studentId, counselorId }: { studentId: string; counselorId: string }) =>
+            studentService.assignCounselor(studentId, counselorId),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: studentKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: studentKeys.detail(variables.studentId) });
+            toast.success('Counselor assigned successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || `Failed to assign counselor: ${error.message}`);
+        },
+    });
+}

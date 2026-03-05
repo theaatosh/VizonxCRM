@@ -8,6 +8,11 @@ export interface User {
     email: string;
     roleId?: string;
     status?: string;
+    role?: {
+        id: string;
+        name: string;
+        description?: string;
+    };
 }
 
 export const useUsers = (params?: PaginationParams) => {

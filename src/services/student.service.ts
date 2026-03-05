@@ -77,6 +77,13 @@ export const studentService = {
         const response = await api.post<StudentDocument>(`${STUDENTS_ENDPOINT}/${studentId}/documents`, data);
         return response.data;
     },
+
+    /**
+     * Assign a counselor to a student
+     */
+    async assignCounselor(studentId: string, counselorId: string): Promise<void> {
+        await api.put(`${STUDENTS_ENDPOINT}/${studentId}/assign-counselor`, { counselorId });
+    },
 };
 
 export default studentService;

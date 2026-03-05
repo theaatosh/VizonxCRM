@@ -21,11 +21,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, Plus, Mail, Phone, MoreVertical } from 'lucide-react';
+import { Search, Plus, Mail, Phone, MoreVertical, UserPlus } from 'lucide-react';
 import { useStudents } from '@/hooks/useStudents';
 import { usePermissions } from '@/contexts/PermissionContext';
 import { ApplicantFormDialog } from '@/components/applicants/ApplicantFormDialog';
 import { DeleteApplicantDialog } from '@/components/applicants/DeleteApplicantDialog';
+import { AssignCounselorDialog } from '@/components/applicants/AssignCounselorDialog';
 import type { Student, StudentStatus, StudentPriority } from '@/types/student.types';
 
 // Status colors
@@ -52,6 +53,7 @@ const Applicants = () => {
   // Dialog states
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedApplicant, setSelectedApplicant] = useState<Student | null>(null);
 
   // Fetch applicants from API
@@ -100,6 +102,11 @@ const Applicants = () => {
 
   const handleViewProfile = (applicant: Student) => {
     navigate(`/applicants/${applicant.id}`);
+  };
+
+  const handleAssignCounselor = (applicant: Student) => {
+    setSelectedApplicant(applicant);
+    setAssignDialogOpen(true);
   };
 
   // Loading skeleton
@@ -281,20 +288,32 @@ const Applicants = () => {
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between pt-2 border-t border-border">
+                        <div className="flex items-center justify-between pt-2 border-t border-border gap-2">
                           <div className="text-sm">
                             <span className="text-muted-foreground">Created: </span>
                             <span className="font-medium">
                               {new Date(applicant.createdAt).toLocaleDateString()}
                             </span>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewProfile(applicant)}
-                          >
-                            View Profile
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1 px-2 h-8"
+                              onClick={() => handleAssignCounselor(applicant)}
+                            >
+                              <UserPlus className="h-3.5 w-3.5" />
+                              <span className="hidden sm:inline">Assign</span>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8"
+                              onClick={() => handleViewProfile(applicant)}
+                            >
+                              View Profile
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -331,6 +350,12 @@ const Applicants = () => {
       <DeleteApplicantDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
+        applicant={selectedApplicant}
+      />
+
+      <AssignCounselorDialog
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
         applicant={selectedApplicant}
       />
     </DashboardLayout>
