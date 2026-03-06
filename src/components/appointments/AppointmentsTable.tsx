@@ -107,7 +107,7 @@ export function AppointmentsTable({ appointments, isLoading }: AppointmentsTable
                                                 <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                                                 {format(new Date(apt.scheduledAt), 'MMM d, yyyy')}
                                             </div>
-                                            <div className="text-xs text-muted-foreground pl-5.5">
+                                            <div className="text-xs text-muted-foreground pl-[22px]">
                                                 {format(new Date(apt.scheduledAt), 'h:mm a')}
                                             </div>
                                         </div>
@@ -115,11 +115,11 @@ export function AppointmentsTable({ appointments, isLoading }: AppointmentsTable
                                     <TableCell>
                                         <div className="flex items-center gap-2">
                                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
-                                                {apt.student.firstName[0]}{apt.student.lastName[0]}
+                                                {apt.student.name[0]}
                                             </div>
                                             <div>
                                                 <p className="font-medium text-sm">
-                                                    {apt.student.firstName} {apt.student.lastName}
+                                                    {apt.student.name}
                                                 </p>
                                                 {apt.student.phone && (
                                                     <p className="text-xs text-muted-foreground">{apt.student.phone}</p>

@@ -21,8 +21,7 @@ export interface Appointment {
     // Relations
     student: {
         id: string;
-        firstName: string;
-        lastName: string;
+        name: string;
         email: string;
         phone?: string;
     };
@@ -30,7 +29,6 @@ export interface Appointment {
         id: string;
         name: string;
         email: string;
-        roleId?: string;
     };
 }
 
@@ -51,3 +49,11 @@ export interface UpdateAppointmentDto {
 }
 
 export type AppointmentsResponse = PaginatedResponse<Appointment>;
+
+export interface AppointmentQueryParams extends PaginationParams {
+    from?: string;
+    to?: string;
+    date?: string;
+    staffId?: string;
+    studentId?: string;
+}

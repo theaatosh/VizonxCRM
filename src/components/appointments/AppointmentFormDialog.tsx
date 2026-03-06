@@ -13,6 +13,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import authService from '@/services/auth.service';
 import {
     Form,
     FormControl,
@@ -86,13 +87,18 @@ export function AppointmentFormDialog({
     const students = studentsData?.data || [];
     const staffMembers = usersData?.data || [];
 
+    const currentUser = authService.getUser();
+    const currentUserId = currentUser?.id;
+    const currentUserRole = (currentUser as any)?.role || (currentUser as any)?.roleName;
+    const isAdmin = currentUserRole === 'ADMIN' || currentUserRole === 'SUPER_ADMIN';
+
     const form = useForm<AppointmentFormValues>({
         resolver: zodResolver(appointmentFormSchema),
         defaultValues: {
             scheduledDate: new Date(),
             scheduledTime: '09:00',
             studentId: '',
-            staffId: '',
+            staffId: isAdmin ? '' : (currentUserId || ''),
             status: AppointmentStatus.SCHEDULED,
             outcomeNotes: '',
         },
@@ -249,12 +255,10 @@ export function AppointmentFormDialog({
                                                     )}
                                                 >
                                                     {field.value
-                                                        ? students.find(
-                                                            (student) => student.id === field.value
-                                                        )?.firstName + ' ' +
-                                                        students.find(
-                                                            (student) => student.id === field.value
-                                                        )?.lastName
+                                                        ? (() => {
+                                                            const student = students.find(s => s.id === field.value);
+                                                            return student ? `${student.firstName} ${student.lastName}` : "Select student";
+                                                        })()
                                                         : "Select student"}
                                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                 </Button>

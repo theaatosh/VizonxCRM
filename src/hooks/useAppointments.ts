@@ -1,13 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { appointmentService } from '@/services/appointment.service';
-import { PaginationParams } from '@/types/country.types';
-import { CreateAppointmentDto, UpdateAppointmentDto } from '@/types/appointment.types';
+import { AppointmentQueryParams, CreateAppointmentDto, UpdateAppointmentDto } from '@/types/appointment.types';
 import { useToast } from '@/hooks/use-toast';
 
-export const useAppointments = (params?: PaginationParams) => {
+export const useAppointments = (params?: AppointmentQueryParams, role?: string, staffId?: string) => {
     return useQuery({
-        queryKey: ['appointments', params],
-        queryFn: () => appointmentService.getAll(params),
+        queryKey: ['appointments', params, role, staffId],
+        queryFn: () => {
+            if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
+                return appointmentService.getPending(params);
+            }
+            if (staffId) {
+                return appointmentService.getByStaffId(staffId, params);
+            }
+            return appointmentService.getAll(params);
+        },
     });
 };
 

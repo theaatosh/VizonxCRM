@@ -3,13 +3,23 @@ import {
     Appointment,
     AppointmentsResponse,
     CreateAppointmentDto,
-    UpdateAppointmentDto
+    UpdateAppointmentDto,
+    AppointmentQueryParams
 } from '@/types/appointment.types';
-import { PaginationParams } from '@/types/country.types';
 
 export const appointmentService = {
-    getAll: async (params?: PaginationParams) => {
+    getAll: async (params?: AppointmentQueryParams) => {
         const response = await api.get<AppointmentsResponse>('/appointments', { params });
+        return response.data;
+    },
+
+    getPending: async (params?: AppointmentQueryParams) => {
+        const response = await api.get<AppointmentsResponse>('/appointments/pending', { params });
+        return response.data;
+    },
+
+    getByStaffId: async (staffId: string, params?: AppointmentQueryParams) => {
+        const response = await api.get<AppointmentsResponse>(`/appointments/staff/${staffId}`, { params });
         return response.data;
     },
 
