@@ -16,6 +16,9 @@ import {
     FileText
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { WorkflowDetailModal } from "@/components/workflow/WorkflowDetailModal";
+import { Workflow } from "@/types/workflow.types";
 
 interface VisaTypeDetailModalProps {
     visaType: VisaType | null;
@@ -24,6 +27,9 @@ interface VisaTypeDetailModalProps {
 }
 
 export const VisaTypeDetailModal = ({ visaType, open, onOpenChange }: VisaTypeDetailModalProps) => {
+    const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+    const [workflowModalOpen, setWorkflowModalOpen] = useState(false);
+
     const { data: detailedVisaType, isLoading } = useVisaType(visaType?.id || "");
 
     const displayVisaType = detailedVisaType || visaType;
@@ -31,6 +37,12 @@ export const VisaTypeDetailModal = ({ visaType, open, onOpenChange }: VisaTypeDe
     if (!displayVisaType) return null;
 
     const workflows = displayVisaType.workflows || [];
+
+    const handleWorkflowClick = (workflow: any) => {
+        // Map any basic workflow info to the full Workflow type
+        setSelectedWorkflow(workflow as Workflow);
+        setWorkflowModalOpen(true);
+    };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -91,7 +103,11 @@ export const VisaTypeDetailModal = ({ visaType, open, onOpenChange }: VisaTypeDe
                     ) : (
                         <div className="space-y-3">
                             {workflows.map((workflow: any) => (
-                                <Card key={workflow.id} className="border">
+                                <Card
+                                    key={workflow.id}
+                                    className="border cursor-pointer hover:border-primary/50 hover:bg-muted/5 transition-all"
+                                    onClick={() => handleWorkflowClick(workflow)}
+                                >
                                     <CardContent className="p-4">
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1">
@@ -116,6 +132,12 @@ export const VisaTypeDetailModal = ({ visaType, open, onOpenChange }: VisaTypeDe
                     )}
                 </div>
             </DialogContent>
+
+            <WorkflowDetailModal
+                workflow={selectedWorkflow}
+                open={workflowModalOpen}
+                onOpenChange={setWorkflowModalOpen}
+            />
         </Dialog>
     );
 };

@@ -48,8 +48,12 @@ const menuItems: MenuItem[] = [
   { title: "Settings", icon: Settings, path: "/settings" },
 ];
 
-export function DashboardSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+interface DashboardSidebarProps {
+  collapsed: boolean;
+  onToggle: (collapsed: boolean) => void;
+}
+
+export function DashboardSidebar({ collapsed, onToggle }: DashboardSidebarProps) {
   const location = useLocation();
   const { canRead, isLoading } = usePermissions();
 
@@ -84,7 +88,7 @@ export function DashboardSidebar() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => onToggle(!collapsed)}
           className="h-8 w-8 text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
         >
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
