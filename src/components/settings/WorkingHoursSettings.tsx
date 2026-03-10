@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Save, Clock, CalendarDays } from "lucide-react";
+import { Loader2, Save, Clock, CalendarDays, Edit2, X } from "lucide-react";
 import workingHoursService, { WorkingHour } from "@/services/workingHours.service";
 
 const daysOfWeek = [
@@ -45,6 +45,7 @@ export const WorkingHoursSettings = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [workingHours, setWorkingHours] = useState<WorkingHour[]>([]);
+    const [editingDay, setEditingDay] = useState<string | null>(null);
 
     useEffect(() => {
         fetchWorkingHours();
@@ -111,16 +112,27 @@ export const WorkingHoursSettings = () => {
 
         setSaving(true);
         try {
-            await workingHoursService.createWorkingHour({
-                dayOfWeek: data.dayOfWeek,
-                isOpen: data.isOpen,
-                openTime: data.openTime,
-                closeTime: data.closeTime,
-            });
+            if (data.id) {
+                await workingHoursService.updateWorkingHour(data.id, {
+                    dayOfWeek: data.dayOfWeek,
+                    isOpen: data.isOpen,
+                    openTime: data.openTime,
+                    closeTime: data.closeTime,
+                    isActive: data.isActive ?? true,
+                });
+            } else {
+                await workingHoursService.createWorkingHour({
+                    dayOfWeek: data.dayOfWeek,
+                    isOpen: data.isOpen,
+                    openTime: data.openTime,
+                    closeTime: data.closeTime,
+                });
+            }
             toast({
                 title: "Success",
                 description: `Working hours for ${day} saved successfully.`,
             });
+            setEditingDay(null);
             fetchWorkingHours();
         } catch (error) {
             console.error("Error saving working hours:", error);
@@ -138,19 +150,28 @@ export const WorkingHoursSettings = () => {
         setSaving(true);
         try {
             await Promise.all(
-                workingHours.map((wh) =>
-                    workingHoursService.createWorkingHour({
+                workingHours.map((wh) => {
+                    const payload = {
                         dayOfWeek: wh.dayOfWeek,
                         isOpen: wh.isOpen,
                         openTime: wh.openTime,
                         closeTime: wh.closeTime,
-                    })
-                )
+                        isActive: wh.isActive ?? true,
+                    };
+
+                    if (wh.id) {
+                        return workingHoursService.updateWorkingHour(wh.id, payload);
+                    } else {
+                        // Create doesn't need isActive usually but it's fine to include if supported
+                        return workingHoursService.createWorkingHour(payload);
+                    }
+                })
             );
             toast({
                 title: "Success",
                 description: "All working hours saved successfully.",
             });
+            setEditingDay(null);
             fetchWorkingHours();
         } catch (error) {
             console.error("Error saving all working hours:", error);
@@ -228,27 +249,56 @@ export const WorkingHoursSettings = () => {
                                                 type="time"
                                                 value={utcToLocal(data.openTime)}
                                                 onChange={(e) => handleTimeChange(day, "openTime", e.target.value)}
-                                                className="w-[110px] bg-background/50 border-muted-foreground/20"
+                                                readOnly={editingDay !== day}
+                                                className={`w-[110px] bg-background/50 border-muted-foreground/20 ${editingDay !== day ? 'cursor-not-allowed opacity-70' : ''}`}
                                             />
                                             <span className="text-muted-foreground">to</span>
                                             <Input
                                                 type="time"
                                                 value={utcToLocal(data.closeTime)}
                                                 onChange={(e) => handleTimeChange(day, "closeTime", e.target.value)}
-                                                className="w-[110px] bg-background/50 border-muted-foreground/20"
+                                                readOnly={editingDay !== day}
+                                                className={`w-[110px] bg-background/50 border-muted-foreground/20 ${editingDay !== day ? 'cursor-not-allowed opacity-70' : ''}`}
                                             />
                                         </div>
                                     </div>
 
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleSave(day)}
-                                        disabled={saving}
-                                        className="hidden md:flex text-primary hover:text-primary hover:bg-primary/10"
-                                    >
-                                        <Save className="h-4 w-4" />
-                                    </Button>
+                                    <div className="flex items-center gap-2">
+                                        {editingDay === day ? (
+                                            <>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => handleSave(day)}
+                                                    disabled={saving}
+                                                    className="text-primary hover:bg-primary/10"
+                                                >
+                                                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => {
+                                                        setEditingDay(null);
+                                                        fetchWorkingHours(); // Revert changes
+                                                    }}
+                                                    className="text-destructive hover:bg-destructive/10"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setEditingDay(day)}
+                                                disabled={saving}
+                                                className="text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                            >
+                                                <Edit2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         );

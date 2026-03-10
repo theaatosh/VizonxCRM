@@ -19,6 +19,14 @@ export interface CreateWorkingHourDto {
     closeTime: string;
 }
 
+export interface UpdateWorkingHourDto {
+    dayOfWeek?: string;
+    isOpen?: boolean;
+    openTime?: string;
+    closeTime?: string;
+    isActive?: boolean;
+}
+
 const workingHoursService = {
     getAllWorkingHours: async () => {
         const response = await api.get<WorkingHour[]>('/working-hours');
@@ -30,8 +38,8 @@ const workingHoursService = {
         return response.data;
     },
 
-    updateWorkingHour: async (id: string, data: Partial<CreateWorkingHourDto>) => {
-        const response = await api.patch<WorkingHour>(`/working-hours/${id}`, data);
+    updateWorkingHour: async (id: string, data: UpdateWorkingHourDto) => {
+        const response = await api.put<WorkingHour>(`/working-hours/${id}`, data);
         return response.data;
     },
 
