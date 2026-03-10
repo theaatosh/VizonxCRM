@@ -61,6 +61,8 @@ export function AppointmentsTable({ appointments, isLoading }: AppointmentsTable
                 return "bg-destructive/10 text-destructive border-destructive/20";
             case AppointmentStatus.PENDING:
                 return "bg-yellow-500/10 text-yellow-700 border-yellow-500/20";
+            case AppointmentStatus.BOOKED:
+                return "bg-blue-500/10 text-blue-700 border-blue-500/20";
             default:
                 return "bg-muted text-muted-foreground";
         }
@@ -115,11 +117,11 @@ export function AppointmentsTable({ appointments, isLoading }: AppointmentsTable
                                     <TableCell>
                                         <div className="flex items-center gap-2">
                                             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
-                                                {apt.student.name[0]}
+                                                {apt.student.firstName?.[0] || apt.student.lastName?.[0] || 'S'}
                                             </div>
                                             <div>
                                                 <p className="font-medium text-sm">
-                                                    {apt.student.name}
+                                                    {apt.student.firstName} {apt.student.lastName}
                                                 </p>
                                                 {apt.student.phone && (
                                                     <p className="text-xs text-muted-foreground">{apt.student.phone}</p>
@@ -140,7 +142,7 @@ export function AppointmentsTable({ appointments, isLoading }: AppointmentsTable
                                     </TableCell>
                                     <TableCell>
                                         <p className="text-sm text-muted-foreground line-clamp-1 max-w-[200px]">
-                                            {apt.outcomeNotes || '-'}
+                                            {apt.notes || '-'}
                                         </p>
                                     </TableCell>
                                     <TableCell>

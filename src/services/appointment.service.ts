@@ -29,19 +29,9 @@ export const appointmentService = {
     },
 
     create: async (data: CreateAppointmentDto) => {
-        // The API expects 'connect' objects for relations
-        const payload = {
-            scheduledAt: data.scheduledAt,
-            status: data.status,
-            outcomeNotes: data.outcomeNotes,
-            student: {
-                connect: { id: data.studentId }
-            },
-            staff: {
-                connect: { id: data.staffId }
-            }
-        };
-        const response = await api.post<Appointment>('/appointments', payload);
+        // The new endpoint /appointments/create expects a simplified payload
+        // and creates a 'Booked' appointment directly.
+        const response = await api.post<Appointment>('/appointments/create', data);
         return response.data;
     },
 
@@ -49,8 +39,9 @@ export const appointmentService = {
         // Prepare payload, handling relations only if ids are provided
         const payload: any = {
             scheduledAt: data.scheduledAt,
+            duration: data.duration,
             status: data.status,
-            outcomeNotes: data.outcomeNotes,
+            notes: data.notes,
         };
 
         if (data.studentId) {

@@ -55,10 +55,11 @@ const appointmentFormSchema = z.object({
         required_error: "A date is required",
     }),
     scheduledTime: z.string().min(1, "Time is required"),
+    duration: z.string().min(1, "Duration is required"),
     studentId: z.string().min(1, "Student is required"),
     staffId: z.string().min(1, "Staff is required"),
     status: z.nativeEnum(AppointmentStatus).optional(),
-    outcomeNotes: z.string().optional(),
+    notes: z.string().optional(),
 });
 
 type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
@@ -97,10 +98,11 @@ export function AppointmentFormDialog({
         defaultValues: {
             scheduledDate: new Date(),
             scheduledTime: '09:00',
+            duration: '60',
             studentId: '',
             staffId: isAdmin ? '' : (currentUserId || ''),
-            status: AppointmentStatus.SCHEDULED,
-            outcomeNotes: '',
+            status: AppointmentStatus.BOOKED,
+            notes: '',
         },
     });
 
@@ -114,19 +116,20 @@ export function AppointmentFormDialog({
                 form.reset({
                     scheduledDate: date,
                     scheduledTime: timeStr,
+                    duration: appointment.duration?.toString() || '60',
                     studentId: appointment.studentId,
                     staffId: appointment.staffId,
                     status: appointment.status,
-                    outcomeNotes: appointment.outcomeNotes || '',
+                    notes: appointment.notes || '',
                 });
             } else {
                 form.reset({
                     scheduledDate: new Date(),
                     scheduledTime: '09:00',
+                    duration: '60',
                     studentId: '',
-                    staffId: '',
-                    status: AppointmentStatus.SCHEDULED,
-                    outcomeNotes: '',
+                    staffId: isAdmin ? '' : (currentUserId || ''),
+                    status: AppointmentStatus.BOOKED,
                 });
             }
         }
@@ -139,21 +142,26 @@ export function AppointmentFormDialog({
             const [hours, minutes] = values.scheduledTime.split(':').map(Number);
             dateTime.setHours(hours, minutes, 0, 0);
 
-            const payload = {
-                scheduledAt: dateTime.toISOString(),
-                studentId: values.studentId,
-                staffId: values.staffId,
-                status: values.status,
-                outcomeNotes: values.outcomeNotes || undefined,
-            };
-
             if (isEditing && appointment) {
                 await updateAppointment.mutateAsync({
                     id: appointment.id,
-                    data: payload
+                    data: {
+                        scheduledAt: dateTime.toISOString(),
+                        studentId: values.studentId,
+                        duration: parseInt(values.duration),
+                        staffId: values.staffId,
+                        status: values.status,
+                        notes: values.notes || undefined,
+                    }
                 });
             } else {
-                await createAppointment.mutateAsync(payload);
+                await createAppointment.mutateAsync({
+                    scheduledAt: dateTime.toISOString(),
+                    studentId: values.studentId,
+                    duration: parseInt(values.duration),
+                    staffId: values.staffId,
+                    notes: values.notes || undefined,
+                });
             }
             onOpenChange(false);
         } catch (error) {
@@ -230,6 +238,34 @@ export function AppointmentFormDialog({
                                         <FormControl>
                                             <Input type="time" {...field} />
                                         </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="duration"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Duration (minutes)</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select duration" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="15">15 minutes</SelectItem>
+                                                <SelectItem value="30">30 minutes</SelectItem>
+                                                <SelectItem value="45">45 minutes</SelectItem>
+                                                <SelectItem value="60">60 minutes</SelectItem>
+                                                <SelectItem value="90">90 minutes</SelectItem>
+                                                <SelectItem value="120">120 minutes</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -378,6 +414,7 @@ export function AppointmentFormDialog({
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
+                                                <SelectItem value={AppointmentStatus.BOOKED}>Booked</SelectItem>
                                                 <SelectItem value={AppointmentStatus.SCHEDULED}>Scheduled</SelectItem>
                                                 <SelectItem value={AppointmentStatus.COMPLETED}>Completed</SelectItem>
                                                 <SelectItem value={AppointmentStatus.CANCELLED}>Cancelled</SelectItem>
@@ -393,13 +430,13 @@ export function AppointmentFormDialog({
                         {/* Outcome Notes */}
                         <FormField
                             control={form.control}
-                            name="outcomeNotes"
+                            name="notes"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Notes / Outcome</FormLabel>
+                                    <FormLabel>Notes</FormLabel>
                                     <FormControl>
                                         <Textarea
-                                            placeholder="Meeting notes or outcome..."
+                                            placeholder="Meeting notes..."
                                             className="resize-none"
                                             rows={3}
                                             {...field}

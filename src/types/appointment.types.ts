@@ -4,7 +4,8 @@ export enum AppointmentStatus {
     SCHEDULED = 'Scheduled',
     COMPLETED = 'Completed',
     CANCELLED = 'Cancelled',
-    PENDING = 'Pending'
+    PENDING = 'Pending',
+    BOOKED = 'Booked'
 }
 
 export interface Appointment {
@@ -13,15 +14,19 @@ export interface Appointment {
     studentId: string;
     staffId: string;
     scheduledAt: string;
+    duration: number;
+    endTime: string;
+    timezone: string;
     status: AppointmentStatus;
-    outcomeNotes?: string | null;
+    notes?: string | null;
     createdAt: string;
     updatedAt: string;
 
     // Relations
     student: {
         id: string;
-        name: string;
+        firstName: string;
+        lastName: string;
         email: string;
         phone?: string;
     };
@@ -35,17 +40,20 @@ export interface Appointment {
 export interface CreateAppointmentDto {
     scheduledAt: string;
     studentId: string;
-    staffId: string;
-    status?: AppointmentStatus;
-    outcomeNotes?: string;
+    duration: number;
+    staffId?: string; // Optional if backend handles assignment from token
+    purpose?: string;
+    notes?: string;
+    staffNotes?: string;
 }
 
 export interface UpdateAppointmentDto {
     scheduledAt?: string;
-    studentId?: string; // Though usually we don't change the student, API might allow it
+    duration?: number;
+    studentId?: string;
     staffId?: string;
     status?: AppointmentStatus;
-    outcomeNotes?: string;
+    notes?: string;
 }
 
 export type AppointmentsResponse = PaginatedResponse<Appointment>;
