@@ -8,6 +8,8 @@ import { AppointmentFormDialog } from "@/components/appointments/AppointmentForm
 import { useAppointments } from "@/hooks/useAppointments";
 import authService from '@/services/auth.service';
 import userService, { User } from '@/services/user.service';
+import studentService from '@/services/student.service';
+import { Student } from '@/types/student.types';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -30,11 +32,16 @@ const Appointments = () => {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string>('all');
   const [selectedStaffId, setSelectedStaffId] = useState<string>('all');
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('all');
   const [staffList, setStaffList] = useState<User[]>([]);
+  const [studentList, setStudentList] = useState<Student[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: undefined,
     to: undefined,
   });
+  const [exactDate, setExactDate] = useState<string>('');
+  const [sortBy, setSortBy] = useState<string>('scheduledAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Get current user info
   const currentUser = authService.getUser();
@@ -42,34 +49,38 @@ const Appointments = () => {
   const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
   const staffId = isAdmin ? (selectedStaffId === 'all' ? undefined : selectedStaffId) : currentUser?.id;
 
-  // Fetch staff list if admin
+  // Fetch staff and student list if admin/staff
   useEffect(() => {
     if (isAdmin) {
       userService.getAllUsers({ limit: 100 })
         .then(response => {
-          // Filter users who are not students
           const staff = response.data.filter(u => u.roleName !== 'STUDENT');
           setStaffList(staff);
         })
         .catch(error => console.error("Error fetching staff list:", error));
     }
+
+    studentService.getStudents({ limit: 100 })
+      .then(response => {
+        setStudentList(response.data);
+      })
+      .catch(error => console.error("Error fetching student list:", error));
   }, [isAdmin]);
 
   // Fetch appointments
-  const { data: appointmentsResponse, isLoading } = useAppointments(
-    {
-      page,
-      limit,
-      sortOrder: 'desc',
-      sortBy: 'scheduledAt',
-      search: search || undefined,
-      status: status === 'all' ? undefined : status,
-      from: dateRange?.from ? format(dateRange.from, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx") : undefined,
-      to: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx") : undefined,
-    },
-    role,
-    staffId
-  );
+  const { data: appointmentsResponse, isLoading } = useAppointments({
+    page,
+    limit,
+    sortOrder,
+    sortBy,
+    search: search || undefined,
+    status: status === 'all' ? undefined : status,
+    from: dateRange?.from ? format(dateRange.from, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx") : undefined,
+    to: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd'T'HH:mm:ss.SSSxxx") : undefined,
+    date: exactDate || undefined,
+    staffId: isAdmin ? (selectedStaffId === 'all' ? undefined : selectedStaffId) : currentUser?.id,
+    studentId: selectedStudentId === 'all' ? undefined : selectedStudentId,
+  });
 
   const appointments = appointmentsResponse?.data || [];
 
@@ -111,6 +122,21 @@ const Appointments = () => {
                 </Select>
               )}
 
+              <Select value={selectedStudentId} onValueChange={(val) => {
+                setSelectedStudentId(val);
+                setPage(1);
+              }}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="All Students" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Students</SelectItem>
+                  {studentList.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <Select value={status} onValueChange={(val) => {
                 setStatus(val);
                 setPage(1);
@@ -131,11 +157,26 @@ const Appointments = () => {
                 date={dateRange}
                 setDate={(range) => {
                   setDateRange(range);
+                  setExactDate(''); // Clear exact date if range is selected
                   setPage(1);
                 }}
               />
 
-              {(search || status !== 'all' || selectedStaffId !== 'all' || dateRange?.from || dateRange?.to) && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">Exact Date:</span>
+                <Input
+                  type="date"
+                  className="w-40"
+                  value={exactDate}
+                  onChange={(e) => {
+                    setExactDate(e.target.value);
+                    setDateRange({ from: undefined, to: undefined }); // Clear range if exact date is selected
+                    setPage(1);
+                  }}
+                />
+              </div>
+
+              {(search || status !== 'all' || selectedStaffId !== 'all' || selectedStudentId !== 'all' || dateRange?.from || dateRange?.to || exactDate) && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -143,7 +184,9 @@ const Appointments = () => {
                     setSearch('');
                     setStatus('all');
                     setSelectedStaffId('all');
+                    setSelectedStudentId('all');
                     setDateRange({ from: undefined, to: undefined });
+                    setExactDate('');
                     setPage(1);
                   }}
                   className="text-muted-foreground px-2 hover:text-destructive hover:bg-destructive/5"
@@ -177,6 +220,16 @@ const Appointments = () => {
         <AppointmentsTable
           appointments={appointments}
           isLoading={isLoading}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSort={(field) => {
+            if (sortBy === field) {
+              setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortBy(field);
+              setSortOrder('desc');
+            }
+          }}
         />
 
         {/* Pagination */}

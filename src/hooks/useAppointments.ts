@@ -3,21 +3,10 @@ import { appointmentService } from '@/services/appointment.service';
 import { AppointmentQueryParams, CreateAppointmentDto, UpdateAppointmentDto } from '@/types/appointment.types';
 import { useToast } from '@/hooks/use-toast';
 
-export const useAppointments = (params?: AppointmentQueryParams, role?: string, staffId?: string) => {
+export const useAppointments = (params?: AppointmentQueryParams) => {
     return useQuery({
-        queryKey: ['appointments', params, role, staffId],
-        queryFn: () => {
-            if (staffId && (role === 'ADMIN' || role === 'SUPER_ADMIN')) {
-                return appointmentService.getByStaffId(staffId, params);
-            }
-            if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
-                return appointmentService.getAll(params);
-            }
-            if (staffId) {
-                return appointmentService.getByStaffId(staffId, params);
-            }
-
-        },
+        queryKey: ['appointments', params],
+        queryFn: () => appointmentService.getAll(params),
     });
 };
 

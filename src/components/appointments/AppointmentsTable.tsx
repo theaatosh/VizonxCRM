@@ -23,7 +23,10 @@ import {
     Trash2,
     Calendar,
     User,
-    UserCog
+    UserCog,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown
 } from 'lucide-react';
 import { Appointment, AppointmentStatus } from '@/types/appointment.types';
 import { AppointmentFormDialog } from './AppointmentFormDialog';
@@ -32,9 +35,18 @@ import { useDeleteAppointment } from '@/hooks/useAppointments';
 interface AppointmentsTableProps {
     appointments: Appointment[];
     isLoading: boolean;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+    onSort?: (field: string) => void;
 }
 
-export function AppointmentsTable({ appointments, isLoading }: AppointmentsTableProps) {
+export function AppointmentsTable({
+    appointments,
+    isLoading,
+    sortBy,
+    sortOrder,
+    onSort
+}: AppointmentsTableProps) {
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
@@ -74,10 +86,58 @@ export function AppointmentsTable({ appointments, isLoading }: AppointmentsTable
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-muted/50">
-                            <TableHead className="w-[180px]">Date & Time</TableHead>
-                            <TableHead>Student</TableHead>
-                            <TableHead>Staff</TableHead>
-                            <TableHead>Status</TableHead>
+                            <TableHead
+                                className="w-[180px] cursor-pointer hover:bg-muted/80 transition-colors"
+                                onClick={() => onSort?.('scheduledAt')}
+                            >
+                                <div className="flex items-center gap-2">
+                                    Date & Time
+                                    {sortBy === 'scheduledAt' ? (
+                                        sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />
+                                    ) : (
+                                        <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />
+                                    )}
+                                </div>
+                            </TableHead>
+                            <TableHead
+                                className="cursor-pointer hover:bg-muted/80 transition-colors"
+                                onClick={() => onSort?.('studentId')}
+                            >
+                                <div className="flex items-center gap-2">
+                                    Student
+                                    {sortBy === 'studentId' ? (
+                                        sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />
+                                    ) : (
+                                        <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />
+                                    )}
+                                </div>
+                            </TableHead>
+                            <TableHead
+                                className="cursor-pointer hover:bg-muted/80 transition-colors"
+                                onClick={() => onSort?.('staffId')}
+                            >
+                                <div className="flex items-center gap-2">
+                                    Staff
+                                    {sortBy === 'staffId' ? (
+                                        sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />
+                                    ) : (
+                                        <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />
+                                    )}
+                                </div>
+                            </TableHead>
+                            <TableHead
+                                className="cursor-pointer hover:bg-muted/80 transition-colors"
+                                onClick={() => onSort?.('status')}
+                            >
+                                <div className="flex items-center gap-2">
+                                    Status
+                                    {sortBy === 'status' ? (
+                                        sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />
+                                    ) : (
+                                        <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/50" />
+                                    )}
+                                </div>
+                            </TableHead>
                             <TableHead>Notes</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
