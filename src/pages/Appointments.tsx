@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { Button } from "@/components/ui/button";
-import { Plus, Search, Calendar as CalendarIcon, FilterX } from "lucide-react";
+import { Plus, Search, Calendar as CalendarIcon, FilterX, Users } from "lucide-react";
 import { AppointmentsTable } from "@/components/appointments/AppointmentsTable";
 import { AppointmentFormDialog } from "@/components/appointments/AppointmentFormDialog";
 import { useAppointments } from "@/hooks/useAppointments";
 import authService from '@/services/auth.service';
+import userService, { User } from '@/services/user.service';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -28,6 +29,8 @@ const Appointments = () => {
   // Filter states
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string>('all');
+  const [selectedStaffId, setSelectedStaffId] = useState<string>('all');
+  const [staffList, setStaffList] = useState<User[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: undefined,
     to: undefined,
@@ -36,7 +39,21 @@ const Appointments = () => {
   // Get current user info
   const currentUser = authService.getUser();
   const role = (currentUser as any)?.role || (currentUser as any)?.roleName;
-  const staffId = currentUser?.id;
+  const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+  const staffId = isAdmin ? (selectedStaffId === 'all' ? undefined : selectedStaffId) : currentUser?.id;
+
+  // Fetch staff list if admin
+  useEffect(() => {
+    if (isAdmin) {
+      userService.getAllUsers({ limit: 100 })
+        .then(response => {
+          // Filter users who are not students
+          const staff = response.data.filter(u => u.roleName !== 'STUDENT');
+          setStaffList(staff);
+        })
+        .catch(error => console.error("Error fetching staff list:", error));
+    }
+  }, [isAdmin]);
 
   // Fetch appointments
   const { data: appointmentsResponse, isLoading } = useAppointments(
@@ -76,6 +93,24 @@ const Appointments = () => {
                 />
               </div>
 
+              {isAdmin && (
+                <Select value={selectedStaffId} onValueChange={(val) => {
+                  setSelectedStaffId(val);
+                  setPage(1);
+                }}>
+                  <SelectTrigger className="w-48 bg-background border-primary/20 hover:border-primary/40 transition-colors">
+                    <Users className="h-4 w-4 mr-2 text-primary" />
+                    <SelectValue placeholder="All Staff" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Staff</SelectItem>
+                    {staffList.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+
               <Select value={status} onValueChange={(val) => {
                 setStatus(val);
                 setPage(1);
@@ -100,17 +135,18 @@ const Appointments = () => {
                 }}
               />
 
-              {(search || status !== 'all' || dateRange?.from || dateRange?.to) && (
+              {(search || status !== 'all' || selectedStaffId !== 'all' || dateRange?.from || dateRange?.to) && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
                     setSearch('');
                     setStatus('all');
+                    setSelectedStaffId('all');
                     setDateRange({ from: undefined, to: undefined });
                     setPage(1);
                   }}
-                  className="text-muted-foreground px-2"
+                  className="text-muted-foreground px-2 hover:text-destructive hover:bg-destructive/5"
                 >
                   <FilterX className="h-4 w-4 mr-2" />
                   Clear
@@ -118,12 +154,24 @@ const Appointments = () => {
               )}
             </div>
 
-            <Button onClick={() => setIsCreateOpen(true)} className="gap-2">
+            <Button onClick={() => setIsCreateOpen(true)} className="gap-2 shadow-sm hover:shadow-md transition-all">
               <Plus className="h-4 w-4" />
               New Appointment
             </Button>
           </div>
         </div>
+
+        {/* Info Card for Admin filtering */}
+        {isAdmin && selectedStaffId !== 'all' && (
+          <div className="bg-primary/5 border border-primary/10 rounded-lg p-3 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Users className="h-4 w-4 text-primary" />
+            </div>
+            <p className="text-sm">
+              Showing all appointments for <span className="font-semibold text-primary">{staffList.find(s => s.id === selectedStaffId)?.name}</span>
+            </p>
+          </div>
+        )}
 
         {/* Appointments Table */}
         <AppointmentsTable

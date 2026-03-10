@@ -42,10 +42,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { User, Shield, Bell, Palette, Users, Trash2, UserPlus, Loader2, Eye, EyeOff, Edit, Key, ShieldCheck, Plus } from "lucide-react";
+import { User, Shield, Bell, Palette, Users, Trash2, UserPlus, Loader2, Eye, EyeOff, Edit, Key, ShieldCheck, Plus, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import userService, { User as UserType, Role, CreateUserDto, UpdateUserDto, Permission, CreateRoleDto } from "@/services/user.service";
 import { PermissionsDialog } from "@/components/settings/PermissionsDialog";
+import { WorkingHoursSettings } from "@/components/settings/WorkingHoursSettings";
 
 const Settings = () => {
   const { toast } = useToast();
@@ -305,7 +306,7 @@ const Settings = () => {
   return (
     <DashboardLayout title="Settings" subtitle="Manage your CRM preferences">
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6 lg:w-[720px]">
+        <TabsList className="grid w-full grid-cols-7 lg:w-[840px]">
           <TabsTrigger value="profile" className="gap-2">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">Profile</span>
@@ -321,6 +322,10 @@ const Settings = () => {
           <TabsTrigger value="notifications" className="gap-2">
             <Bell className="h-4 w-4" />
             <span className="hidden sm:inline">Alerts</span>
+          </TabsTrigger>
+          <TabsTrigger value="working-hours" className="gap-2">
+            <Clock className="h-4 w-4" />
+            <span className="hidden sm:inline">Working Hours</span>
           </TabsTrigger>
           <TabsTrigger value="security" className="gap-2">
             <Shield className="h-4 w-4" />
@@ -801,6 +806,11 @@ const Settings = () => {
             isSubmitting={isSubmitting}
             onSave={handleAssignPermissions}
           />
+        </TabsContent>
+
+        {/* Working Hours Tab */}
+        <TabsContent value="working-hours">
+          <WorkingHoursSettings />
         </TabsContent>
 
         {/* Notifications Tab */}

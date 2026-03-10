@@ -7,13 +7,16 @@ export const useAppointments = (params?: AppointmentQueryParams, role?: string, 
     return useQuery({
         queryKey: ['appointments', params, role, staffId],
         queryFn: () => {
+            if (staffId && (role === 'ADMIN' || role === 'SUPER_ADMIN')) {
+                return appointmentService.getByStaffId(staffId, params);
+            }
             if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
-                return appointmentService.getPending(params);
+                return appointmentService.getAll(params);
             }
             if (staffId) {
                 return appointmentService.getByStaffId(staffId, params);
             }
-            return appointmentService.getAll(params);
+
         },
     });
 };

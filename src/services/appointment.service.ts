@@ -13,11 +13,6 @@ export const appointmentService = {
         return response.data;
     },
 
-    getPending: async (params?: AppointmentQueryParams) => {
-        const response = await api.get<AppointmentsResponse>('/appointments/pending', { params });
-        return response.data;
-    },
-
     getByStaffId: async (staffId: string, params?: AppointmentQueryParams) => {
         const response = await api.get<AppointmentsResponse>(`/appointments/staff/${staffId}`, { params });
         return response.data;
