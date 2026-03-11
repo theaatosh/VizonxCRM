@@ -20,9 +20,27 @@ export interface Appointment {
     endTime: string;
     timezone: string;
     status: AppointmentStatus;
+    purpose?: string | null;
+    note?: string | null;
     notes?: string | null;
+    staffNotes?: string | null;
+    requestedBy: 'Student' | 'Staff';
+    requestedAt: string;
+    approvedAt?: string | null;
+    approvedBy?: string | null;
+    rejectedAt?: string | null;
+    rejectedBy?: string | null;
+    rejectionReason?: string | null;
+    cancelledAt?: string | null;
+    cancelledBy?: string | null;
+    cancellationReason?: string | null;
+    completedAt?: string | null;
+    outcomeNotes?: string | null;
+    version: number;
     createdAt: string;
     updatedAt: string;
+    reminder24hSent: boolean;
+    reminder1hSent: boolean;
 
     // Relations
     student: {

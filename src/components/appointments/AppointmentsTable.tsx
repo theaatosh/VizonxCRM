@@ -25,6 +25,7 @@ import {
     ArrowUpDown,
     ArrowUp,
     ArrowDown,
+    Eye,
     CheckCircle, 
     XCircle, 
     UserX, 
@@ -34,6 +35,7 @@ import {
 import { Appointment, AppointmentStatus } from '@/types/appointment.types';
 import { AppointmentFormDialog } from './AppointmentFormDialog';
 import { AppointmentActionModal, ActionType } from './AppointmentActionModal';
+import { AppointmentDetailModal } from './AppointmentDetailModal';
 import { 
     useUpdateAppointment,
     useApproveAppointment,
@@ -63,6 +65,7 @@ export function AppointmentsTable({
     const [actionModalOpen, setActionModalOpen] = useState(false);
     const [selectedAction, setSelectedAction] = useState<ActionType>(null);
     const [selectedAptId, setSelectedAptId] = useState<string | null>(null);
+    const [detailModalOpen, setDetailModalOpen] = useState(false);
 
     const noShowAppointment = useNoShowAppointment();
 
@@ -70,6 +73,11 @@ export function AppointmentsTable({
         setSelectedAptId(id);
         setSelectedAction(action);
         setActionModalOpen(true);
+    };
+
+    const handleDetailClick = (id: string) => {
+        setSelectedAptId(id);
+        setDetailModalOpen(true);
     };
 
     const handleEdit = (appointment: Appointment) => {
@@ -156,8 +164,7 @@ export function AppointmentsTable({
                                     )}
                                 </div>
                             </TableHead>
-                            <TableHead>Notes</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
+                            <TableHead className="w-[100px] text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -168,8 +175,12 @@ export function AppointmentsTable({
                                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                                     <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                                     <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                                    <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                                    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex justify-end gap-2">
+                                            <Skeleton className="h-8 w-8 rounded-md" />
+                                            <Skeleton className="h-8 w-8 rounded-md" />
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
                             ))
                         ) : appointments.length === 0 ? (
@@ -218,19 +229,23 @@ export function AppointmentsTable({
                                             {apt.status}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>
-                                        <p className="text-sm text-muted-foreground line-clamp-1 max-w-[200px]">
-                                            {apt.notes || '-'}
-                                        </p>
-                                    </TableCell>
-                                    <TableCell>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
+                                    <TableCell className="text-right">
+                                        <div className="flex justify-end items-center gap-3">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
+                                                onClick={() => handleDetailClick(apt.id)}
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
                                                 {apt.status === AppointmentStatus.PENDING && (
                                                     <>
                                                         <DropdownMenuItem 
@@ -282,6 +297,7 @@ export function AppointmentsTable({
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -301,6 +317,12 @@ export function AppointmentsTable({
                 onOpenChange={setActionModalOpen}
                 actionType={selectedAction}
                 appointmentId={selectedAptId}
+            />
+
+            <AppointmentDetailModal
+                id={selectedAptId}
+                open={detailModalOpen}
+                onOpenChange={setDetailModalOpen}
             />
         </>
     );
