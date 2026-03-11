@@ -65,23 +65,118 @@ export const useUpdateAppointment = () => {
     });
 };
 
-export const useDeleteAppointment = () => {
+export const useApproveAppointment = () => {
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
     return useMutation({
-        mutationFn: (id: string) => appointmentService.delete(id),
+        mutationFn: ({ id, staffNotes }: { id: string; staffNotes?: string }) =>
+            appointmentService.approve(id, staffNotes),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['appointments'] });
             toast({
                 title: "Success",
-                description: "Appointment deleted successfully",
+                description: "Appointment approved successfully",
             });
         },
         onError: (error: any) => {
             toast({
                 title: "Error",
-                description: error.response?.data?.message || "Failed to delete appointment",
+                description: error.response?.data?.message || "Failed to approve appointment",
+                variant: "destructive",
+            });
+        },
+    });
+};
+export const useRejectAppointment = () => {
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
+
+    return useMutation({
+        mutationFn: ({ id, rejectionReason }: { id: string; rejectionReason?: string }) =>
+            appointmentService.reject(id, rejectionReason),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['appointments'] });
+            toast({
+                title: "Success",
+                description: "Appointment rejected successfully",
+            });
+        },
+        onError: (error: any) => {
+            toast({
+                title: "Error",
+                description: error.response?.data?.message || "Failed to reject appointment",
+                variant: "destructive",
+            });
+        },
+    });
+};
+
+export const useCompleteAppointment = () => {
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
+
+    return useMutation({
+        mutationFn: ({ id, outcomeNotes }: { id: string; outcomeNotes?: string }) =>
+            appointmentService.complete(id, outcomeNotes),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['appointments'] });
+            toast({
+                title: "Success",
+                description: "Appointment marked as completed",
+            });
+        },
+        onError: (error: any) => {
+            toast({
+                title: "Error",
+                description: error.response?.data?.message || "Failed to complete appointment",
+                variant: "destructive",
+            });
+        },
+    });
+};
+
+export const useNoShowAppointment = () => {
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
+
+    return useMutation({
+        mutationFn: (id: string) => appointmentService.noShow(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['appointments'] });
+            toast({
+                title: "Success",
+                description: "Appointment marked as no-show",
+            });
+        },
+        onError: (error: any) => {
+            toast({
+                title: "Error",
+                description: error.response?.data?.message || "Failed to mark as no-show",
+                variant: "destructive",
+            });
+        },
+    });
+};
+
+export const useCancelAppointment = () => {
+    const queryClient = useQueryClient();
+    const { toast } = useToast();
+
+    return useMutation({
+        mutationFn: ({ id, cancellationReason }: { id: string; cancellationReason: string }) =>
+            appointmentService.cancel(id, cancellationReason),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['appointments'] });
+            toast({
+                title: "Success",
+                description: "Appointment cancelled successfully",
+            });
+        },
+        onError: (error: any) => {
+            toast({
+                title: "Error",
+                description: error.response?.data?.message || "Failed to cancel appointment",
                 variant: "destructive",
             });
         },

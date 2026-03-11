@@ -5,7 +5,9 @@ export enum AppointmentStatus {
     COMPLETED = 'Completed',
     CANCELLED = 'Cancelled',
     PENDING = 'Pending',
-    BOOKED = 'Booked'
+    BOOKED = 'Booked',
+    NO_SHOW = 'No-Show',
+    REJECTED = 'Rejected'
 }
 
 export interface Appointment {

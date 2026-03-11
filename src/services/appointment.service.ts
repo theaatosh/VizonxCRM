@@ -50,7 +50,28 @@ export const appointmentService = {
         return response.data;
     },
 
-    delete: async (id: string) => {
-        await api.delete(`/appointments/${id}`);
+    approve: async (id: string, staffNotes?: string) => {
+        const response = await api.post<Appointment>(`/appointments/${id}/approve`, { staffNotes });
+        return response.data;
+    },
+
+    reject: async (id: string, rejectionReason?: string) => {
+        const response = await api.post<Appointment>(`/appointments/${id}/reject`, { rejectionReason });
+        return response.data;
+    },
+
+    complete: async (id: string, outcomeNotes?: string) => {
+        const response = await api.post<Appointment>(`/appointments/${id}/complete`, { outcomeNotes });
+        return response.data;
+    },
+
+    noShow: async (id: string) => {
+        const response = await api.post<Appointment>(`/appointments/${id}/no-show`);
+        return response.data;
+    },
+
+    cancel: async (id: string, cancellationReason: string) => {
+        const response = await api.post<Appointment>(`/appointments/${id}/cancel`, { cancellationReason });
+        return response.data;
     }
 };

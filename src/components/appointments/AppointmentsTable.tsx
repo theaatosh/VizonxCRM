@@ -20,17 +20,28 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
     MoreHorizontal,
     Edit,
-    Trash2,
     Calendar,
-    User,
     UserCog,
     ArrowUpDown,
     ArrowUp,
-    ArrowDown
+    ArrowDown,
+    CheckCircle, 
+    XCircle, 
+    UserX, 
+    CheckSquare,
+    Ban
 } from 'lucide-react';
 import { Appointment, AppointmentStatus } from '@/types/appointment.types';
 import { AppointmentFormDialog } from './AppointmentFormDialog';
-import { useDeleteAppointment } from '@/hooks/useAppointments';
+import { AppointmentActionModal, ActionType } from './AppointmentActionModal';
+import { 
+    useUpdateAppointment,
+    useApproveAppointment,
+    useRejectAppointment,
+    useCompleteAppointment,
+    useNoShowAppointment,
+    useCancelAppointment
+} from '@/hooks/useAppointments';
 
 interface AppointmentsTableProps {
     appointments: Appointment[];
@@ -49,18 +60,21 @@ export function AppointmentsTable({
 }: AppointmentsTableProps) {
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+    const [actionModalOpen, setActionModalOpen] = useState(false);
+    const [selectedAction, setSelectedAction] = useState<ActionType>(null);
+    const [selectedAptId, setSelectedAptId] = useState<string | null>(null);
 
-    const deleteAppointment = useDeleteAppointment();
+    const noShowAppointment = useNoShowAppointment();
+
+    const handleActionClick = (id: string, action: ActionType) => {
+        setSelectedAptId(id);
+        setSelectedAction(action);
+        setActionModalOpen(true);
+    };
 
     const handleEdit = (appointment: Appointment) => {
         setSelectedAppointment(appointment);
         setEditDialogOpen(true);
-    };
-
-    const handleDelete = async (appointment: Appointment) => {
-        if (confirm('Are you sure you want to delete this appointment?')) {
-            await deleteAppointment.mutateAsync(appointment.id);
-        }
     };
 
     const getStatusColor = (status: AppointmentStatus) => {
@@ -75,6 +89,10 @@ export function AppointmentsTable({
                 return "bg-yellow-500/10 text-yellow-700 border-yellow-500/20";
             case AppointmentStatus.BOOKED:
                 return "bg-blue-500/10 text-blue-700 border-blue-500/20";
+            case AppointmentStatus.NO_SHOW:
+                return "bg-orange-500/10 text-orange-700 border-orange-500/20";
+            case AppointmentStatus.REJECTED:
+                return "bg-destructive/10 text-destructive border-destructive/20";
             default:
                 return "bg-muted text-muted-foreground";
         }
@@ -213,16 +231,54 @@ export function AppointmentsTable({
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
+                                                {apt.status === AppointmentStatus.PENDING && (
+                                                    <>
+                                                        <DropdownMenuItem 
+                                                            className="text-green-600 focus:text-green-600"
+                                                            onClick={() => handleActionClick(apt.id, 'approve')}
+                                                        >
+                                                            <CheckCircle className="mr-2 h-4 w-4" />
+                                                            Approve
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem 
+                                                            className="text-destructive focus:text-destructive"
+                                                            onClick={() => handleActionClick(apt.id, 'reject')}
+                                                        >
+                                                            <XCircle className="mr-2 h-4 w-4" />
+                                                            Reject
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                )}
+
+                                                {apt.status === AppointmentStatus.BOOKED && (
+                                                    <>
+                                                        <DropdownMenuItem 
+                                                            className="text-green-600 focus:text-green-600"
+                                                            onClick={() => handleActionClick(apt.id, 'complete')}
+                                                        >
+                                                            <CheckSquare className="mr-2 h-4 w-4" />
+                                                            Complete
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem 
+                                                            className="text-orange-600 focus:text-orange-600"
+                                                            onClick={() => noShowAppointment.mutateAsync(apt.id)}
+                                                        >
+                                                            <UserX className="mr-2 h-4 w-4" />
+                                                            No-show
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem 
+                                                            className="text-destructive focus:text-destructive"
+                                                            onClick={() => handleActionClick(apt.id, 'cancel')}
+                                                        >
+                                                            <Ban className="mr-2 h-4 w-4" />
+                                                            Cancel
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                )}
+
                                                 <DropdownMenuItem onClick={() => handleEdit(apt)}>
                                                     <Edit className="mr-2 h-4 w-4" />
                                                     Edit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    className="text-destructive focus:text-destructive"
-                                                    onClick={() => handleDelete(apt)}
-                                                >
-                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                    Delete
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
@@ -238,6 +294,13 @@ export function AppointmentsTable({
                 open={editDialogOpen}
                 onOpenChange={setEditDialogOpen}
                 appointment={selectedAppointment}
+            />
+
+            <AppointmentActionModal
+                open={actionModalOpen}
+                onOpenChange={setActionModalOpen}
+                actionType={selectedAction}
+                appointmentId={selectedAptId}
             />
         </>
     );
