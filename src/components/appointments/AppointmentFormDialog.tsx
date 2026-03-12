@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { format } from 'date-fns';
+import { format, startOfDay, endOfDay } from 'date-fns';
 import { Calendar as CalendarIcon, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -45,10 +45,35 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
-import { useCreateAppointment, useUpdateAppointment } from '@/hooks/useAppointments';
+import { useCreateAppointment, useUpdateAppointment, useBookedSlots } from '@/hooks/useAppointments';
 import { useStudents } from '@/hooks/useStudents';
 import { useUsers } from '@/hooks/useUsers';
+import { useWorkingHours } from '@/hooks/useWorkingHours';
 import { Appointment, AppointmentStatus } from '@/types/appointment.types';
+
+// Helper to convert UTC HH:mm to local HH:mm
+const utcToLocal = (utcTime: string) => {
+    if (!utcTime) return "09:00";
+    const [hours, minutes] = utcTime.split(':').map(Number);
+    const date = new Date();
+    date.setUTCHours(hours, minutes, 0, 0);
+    const localHours = date.getHours().toString().padStart(2, '0');
+    const localMinutes = date.getMinutes().toString().padStart(2, '0');
+    return `${localHours}:${localMinutes}`;
+};
+
+// Helper to generate time slots (30 min intervals)
+const generateTimeSlots = (start: string, end: string) => {
+    const slots = [];
+    let current = new Date(`2000-01-01T${start}:00`);
+    const final = new Date(`2000-01-01T${end}:00`);
+
+    while (current <= final) {
+        slots.push(format(current, 'HH:mm'));
+        current.setMinutes(current.getMinutes() + 30);
+    }
+    return slots;
+};
 
 const appointmentFormSchema = z.object({
     scheduledDate: z.date({
@@ -96,7 +121,7 @@ export function AppointmentFormDialog({
     const form = useForm<AppointmentFormValues>({
         resolver: zodResolver(appointmentFormSchema),
         defaultValues: {
-            scheduledDate: new Date(),
+            scheduledDate: undefined as any as Date,
             scheduledTime: '09:00',
             duration: '60',
             studentId: '',
@@ -105,6 +130,73 @@ export function AppointmentFormDialog({
             notes: '',
         },
     });
+
+    const selectedStaffId = form.watch('staffId');
+    const selectedDate = form.watch('scheduledDate');
+    const selectedDuration = form.watch('duration');
+
+    // Fetch working hours
+    const { data: workingHours } = useWorkingHours();
+
+    // Fetch booked slots for the selected date
+    const from = selectedDate ? startOfDay(selectedDate).toISOString() : "";
+    const to = selectedDate ? endOfDay(selectedDate).toISOString() : "";
+
+    const { data: bookedSlotsData, isLoading: isBookedSlotsLoading } = useBookedSlots({
+        staffId: selectedStaffId,
+        from,
+        to
+    });
+    const bookedSlots = bookedSlotsData?.data || [];
+
+    // Filter available time slots based on working hours and existing bookings for the selected day
+    const getTimeOptions = () => {
+        if (!workingHours || !selectedDate) return generateTimeSlots("09:00", "17:00");
+
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayName = dayNames[selectedDate.getDay()];
+        const workingDay = workingHours.find(wh => wh.dayOfWeek === dayName);
+
+        if (!workingDay || !workingDay.isOpen) return [];
+
+        const localOpen = utcToLocal(workingDay.openTime);
+        const localClose = utcToLocal(workingDay.closeTime);
+
+        let slots = generateTimeSlots(localOpen, localClose);
+
+        // Filter out slots that overlap with existing bookings for this staff member
+        const dayBookings = bookedSlots.filter(slot => {
+            // If editing, don't block the current appointment's own time slot
+            if (isEditing && appointment && slot.id === appointment.id) return false;
+
+            const slotDate = new Date(slot.scheduledAt);
+            return slotDate.getFullYear() === selectedDate.getFullYear() &&
+                   slotDate.getMonth() === selectedDate.getMonth() &&
+                   slotDate.getDate() === selectedDate.getDate();
+        });
+
+        if (dayBookings.length > 0) {
+            slots = slots.filter(timeStr => {
+                const [h, m] = timeStr.split(':').map(Number);
+                const slotStart = new Date(selectedDate);
+                slotStart.setHours(h, m, 0, 0);
+                
+                const slotEnd = new Date(slotStart);
+                slotEnd.setMinutes(slotEnd.getMinutes() + parseInt(selectedDuration || '30'));
+
+                // Overlap: (StartA < EndB) && (EndA > StartB)
+                return !dayBookings.some(booking => {
+                    const bookingStart = new Date(booking.scheduledAt);
+                    const bookingEnd = new Date(booking.endTime);
+                    return slotStart < bookingEnd && slotEnd > bookingStart;
+                });
+            });
+        }
+
+        return slots;
+    };
+
+    const timeOptions = getTimeOptions();
 
     // Reset when opening/closing or changing appointment
     useEffect(() => {
@@ -124,7 +216,7 @@ export function AppointmentFormDialog({
                 });
             } else {
                 form.reset({
-                    scheduledDate: new Date(),
+                    scheduledDate: undefined as any as Date,
                     scheduledTime: '09:00',
                     duration: '60',
                     studentId: '',
@@ -171,6 +263,19 @@ export function AppointmentFormDialog({
 
     const isLoading = createAppointment.isPending || updateAppointment.isPending;
 
+    // Restriction Logic
+    // If pending: can edit date, time, and notes.
+    // If other editable status (Booked, etc.): can ONLY edit notes.
+    const isPending = appointment?.status === AppointmentStatus.PENDING;
+    const isOtherEditable = isEditing && !isPending;
+
+    const isDateDisabled = isOtherEditable || isLoading;
+    const isDurationDisabled = isEditing || isLoading; // Per instructions, duration seems to be non-editable in both cases (only date/time/notes for pending, only notes for others)
+    const isStudentDisabled = isEditing || isLoading;
+    const isStaffDisabled = isEditing || isLoading;
+    const isStatusDisabled = isEditing || isLoading;
+    const isNotesDisabled = isLoading;
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[500px]">
@@ -196,20 +301,21 @@ export function AppointmentFormDialog({
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
-                                                    <Button
-                                                        variant={"outline"}
-                                                        className={cn(
-                                                            "pl-3 text-left font-normal",
-                                                            !field.value && "text-muted-foreground"
-                                                        )}
-                                                    >
-                                                        {field.value ? (
-                                                            format(field.value, "PPP")
-                                                        ) : (
-                                                            <span>Pick a date</span>
-                                                        )}
-                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                    </Button>
+                                                        <Button
+                                                            variant={"outline"}
+                                                            disabled={isDateDisabled}
+                                                            className={cn(
+                                                                "pl-3 text-left font-normal",
+                                                                !field.value && "text-muted-foreground"
+                                                            )}
+                                                        >
+                                                            {field.value ? (
+                                                                format(field.value, "PPP")
+                                                            ) : (
+                                                                <span>Pick a date</span>
+                                                            )}
+                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                        </Button>
                                                 </FormControl>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-auto p-0" align="start">
@@ -217,9 +323,20 @@ export function AppointmentFormDialog({
                                                     mode="single"
                                                     selected={field.value}
                                                     onSelect={field.onChange}
-                                                    disabled={(date) =>
-                                                        date < new Date(new Date().setHours(0, 0, 0, 0))
-                                                    }
+                                                    disabled={(date) => {
+                                                        // 1. Disable past dates
+                                                        if (date < new Date(new Date().setHours(0, 0, 0, 0))) return true;
+
+                                                        // 2. Disable based on working hours
+                                                        if (workingHours) {
+                                                            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                                                            const dayName = dayNames[date.getDay()];
+                                                            const workingDay = workingHours.find(wh => wh.dayOfWeek === dayName);
+                                                            if (workingDay && !workingDay.isOpen) return true;
+                                                        }
+
+                                                        return false;
+                                                    }}
                                                     initialFocus
                                                 />
                                             </PopoverContent>
@@ -229,19 +346,42 @@ export function AppointmentFormDialog({
                                 )}
                             />
 
-                            <FormField
-                                control={form.control}
-                                name="scheduledTime"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Time</FormLabel>
-                                        <FormControl>
-                                            <Input type="time" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            {selectedDate && (
+                                <FormField
+                                    control={form.control}
+                                    name="scheduledTime"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Time</FormLabel>
+                                            <Select 
+                                                onValueChange={field.onChange} 
+                                                value={field.value} 
+                                                disabled={isDateDisabled || (timeOptions.length === 0 && !isBookedSlotsLoading) || isBookedSlotsLoading}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select time" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent className="max-h-[300px] overflow-y-auto">
+                                                    {isBookedSlotsLoading ? (
+                                                        <SelectItem value="loading" disabled>Loading available slots...</SelectItem>
+                                                    ) : timeOptions.length > 0 ? (
+                                                        timeOptions.map((time) => (
+                                                            <SelectItem key={time} value={time}>
+                                                                {time}
+                                                            </SelectItem>
+                                                        ))
+                                                    ) : (
+                                                        <SelectItem value="none" disabled>No slots available</SelectItem>
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
                         </div>
 
                         <div className="grid grid-cols-1 gap-4">
@@ -251,7 +391,7 @@ export function AppointmentFormDialog({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Duration (minutes)</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isDurationDisabled}>
                                             <FormControl>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Select duration" />
@@ -285,6 +425,7 @@ export function AppointmentFormDialog({
                                                 <Button
                                                     variant="outline"
                                                     role="combobox"
+                                                    disabled={isStudentDisabled}
                                                     className={cn(
                                                         "justify-between",
                                                         !field.value && "text-muted-foreground"
@@ -349,6 +490,7 @@ export function AppointmentFormDialog({
                                                 <Button
                                                     variant="outline"
                                                     role="combobox"
+                                                    disabled={isStaffDisabled}
                                                     className={cn(
                                                         "justify-between",
                                                         !field.value && "text-muted-foreground"
@@ -407,6 +549,7 @@ export function AppointmentFormDialog({
                                         <Select
                                             onValueChange={field.onChange}
                                             defaultValue={field.value}
+                                            disabled={isStatusDisabled}
                                         >
                                             <FormControl>
                                                 <SelectTrigger>
@@ -439,6 +582,7 @@ export function AppointmentFormDialog({
                                             placeholder="Meeting notes..."
                                             className="resize-none"
                                             rows={3}
+                                            disabled={isNotesDisabled}
                                             {...field}
                                         />
                                     </FormControl>

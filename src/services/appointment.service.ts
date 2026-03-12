@@ -73,5 +73,10 @@ export const appointmentService = {
     cancel: async (id: string, cancellationReason: string) => {
         const response = await api.post<Appointment>(`/appointments/${id}/cancel`, { cancellationReason });
         return response.data;
+    },
+
+    getBookedSlots: async (data: { staffId: string; from: string; to: string }) => {
+        const response = await api.post<{ data: any[], total: number }>('/appointments/booked-slots', data);
+        return response.data;
     }
 };

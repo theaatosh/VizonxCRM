@@ -182,3 +182,11 @@ export const useCancelAppointment = () => {
         },
     });
 };
+
+export const useBookedSlots = (data: { staffId: string; from: string; to: string }) => {
+    return useQuery({
+        queryKey: ['booked-slots', data],
+        queryFn: () => appointmentService.getBookedSlots(data),
+        enabled: !!data.staffId && !!data.from && !!data.to,
+    });
+};

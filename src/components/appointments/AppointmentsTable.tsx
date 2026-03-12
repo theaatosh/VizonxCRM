@@ -239,64 +239,67 @@ export function AppointmentsTable({
                                             >
                                                 <Eye className="h-4 w-4" />
                                             </Button>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                {apt.status === AppointmentStatus.PENDING && (
-                                                    <>
-                                                        <DropdownMenuItem 
-                                                            className="text-green-600 focus:text-green-600"
-                                                            onClick={() => handleActionClick(apt.id, 'approve')}
-                                                        >
-                                                            <CheckCircle className="mr-2 h-4 w-4" />
-                                                            Approve
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem 
-                                                            className="text-destructive focus:text-destructive"
-                                                            onClick={() => handleActionClick(apt.id, 'reject')}
-                                                        >
-                                                            <XCircle className="mr-2 h-4 w-4" />
-                                                            Reject
-                                                        </DropdownMenuItem>
-                                                    </>
-                                                )}
+                                            {apt.status !== AppointmentStatus.REJECTED && 
+                                             apt.status !== AppointmentStatus.CANCELLED && (
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                    {apt.status === AppointmentStatus.PENDING && (
+                                                        <>
+                                                            <DropdownMenuItem 
+                                                                className="text-green-600 focus:text-green-600"
+                                                                onClick={() => handleActionClick(apt.id, 'approve')}
+                                                            >
+                                                                <CheckCircle className="mr-2 h-4 w-4" />
+                                                                Approve
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem 
+                                                                className="text-destructive focus:text-destructive"
+                                                                onClick={() => handleActionClick(apt.id, 'reject')}
+                                                            >
+                                                                <XCircle className="mr-2 h-4 w-4" />
+                                                                Reject
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    )}
 
-                                                {apt.status === AppointmentStatus.BOOKED && (
-                                                    <>
-                                                        <DropdownMenuItem 
-                                                            className="text-green-600 focus:text-green-600"
-                                                            onClick={() => handleActionClick(apt.id, 'complete')}
-                                                        >
-                                                            <CheckSquare className="mr-2 h-4 w-4" />
-                                                            Complete
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem 
-                                                            className="text-orange-600 focus:text-orange-600"
-                                                            onClick={() => noShowAppointment.mutateAsync(apt.id)}
-                                                        >
-                                                            <UserX className="mr-2 h-4 w-4" />
-                                                            No-show
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem 
-                                                            className="text-destructive focus:text-destructive"
-                                                            onClick={() => handleActionClick(apt.id, 'cancel')}
-                                                        >
-                                                            <Ban className="mr-2 h-4 w-4" />
-                                                            Cancel
-                                                        </DropdownMenuItem>
-                                                    </>
-                                                )}
+                                                    {apt.status === AppointmentStatus.BOOKED && (
+                                                        <>
+                                                            <DropdownMenuItem 
+                                                                className="text-green-600 focus:text-green-600"
+                                                                onClick={() => handleActionClick(apt.id, 'complete')}
+                                                            >
+                                                                <CheckSquare className="mr-2 h-4 w-4" />
+                                                                Complete
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem 
+                                                                className="text-orange-600 focus:text-orange-600"
+                                                                onClick={() => noShowAppointment.mutateAsync(apt.id)}
+                                                            >
+                                                                <UserX className="mr-2 h-4 w-4" />
+                                                                No-show
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem 
+                                                                className="text-destructive focus:text-destructive"
+                                                                onClick={() => handleActionClick(apt.id, 'cancel')}
+                                                            >
+                                                                <Ban className="mr-2 h-4 w-4" />
+                                                                Cancel
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    )}
 
-                                                <DropdownMenuItem onClick={() => handleEdit(apt)}>
-                                                    <Edit className="mr-2 h-4 w-4" />
-                                                    Edit
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                                    <DropdownMenuItem onClick={() => handleEdit(apt)}>
+                                                        <Edit className="mr-2 h-4 w-4" />
+                                                        Edit
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
                                         </div>
                                     </TableCell>
                                 </TableRow>
