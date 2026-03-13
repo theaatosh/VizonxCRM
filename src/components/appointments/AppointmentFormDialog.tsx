@@ -45,7 +45,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
-import { useCreateAppointment, useUpdateAppointment, useBookedSlots } from '@/hooks/useAppointments';
+import { useCreateAppointment, useUpdateAppointment, useBookedSlots, useApproveAppointment } from '@/hooks/useAppointments';
 import { useStudents } from '@/hooks/useStudents';
 import { useUsers } from '@/hooks/useUsers';
 import { useWorkingHours } from '@/hooks/useWorkingHours';
@@ -109,6 +109,7 @@ export function AppointmentFormDialog({
     // Hooks
     const createAppointment = useCreateAppointment();
     const updateAppointment = useUpdateAppointment();
+    const approveAppointment = useApproveAppointment();
 
     // Fetch data for selects - getting all (limit 100 for now)
     const { data: studentsData } = useStudents({ limit: 100 });
@@ -275,7 +276,46 @@ export function AppointmentFormDialog({
         }
     };
 
-    const isLoading = createAppointment.isPending || updateAppointment.isPending;
+    const handleSaveAndApprove = async () => {
+        const values = form.getValues();
+        // Manually trigger validation before proceeding
+        const isValid = await form.trigger();
+        if (!isValid) return;
+
+        try {
+            // Step 1: Combine date and time
+            const dateTime = new Date(values.scheduledDate);
+            const [hours, minutes] = values.scheduledTime.split(':').map(Number);
+            dateTime.setHours(hours, minutes, 0, 0);
+
+            // Step 2: Save the appointment (PUT request)
+            if (isEditing && appointment) {
+                await updateAppointment.mutateAsync({
+                    id: appointment.id,
+                    data: {
+                        scheduledAt: dateTime.toISOString(),
+                        studentId: values.studentId,
+                        duration: parseInt(values.duration),
+                        staffId: values.staffId,
+                        status: values.status,
+                        notes: values.notes || undefined,
+                    }
+                });
+
+                // Step 3: Approve the appointment (POST request)
+                await approveAppointment.mutateAsync({ 
+                    id: appointment.id,
+                    staffNotes: values.notes || undefined
+                });
+
+                onOpenChange(false);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const isLoading = createAppointment.isPending || updateAppointment.isPending || approveAppointment.isPending;
 
     // Restriction Logic
     // If pending: can edit date, time, and notes.
@@ -614,19 +654,29 @@ export function AppointmentFormDialog({
                             )}
                         />
 
-                        <DialogFooter>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => onOpenChange(false)}
-                                disabled={isLoading}
-                            >
-                                Cancel
-                            </Button>
-                            <Button type="submit" disabled={isLoading}>
-                                {isLoading ? 'Saving...' : 'Save Appointment'}
-                            </Button>
-                        </DialogFooter>
+                            <div className="flex gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => onOpenChange(false)}
+                                    disabled={isLoading}
+                                >
+                                    Cancel
+                                </Button>
+                                {isEditing && (
+                                    <Button 
+                                        type="button"
+                                        onClick={handleSaveAndApprove}
+                                        disabled={isLoading}
+                                        className="bg-green-600 hover:bg-green-700 text-white min-w-[160px]"
+                                    >
+                                        {approveAppointment.isPending ? 'Approving...' : (updateAppointment.isPending ? 'Saving...' : 'Save & Approve')}
+                                    </Button>
+                                )}
+                                <Button type="submit" disabled={isLoading}>
+                                    {isLoading && !approveAppointment.isPending ? 'Saving...' : (isEditing ? 'Save Changes' : 'Create Appointment')}
+                                </Button>
+                            </div>
                     </form>
                 </Form>
             </DialogContent>
