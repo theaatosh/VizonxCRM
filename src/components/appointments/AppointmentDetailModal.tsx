@@ -143,49 +143,49 @@ export const AppointmentDetailModal = ({ id, open, onOpenChange }: AppointmentDe
                                         Notes & Feedback
                                     </h3>
                                     <div className="space-y-4">
-                                    {appointment.purpose && (
-                                        <div className="bg-muted/30 rounded-lg p-3">
-                                            <InfoRow label="Purpose of Visit" value={appointment.purpose} />
-                                        </div>
-                                    )}
+                                        {appointment.purpose && (
+                                            <div className="bg-muted/30 rounded-lg p-3">
+                                                <InfoRow label="Purpose of Visit" value={appointment.purpose} />
+                                            </div>
+                                        )}
 
-                                    {appointment.note && (
-                                        <div className="border-l-4 border-blue-400 pl-4 py-1">
-                                            <InfoRow label="Initial Note (Student)" value={appointment.note} />
-                                        </div>
-                                    )}
+                                        {appointment.note && (
+                                            <div className="border-l-4 border-blue-400 pl-4 py-1">
+                                                <InfoRow label="Initial Note (Student)" value={appointment.note} />
+                                            </div>
+                                        )}
 
-                                    {appointment.notes && (
-                                        <div className="border-l-4 border-primary pl-4 py-1">
-                                            <InfoRow label="Internal Admin Notes" value={appointment.notes} />
-                                        </div>
-                                    )}
+                                        {appointment.notes && (
+                                            <div className="border-l-4 border-primary pl-4 py-1">
+                                                <InfoRow label="Student Notes" value={appointment.notes} />
+                                            </div>
+                                        )}
 
-                                    {appointment.staffNotes && (
-                                        <div className="border-l-4 border-green-500 pl-4 py-1">
-                                            <InfoRow label="Staff Notes" value={appointment.staffNotes} />
-                                        </div>
-                                    )}
+                                        {appointment.staffNotes && (
+                                            <div className="border-l-4 border-green-500 pl-4 py-1">
+                                                <InfoRow label="Staff Notes" value={appointment.staffNotes} />
+                                            </div>
+                                        )}
 
-                                    {appointment.outcomeNotes && (
-                                        <div className="border-l-4 border-amber-500 pl-4 py-1">
-                                            <InfoRow label="Outcome & Results" value={appointment.outcomeNotes} />
-                                        </div>
-                                    )}
+                                        {appointment.outcomeNotes && (
+                                            <div className="border-l-4 border-amber-500 pl-4 py-1">
+                                                <InfoRow label="Outcome & Results" value={appointment.outcomeNotes} />
+                                            </div>
+                                        )}
 
-                                    {appointment.rejectionReason && (
-                                        <div className="border-l-4 border-destructive pl-4 py-1 bg-destructive/5">
-                                            <InfoRow label="Reason for Rejection" value={appointment.rejectionReason} />
-                                        </div>
-                                    )}
+                                        {appointment.rejectionReason && (
+                                            <div className="border-l-4 border-destructive pl-4 py-1 bg-destructive/5">
+                                                <InfoRow label="Reason for Rejection" value={appointment.rejectionReason} />
+                                            </div>
+                                        )}
 
-                                    {appointment.cancellationReason && (
-                                        <div className="border-l-4 border-red-400 pl-4 py-1 bg-red-50">
-                                            <InfoRow label="Reason for Cancellation" value={appointment.cancellationReason} />
-                                        </div>
-                                    )}
-                                </div>
-                            </section>
+                                        {appointment.cancellationReason && (
+                                            <div className="border-l-4 border-red-400 pl-4 py-1 bg-red-50">
+                                                <InfoRow label="Reason for Cancellation" value={appointment.cancellationReason} />
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
 
                                 {(appointment.approvedAt || appointment.rejectedAt || appointment.cancelledAt || appointment.completedAt) && (
                                     <>
@@ -233,12 +233,12 @@ export const AppointmentDetailModal = ({ id, open, onOpenChange }: AppointmentDe
                                                 )}
                                             </div>
                                         </section>
-                                    </> 
+                                    </>
                                 )}
 
                                 <Separator />
 
-                               
+
                             </div>
                         ) : (
                             <div className="text-center py-12 text-muted-foreground">
