@@ -90,111 +90,143 @@ const Appointments = () => {
         {/* Header Actions */}
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search appointments..."
-                  className="pl-9"
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setPage(1);
-                  }}
-                />
-              </div>
+            {/* Filters Section */}
+            <div className="flex flex-col space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search appointments..."
+                    className="pl-9 h-10"
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setPage(1);
+                    }}
+                  />
+                </div>
 
-              {isAdmin && (
-                <Select value={selectedStaffId} onValueChange={(val) => {
-                  setSelectedStaffId(val);
+                {/* Staff Selection (Admin only) or Status */}
+                {isAdmin ? (
+                  <Select value={selectedStaffId} onValueChange={(val) => {
+                    setSelectedStaffId(val);
+                    setPage(1);
+                  }}>
+                    <SelectTrigger className="h-10 bg-background border-primary/20 hover:border-primary/40 transition-colors">
+                      <Users className="h-4 w-4 mr-2 text-primary" />
+                      <SelectValue placeholder="All Staff" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Staff</SelectItem>
+                      {staffList.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Select value={status} onValueChange={(val) => {
+                    setStatus(val);
+                    setPage(1);
+                  }}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      {Object.values(AppointmentStatus).map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* Student Selection */}
+                <Select value={selectedStudentId} onValueChange={(val) => {
+                  setSelectedStudentId(val);
                   setPage(1);
                 }}>
-                  <SelectTrigger className="w-48 bg-background border-primary/20 hover:border-primary/40 transition-colors">
-                    <Users className="h-4 w-4 mr-2 text-primary" />
-                    <SelectValue placeholder="All Staff" />
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="All Students" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Staff</SelectItem>
-                    {staffList.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    <SelectItem value="all">All Students</SelectItem>
+                    {studentList.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              )}
 
-              <Select value={selectedStudentId} onValueChange={(val) => {
-                setSelectedStudentId(val);
-                setPage(1);
-              }}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="All Students" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Students</SelectItem>
-                  {studentList.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={status} onValueChange={(val) => {
-                setStatus(val);
-                setPage(1);
-              }}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  {Object.values(AppointmentStatus).map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <DatePickerWithRange
-                className="w-[280px]"
-                date={dateRange}
-                setDate={(range) => {
-                  setDateRange(range);
-                  setExactDate(''); // Clear exact date if range is selected
-                  setPage(1);
-                }}
-              />
-
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground whitespace-nowrap">Exact Date:</span>
-                <Input
-                  type="date"
-                  className="w-40"
-                  value={exactDate}
-                  onChange={(e) => {
-                    setExactDate(e.target.value);
-                    setDateRange({ from: undefined, to: undefined }); // Clear range if exact date is selected
+                {/* Status (If Admin, show after Student) */}
+                {isAdmin && (
+                  <Select value={status} onValueChange={(val) => {
+                    setStatus(val);
                     setPage(1);
-                  }}
-                />
+                  }}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      {Object.values(AppointmentStatus).map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
-              {(search || status !== 'all' || selectedStaffId !== 'all' || selectedStudentId !== 'all' || dateRange?.from || dateRange?.to || exactDate) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSearch('');
-                    setStatus('all');
-                    setSelectedStaffId('all');
-                    setSelectedStudentId('all');
-                    setDateRange({ from: undefined, to: undefined });
-                    setExactDate('');
-                    setPage(1);
-                  }}
-                  className="text-muted-foreground px-2 hover:text-destructive hover:bg-destructive/5"
-                >
-                  <FilterX className="h-4 w-4 mr-2" />
-                  Clear
-                </Button>
-              )}
+              {/* Date Filters */}
+              <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-muted/50">
+                <div className="flex flex-col gap-1.5 min-w-[280px]">
+                  <span className="text-xs font-medium text-muted-foreground ml-1">Date Range</span>
+                  <DatePickerWithRange
+                    className="w-full"
+                    date={dateRange}
+                    setDate={(range) => {
+                      setDateRange(range);
+                      setExactDate('');
+                      setPage(1);
+                    }}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5 min-w-[160px]">
+                  <span className="text-xs font-medium text-muted-foreground ml-1">Exact Date</span>
+                  <Input
+                    type="date"
+                    className="h-10"
+                    value={exactDate}
+                    onChange={(e) => {
+                      setExactDate(e.target.value);
+                      setDateRange({ from: undefined, to: undefined });
+                      setPage(1);
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-end h-full pt-6">
+                  {(search || status !== 'all' || selectedStaffId !== 'all' || selectedStudentId !== 'all' || dateRange?.from || dateRange?.to || exactDate) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSearch('');
+                        setStatus('all');
+                        setSelectedStaffId('all');
+                        setSelectedStudentId('all');
+                        setDateRange({ from: undefined, to: undefined });
+                        setExactDate('');
+                        setPage(1);
+                      }}
+                      className="text-muted-foreground h-10 hover:text-destructive hover:border-destructive/30 hover:bg-destructive/5 transition-all"
+                    >
+                      <FilterX className="h-4 w-4 mr-2" />
+                      Clear Filters
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
 
             <Button onClick={() => setIsCreateOpen(true)} className="gap-2 shadow-sm hover:shadow-md transition-all">

@@ -91,10 +91,10 @@ export const AppointmentDetailModal = ({ id, open, onOpenChange }: AppointmentDe
                                             value={`${appointment.duration} minutes`}
                                         />
                                         <InfoRow label="Requested By" value={appointment.requestedBy} />
-                                        <InfoRow
-                                            label="Requested At"
+                                        <InfoRow label="Requested At"
                                             value={format(new Date(appointment.requestedAt), 'PPP p')}
                                         />
+                                        <InfoRow label="Assigned Counselor" value={appointment.staff.name} />
                                         <InfoRow label="Timezone" value={appointment.timezone} />
                                     </div>
                                 </section>
@@ -122,10 +122,10 @@ export const AppointmentDetailModal = ({ id, open, onOpenChange }: AppointmentDe
                                         </div>
                                         <div className="border rounded-lg p-4 bg-muted/30">
                                             <p className="text-xs font-bold text-muted-foreground mb-2 flex items-center gap-1">
-                                                <UserCog className="h-3 w-3" /> STAFF
+                                                <UserCog className="h-3 w-3" /> ASSIGNED COUNSELOR
                                             </p>
                                             <div className="grid grid-cols-2 gap-x-4">
-                                                <InfoRow label="Name" value={appointment.staff.name} />
+                                                <InfoRow label="Counselor Name" value={appointment.staff.name} />
                                                 <div className="col-span-2">
                                                     <InfoRow label="Email" value={appointment.staff.email} />
                                                 </div>

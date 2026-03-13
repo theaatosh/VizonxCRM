@@ -143,7 +143,7 @@ export function AppointmentsTable({
                                 onClick={() => onSort?.('staffId')}
                             >
                                 <div className="flex items-center gap-2">
-                                    Staff
+                                    Assigned Counselor
                                     {sortBy === 'staffId' ? (
                                         sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />
                                     ) : (

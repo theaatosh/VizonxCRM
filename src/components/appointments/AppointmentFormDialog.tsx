@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -79,7 +79,9 @@ const appointmentFormSchema = z.object({
     scheduledDate: z.date({
         required_error: "A date is required",
     }),
-    scheduledTime: z.string().min(1, "Time is required"),
+    scheduledTime: z.string().min(1, "Time is required").refine(val => val !== 'select-time', {
+        message: "Please select a specific time slot",
+    }),
     duration: z.string().min(1, "Duration is required"),
     studentId: z.string().min(1, "Student is required"),
     staffId: z.string().min(1, "Staff is required"),
@@ -101,6 +103,8 @@ export function AppointmentFormDialog({
     appointment
 }: AppointmentFormDialogProps) {
     const isEditing = !!appointment;
+    const [staffPopoverOpen, setStaffPopoverOpen] = useState(false);
+    const [studentPopoverOpen, setStudentPopoverOpen] = useState(false);
 
     // Hooks
     const createAppointment = useCreateAppointment();
@@ -202,12 +206,8 @@ export function AppointmentFormDialog({
     useEffect(() => {
         if (selectedDate && selectedStaffId) {
             const currentSelectedTime = form.getValues('scheduledTime');
-            if (currentSelectedTime && !timeOptions.includes(currentSelectedTime)) {
-                // If the current time is no longer available, reset it
-                // But only if we have options to select from
-                if (timeOptions.length > 0) {
-                   // form.setValue('scheduledTime', ''); // Keep it or clear it? Better clear to force re-selection
-                }
+            if (currentSelectedTime && currentSelectedTime !== 'select-time' && !timeOptions.includes(currentSelectedTime)) {
+                form.setValue('scheduledTime', 'select-time');
             }
         }
     }, [selectedDate, selectedStaffId, timeOptions, form]);
@@ -311,7 +311,7 @@ export function AppointmentFormDialog({
                             render={({ field }) => (
                                 <FormItem className="flex flex-col">
                                     <FormLabel>Staff</FormLabel>
-                                    <Popover>
+                                    <Popover open={staffPopoverOpen} onOpenChange={setStaffPopoverOpen}>
                                         <PopoverTrigger asChild>
                                             <FormControl>
                                                 <Button
@@ -343,6 +343,7 @@ export function AppointmentFormDialog({
                                                             key={user.id}
                                                             onSelect={() => {
                                                                 form.setValue("staffId", user.id);
+                                                                setStaffPopoverOpen(false);
                                                             }}
                                                         >
                                                             <Check
@@ -360,36 +361,43 @@ export function AppointmentFormDialog({
                                             </Command>
                                         </PopoverContent>
                                     </Popover>
+                                    {!selectedStaffId && (
+                                        <p className="text-[10px] text-amber-600 mt-1 font-medium">
+                                            * Please select a staff member first to select date and time
+                                        </p>
+                                    )}
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
 
                         {/* Date & Time */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col sm:flex-row gap-4 items-end">
                             <FormField
                                 control={form.control}
                                 name="scheduledDate"
                                 render={({ field }) => (
-                                    <FormItem className="flex flex-col">
+                                    <FormItem className="flex flex-col flex-1 w-full sm:w-1/2">
                                         <FormLabel>Date</FormLabel>
-                                        <Popover>
+                                        <Popover open={staffPopoverOpen} onOpenChange={setStaffPopoverOpen}>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
                                                         <Button
                                                             variant={"outline"}
-                                                            disabled={isDateDisabled}
+                                                            disabled={!selectedStaffId || isDateDisabled}
                                                             className={cn(
-                                                                "pl-3 text-left font-normal",
+                                                                "w-full pl-3 text-left font-normal h-10",
                                                                 !field.value && "text-muted-foreground"
                                                             )}
                                                         >
-                                                            {field.value ? (
-                                                                format(field.value, "PPP")
-                                                            ) : (
-                                                                <span>Pick a date</span>
-                                                            )}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                            <div className="flex items-center justify-between w-full">
+                                                                {field.value ? (
+                                                                    format(field.value, "PPP")
+                                                                ) : (
+                                                                    <span>Pick a date</span>
+                                                                )}
+                                                                <CalendarIcon className="h-4 w-4 opacity-50" />
+                                                            </div>
                                                         </Button>
                                                 </FormControl>
                                             </PopoverTrigger>
@@ -425,19 +433,20 @@ export function AppointmentFormDialog({
                                 control={form.control}
                                 name="scheduledTime"
                                 render={({ field }) => (
-                                    <FormItem>
+                                    <FormItem className="flex flex-col flex-1 w-full sm:w-1/2">
                                         <FormLabel>Time</FormLabel>
                                         <Select 
                                             onValueChange={field.onChange} 
-                                            value={field.value} 
-                                            disabled={!selectedDate || isDateDisabled || (timeOptions.length === 0 && !isBookedSlotsLoading) || isBookedSlotsLoading}
+                                            value={field.value || 'select-time'} 
+                                            disabled={!selectedStaffId || !selectedDate || isDateDisabled || (timeOptions.length === 0 && !isBookedSlotsLoading) || isBookedSlotsLoading}
                                         >
                                             <FormControl>
-                                                <SelectTrigger>
+                                                <SelectTrigger className="h-10">
                                                     <SelectValue placeholder="Select time" />
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent className="max-h-[300px] overflow-y-auto">
+                                                <SelectItem value="select-time" disabled>Select time</SelectItem>
                                                 {isBookedSlotsLoading ? (
                                                     <SelectItem value="loading" disabled>Loading available slots...</SelectItem>
                                                 ) : timeOptions.length > 0 ? (
@@ -492,7 +501,7 @@ export function AppointmentFormDialog({
                             render={({ field }) => (
                                 <FormItem className="flex flex-col">
                                     <FormLabel>Student</FormLabel>
-                                    <Popover>
+                                    <Popover open={studentPopoverOpen} onOpenChange={setStudentPopoverOpen}>
                                         <PopoverTrigger asChild>
                                             <FormControl>
                                                 <Button
@@ -525,6 +534,7 @@ export function AppointmentFormDialog({
                                                             key={student.id}
                                                             onSelect={() => {
                                                                 form.setValue("studentId", student.id);
+                                                                setStudentPopoverOpen(false);
                                                             }}
                                                         >
                                                             <Check
