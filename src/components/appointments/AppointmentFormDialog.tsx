@@ -139,8 +139,8 @@ export function AppointmentFormDialog({
     const { data: workingHours } = useWorkingHours();
 
     // Fetch booked slots for the selected date
-    const from = selectedDate ? startOfDay(selectedDate).toISOString() : "";
-    const to = selectedDate ? endOfDay(selectedDate).toISOString() : "";
+    const from = selectedDate ? new Date(new Date(selectedDate).setHours(0, 0, 0, 0)).toISOString() : "";
+    const to = selectedDate ? new Date(new Date(selectedDate).setHours(23, 59, 59, 999)).toISOString() : "";
 
     const { data: bookedSlotsData, isLoading: isBookedSlotsLoading } = useBookedSlots({
         staffId: selectedStaffId,
@@ -197,6 +197,20 @@ export function AppointmentFormDialog({
     };
 
     const timeOptions = getTimeOptions();
+
+    // Reset scheduledTime when staff or date changes if the current time becomes invalid
+    useEffect(() => {
+        if (selectedDate && selectedStaffId) {
+            const currentSelectedTime = form.getValues('scheduledTime');
+            if (currentSelectedTime && !timeOptions.includes(currentSelectedTime)) {
+                // If the current time is no longer available, reset it
+                // But only if we have options to select from
+                if (timeOptions.length > 0) {
+                   // form.setValue('scheduledTime', ''); // Keep it or clear it? Better clear to force re-selection
+                }
+            }
+        }
+    }, [selectedDate, selectedStaffId, timeOptions, form]);
 
     // Reset when opening/closing or changing appointment
     useEffect(() => {
@@ -290,6 +304,67 @@ export function AppointmentFormDialog({
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        {/* Staff Selection */}
+                        <FormField
+                            control={form.control}
+                            name="staffId"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                    <FormLabel>Staff</FormLabel>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    disabled={isStaffDisabled}
+                                                    className={cn(
+                                                        "justify-between",
+                                                        !field.value && "text-muted-foreground"
+                                                    )}
+                                                >
+                                                    {field.value
+                                                        ? staffMembers.find(
+                                                            (user) => user.id === field.value
+                                                        )?.name
+                                                        : "Select staff"}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[400px] p-0">
+                                            <Command>
+                                                <CommandInput placeholder="Search staff..." />
+                                                <CommandEmpty>No staff found.</CommandEmpty>
+                                                <CommandGroup className="max-h-[300px] overflow-auto">
+                                                    {staffMembers.map((user) => (
+                                                        <CommandItem
+                                                            value={user.name}
+                                                            key={user.id}
+                                                            onSelect={() => {
+                                                                form.setValue("staffId", user.id);
+                                                            }}
+                                                        >
+                                                            <Check
+                                                                className={cn(
+                                                                    "mr-2 h-4 w-4",
+                                                                    user.id === field.value
+                                                                        ? "opacity-100"
+                                                                        : "opacity-0"
+                                                                )}
+                                                            />
+                                                            {user.name}
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
                         {/* Date & Time */}
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
@@ -346,42 +421,40 @@ export function AppointmentFormDialog({
                                 )}
                             />
 
-                            {selectedDate && (
-                                <FormField
-                                    control={form.control}
-                                    name="scheduledTime"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Time</FormLabel>
-                                            <Select 
-                                                onValueChange={field.onChange} 
-                                                value={field.value} 
-                                                disabled={isDateDisabled || (timeOptions.length === 0 && !isBookedSlotsLoading) || isBookedSlotsLoading}
-                                            >
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select time" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent className="max-h-[300px] overflow-y-auto">
-                                                    {isBookedSlotsLoading ? (
-                                                        <SelectItem value="loading" disabled>Loading available slots...</SelectItem>
-                                                    ) : timeOptions.length > 0 ? (
-                                                        timeOptions.map((time) => (
-                                                            <SelectItem key={time} value={time}>
-                                                                {time}
-                                                            </SelectItem>
-                                                        ))
-                                                    ) : (
-                                                        <SelectItem value="none" disabled>No slots available</SelectItem>
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            )}
+                            <FormField
+                                control={form.control}
+                                name="scheduledTime"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Time</FormLabel>
+                                        <Select 
+                                            onValueChange={field.onChange} 
+                                            value={field.value} 
+                                            disabled={!selectedDate || isDateDisabled || (timeOptions.length === 0 && !isBookedSlotsLoading) || isBookedSlotsLoading}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select time" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent className="max-h-[300px] overflow-y-auto">
+                                                {isBookedSlotsLoading ? (
+                                                    <SelectItem value="loading" disabled>Loading available slots...</SelectItem>
+                                                ) : timeOptions.length > 0 ? (
+                                                    timeOptions.map((time) => (
+                                                        <SelectItem key={time} value={time}>
+                                                            {time}
+                                                        </SelectItem>
+                                                    ))
+                                                ) : (
+                                                    <SelectItem value="none" disabled>No slots available</SelectItem>
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                         </div>
 
                         <div className="grid grid-cols-1 gap-4">
@@ -477,66 +550,6 @@ export function AppointmentFormDialog({
                             )}
                         />
 
-                        {/* Staff Selection */}
-                        <FormField
-                            control={form.control}
-                            name="staffId"
-                            render={({ field }) => (
-                                <FormItem className="flex flex-col">
-                                    <FormLabel>Staff</FormLabel>
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <FormControl>
-                                                <Button
-                                                    variant="outline"
-                                                    role="combobox"
-                                                    disabled={isStaffDisabled}
-                                                    className={cn(
-                                                        "justify-between",
-                                                        !field.value && "text-muted-foreground"
-                                                    )}
-                                                >
-                                                    {field.value
-                                                        ? staffMembers.find(
-                                                            (user) => user.id === field.value
-                                                        )?.name
-                                                        : "Select staff"}
-                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                </Button>
-                                            </FormControl>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-[400px] p-0">
-                                            <Command>
-                                                <CommandInput placeholder="Search staff..." />
-                                                <CommandEmpty>No staff found.</CommandEmpty>
-                                                <CommandGroup className="max-h-[300px] overflow-auto">
-                                                    {staffMembers.map((user) => (
-                                                        <CommandItem
-                                                            value={user.name}
-                                                            key={user.id}
-                                                            onSelect={() => {
-                                                                form.setValue("staffId", user.id);
-                                                            }}
-                                                        >
-                                                            <Check
-                                                                className={cn(
-                                                                    "mr-2 h-4 w-4",
-                                                                    user.id === field.value
-                                                                        ? "opacity-100"
-                                                                        : "opacity-0"
-                                                                )}
-                                                            />
-                                                            {user.name}
-                                                        </CommandItem>
-                                                    ))}
-                                                </CommandGroup>
-                                            </Command>
-                                        </PopoverContent>
-                                    </Popover>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
 
                         {/* Status (Only show if editing) */}
                         {isEditing && (

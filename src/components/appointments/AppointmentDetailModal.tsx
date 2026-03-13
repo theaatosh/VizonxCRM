@@ -51,7 +51,7 @@ export const AppointmentDetailModal = ({ id, open, onOpenChange }: AppointmentDe
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[550px] max-h-[90vh] flex flex-col p-0 border-2 border-red-500">
+            <DialogContent className="sm:max-w-[550px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
                 <DialogHeader className="p-6 pb-2 border-b">
                     <DialogTitle className="flex justify-between items-center pr-4">
                         <span>Appointment Details</span>
@@ -143,39 +143,49 @@ export const AppointmentDetailModal = ({ id, open, onOpenChange }: AppointmentDe
                                         Notes & Feedback
                                     </h3>
                                     <div className="space-y-4">
+                                    {appointment.purpose && (
                                         <div className="bg-muted/30 rounded-lg p-3">
                                             <InfoRow label="Purpose of Visit" value={appointment.purpose} />
                                         </div>
+                                    )}
 
+                                    {appointment.note && (
                                         <div className="border-l-4 border-blue-400 pl-4 py-1">
                                             <InfoRow label="Initial Note (Student)" value={appointment.note} />
                                         </div>
+                                    )}
 
+                                    {appointment.notes && (
                                         <div className="border-l-4 border-primary pl-4 py-1">
-                                            <InfoRow label="Student Notes" value={appointment.notes} />
+                                            <InfoRow label="Internal Admin Notes" value={appointment.notes} />
                                         </div>
+                                    )}
 
+                                    {appointment.staffNotes && (
                                         <div className="border-l-4 border-green-500 pl-4 py-1">
                                             <InfoRow label="Staff Notes" value={appointment.staffNotes} />
                                         </div>
+                                    )}
 
+                                    {appointment.outcomeNotes && (
                                         <div className="border-l-4 border-amber-500 pl-4 py-1">
                                             <InfoRow label="Outcome & Results" value={appointment.outcomeNotes} />
                                         </div>
+                                    )}
 
-                                        {appointment.rejectionReason && (
-                                            <div className="border-l-4 border-destructive pl-4 py-1 bg-destructive/5">
-                                                <InfoRow label="Reason for Rejection" value={appointment.rejectionReason} />
-                                            </div>
-                                        )}
+                                    {appointment.rejectionReason && (
+                                        <div className="border-l-4 border-destructive pl-4 py-1 bg-destructive/5">
+                                            <InfoRow label="Reason for Rejection" value={appointment.rejectionReason} />
+                                        </div>
+                                    )}
 
-                                        {appointment.cancellationReason && (
-                                            <div className="border-l-4 border-gray-400 pl-4 py-1 bg-gray-50">
-                                                <InfoRow label="Reason for Cancellation" value={appointment.cancellationReason} />
-                                            </div>
-                                        )}
-                                    </div>
-                                </section>
+                                    {appointment.cancellationReason && (
+                                        <div className="border-l-4 border-red-400 pl-4 py-1 bg-red-50">
+                                            <InfoRow label="Reason for Cancellation" value={appointment.cancellationReason} />
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
 
                                 {(appointment.approvedAt || appointment.rejectedAt || appointment.cancelledAt || appointment.completedAt) && (
                                     <>
@@ -193,7 +203,6 @@ export const AppointmentDetailModal = ({ id, open, onOpenChange }: AppointmentDe
                                                             label="Approved At"
                                                             value={format(new Date(appointment.approvedAt), 'PPP p')}
                                                         />
-                                                        <InfoRow label="Approved By" value={appointment.approvedBy} />
                                                     </div>
                                                 )}
                                                 {appointment.rejectedAt && (
@@ -202,17 +211,15 @@ export const AppointmentDetailModal = ({ id, open, onOpenChange }: AppointmentDe
                                                             label="Rejected At"
                                                             value={format(new Date(appointment.rejectedAt), 'PPP p')}
                                                         />
-                                                        <InfoRow label="Rejected By" value={appointment.rejectedBy} />
                                                         <InfoRow label="Rejection Reason" value={appointment.rejectionReason} />
                                                     </div>
                                                 )}
                                                 {appointment.cancelledAt && (
-                                                    <div className="border rounded-lg p-3 bg-gray-50/50 border-gray-100">
+                                                    <div className="border rounded-lg p-3 bg-red-50/50 border-red-100">
                                                         <InfoRow
                                                             label="Cancelled At"
                                                             value={format(new Date(appointment.cancelledAt), 'PPP p')}
                                                         />
-                                                        <InfoRow label="Cancelled By" value={appointment.cancelledBy} />
                                                         <InfoRow label="Cancellation Reason" value={appointment.cancellationReason} />
                                                     </div>
                                                 )}
@@ -226,7 +233,7 @@ export const AppointmentDetailModal = ({ id, open, onOpenChange }: AppointmentDe
                                                 )}
                                             </div>
                                         </section>
-                                    </>
+                                    </> 
                                 )}
 
                                 <Separator />
