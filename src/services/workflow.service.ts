@@ -110,10 +110,10 @@ class WorkflowService {
     /**
      * Reorder workflow steps
      * @param workflowId - The workflow ID
-     * @param stepIds - Array of step IDs in the desired order
+     * @param steps - Array of step objects with ID and new order
      */
-    async reorderSteps(workflowId: string, stepIds: string[]): Promise<WorkflowStep[]> {
-        const response = await api.put<WorkflowStep[]>(`${this.baseUrl}/${workflowId}/steps/reorder`, stepIds);
+    async reorderSteps(workflowId: string, steps: { id: string; order: number }[]): Promise<WorkflowStep[]> {
+        const response = await api.put<WorkflowStep[]>(`${this.baseUrl}/${workflowId}/steps/reorder`, steps);
         return response.data;
     }
 }

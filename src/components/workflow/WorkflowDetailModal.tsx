@@ -85,8 +85,11 @@ export const WorkflowDetailModal = ({ workflow, open, onOpenChange }: WorkflowDe
         const [removed] = newSteps.splice(draggedIndex, 1);
         newSteps.splice(targetIndex, 0, removed);
 
-        const stepIds = newSteps.map(s => s.id);
-        reorderStepsMutation.mutate({ workflowId: workflow.id, stepIds });
+        const reorderPayload = newSteps.map((s, index) => ({
+            id: s.id,
+            order: index + 1
+        }));
+        reorderStepsMutation.mutate({ workflowId: workflow.id, steps: reorderPayload });
 
         setDraggedStepId(null);
     };

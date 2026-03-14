@@ -76,7 +76,7 @@ export const useCreateWorkflow = () => {
     return useMutation({
         mutationFn: (data: CreateWorkflowDto) => workflowService.createWorkflow(data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: workflowKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: workflowKeys.all });
             toast.success('Workflow created successfully');
         },
         onError: (error: any) => {
@@ -95,8 +95,7 @@ export const useUpdateWorkflow = () => {
         mutationFn: ({ id, data }: { id: string; data: UpdateWorkflowDto }) =>
             workflowService.updateWorkflow(id, data),
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: workflowKeys.lists() });
-            queryClient.invalidateQueries({ queryKey: workflowKeys.detail(variables.id) });
+            queryClient.invalidateQueries({ queryKey: workflowKeys.all });
             toast.success('Workflow updated successfully');
         },
         onError: (error: any) => {
@@ -114,7 +113,7 @@ export const useDeleteWorkflow = () => {
     return useMutation({
         mutationFn: (id: string) => workflowService.deleteWorkflow(id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: workflowKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: workflowKeys.all });
             toast.success('Workflow deleted successfully');
         },
         onError: (error: any) => {
@@ -190,8 +189,8 @@ export const useReorderSteps = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ workflowId, stepIds }: { workflowId: string; stepIds: string[] }) =>
-            workflowService.reorderSteps(workflowId, stepIds),
+        mutationFn: ({ workflowId, steps }: { workflowId: string; steps: { id: string; order: number }[] }) =>
+            workflowService.reorderSteps(workflowId, steps),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: workflowKeys.steps(variables.workflowId) });
             queryClient.invalidateQueries({ queryKey: workflowKeys.detail(variables.workflowId) });
