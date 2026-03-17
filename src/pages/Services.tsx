@@ -21,13 +21,20 @@ import {
   AlertCircle,
   MoreVertical,
   Pencil,
-  Trash2
+  Trash2,
+  BookOpen,
+  FileCheck
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useServices } from "@/hooks/useServices";
+import { useClasses } from "@/hooks/useClasses";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { ServiceFormDialog } from "@/components/services/ServiceFormDialog";
 import { DeleteServiceDialog } from "@/components/services/DeleteServiceDialog";
+import { ClassFormDialog } from "@/components/services/ClassFormDialog";
+import { DeleteClassDialog } from "@/components/services/DeleteClassDialog";
 import type { Service } from "@/types/service.types";
+import type { Class } from "@/types/class.types";
 
 const Services = () => {
   const [page, setPage] = useState(1);
@@ -38,15 +45,34 @@ const Services = () => {
     sortBy: 'name',
     sortOrder: 'asc'
   });
+
+  const [classPage, setClassPage] = useState(1);
+  const [classLimit, setClassLimit] = useState(10);
+  const { 
+    data: classesData, 
+    isLoading: isClassesLoading, 
+    isError: isClassesError 
+  } = useClasses({
+    page: classPage,
+    limit: classLimit,
+  });
+
   const { canCreate, canUpdate, canDelete } = usePermissions();
 
   const services = data?.data || [];
   const totalServices = data?.total || 0;
 
+  const classes = classesData?.data || [];
+  const totalClasses = classesData?.total || 0;
+
   // Dialog states
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+
+  const [classFormOpen, setClassFormOpen] = useState(false);
+  const [classDeleteOpen, setClassDeleteOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
 
   // Format price with currency
   const formatPrice = (price: number) => {
@@ -75,13 +101,29 @@ const Services = () => {
     setDeleteDialogOpen(true);
   };
 
+  // Class handlers
+  const handleAddClass = () => {
+    setSelectedClass(null);
+    setClassFormOpen(true);
+  };
+
+  const handleEditClass = (classData: Class) => {
+    setSelectedClass(classData);
+    setClassFormOpen(true);
+  };
+
+  const handleDeleteClass = (classData: Class) => {
+    setSelectedClass(classData);
+    setClassDeleteOpen(true);
+  };
+
   // Loading skeleton for stats
   const StatSkeleton = () => (
     <Skeleton className="h-8 w-16 mb-1" />
   );
 
-  // Loading skeleton for service cards
-  const ServiceCardSkeleton = () => (
+  // Loading skeleton for cards
+  const CardSkeleton = () => (
     <Card className="border border-border">
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-4">
@@ -105,8 +147,34 @@ const Services = () => {
   );
 
   return (
-    <DashboardLayout title="Services" subtitle="Manage consultancy services">
-      {/* Stats */}
+    <DashboardLayout title="Services" subtitle="Manage your academic offerings and services">
+      <Tabs defaultValue="services" className="space-y-6">
+        <TabsList className="inline-flex h-12 items-center justify-start rounded-xl bg-muted/50 p-1 text-muted-foreground w-auto shadow-sm">
+          <TabsTrigger 
+            value="services" 
+            className="flex items-center gap-2 px-6 py-2 rounded-lg data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md transition-all font-medium"
+          >
+            <Package className="h-4 w-4" />
+            Services
+          </TabsTrigger>
+          <TabsTrigger 
+            value="classes" 
+            className="flex items-center gap-2 px-6 py-2 rounded-lg data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md transition-all font-medium"
+          >
+            <BookOpen className="h-4 w-4" />
+            Classes
+          </TabsTrigger>
+          <TabsTrigger 
+            value="tests" 
+            className="flex items-center gap-2 px-6 py-2 rounded-lg data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md transition-all font-medium"
+          >
+            <FileCheck className="h-4 w-4" />
+            Tests
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="services" className="space-y-6 animate-in fade-in-50 duration-300">
+          {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3 mb-6">
         <Card className="shadow-card">
           <CardContent className="p-4">
@@ -193,7 +261,7 @@ const Services = () => {
           {isLoading && (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <ServiceCardSkeleton key={i} />
+                <CardSkeleton key={i} />
               ))}
             </div>
           )}
@@ -298,6 +366,180 @@ const Services = () => {
           )}
         </CardContent>
       </Card>
+    </TabsContent>
+
+    <TabsContent value="classes" className="animate-in fade-in-50 duration-300">
+      <Card className="shadow-card">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold">Academic Classes</CardTitle>
+              <p className="text-sm text-muted-foreground">Manage your academic schedules and instructors</p>
+            </div>
+            {canCreate('services') && (
+              <Button className="gap-2" onClick={handleAddClass}>
+                <Plus className="h-4 w-4" />
+                Add Class
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Error State */}
+          {isClassesError && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Failed to load classes</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                An error occurred while fetching class data
+              </p>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {isClassesLoading && (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <CardSkeleton key={i} />
+              ))}
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!isClassesLoading && !isClassesError && classes.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No classes found</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Set up your first academic class and schedule
+              </p>
+              {canCreate('services') && (
+                <Button className="gap-2" onClick={handleAddClass}>
+                  <Plus className="h-4 w-4" />
+                  Add Class
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Classes Grid */}
+          {!isClassesLoading && !isClassesError && classes.length > 0 && (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {classes.map((classData: Class) => (
+                <Card key={classData.id} className="border border-border hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 rounded-xl bg-success/10 flex items-center justify-center">
+                          <BookOpen className="h-6 w-6 text-success" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">{classData.level} Class</h3>
+                          <Badge
+                            variant="outline"
+                            className="bg-info/10 text-info border-info/20"
+                          >
+                            {classData.schedule.time}
+                          </Badge>
+                        </div>
+                      </div>
+                      {(canUpdate('services') || canDelete('services')) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {canUpdate('services') && (
+                              <DropdownMenuItem onClick={() => handleEditClass(classData)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
+                            {canDelete('services') && (
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteClass(classData)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2 mb-4">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Users className="h-4 w-4" />
+                        <span>Instructor: {classData.instructorName || 'Assigned'}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {classData.schedule.days.map(day => (
+                          <Badge key={day} variant="secondary" className="text-[10px] px-1.5 py-0">
+                            {day.substring(0, 3)}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-border">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Settings className="h-3 w-3" />
+                        <span>ID: {classData.id.substring(0, 8)}</span>
+                      </div>
+                      <Badge variant="outline" className="text-[10px]">
+                        {new Date(classData.createdAt).toLocaleDateString()}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {classesData && (
+            <DataTablePagination
+              pageIndex={classPage}
+              pageSize={classLimit}
+              totalItems={classesData.total}
+              totalPages={classesData.totalPages}
+              onPageChange={setClassPage}
+              onPageSizeChange={(newLimit) => {
+                setClassLimit(newLimit);
+                setClassPage(1);
+              }}
+            />
+          )}
+        </CardContent>
+      </Card>
+    </TabsContent>
+
+    <TabsContent value="tests" className="animate-in fade-in-50 duration-300">
+      <Card className="shadow-card border-none bg-background/50 backdrop-blur-sm">
+        <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="h-20 w-20 bg-success/10 rounded-full flex items-center justify-center mb-6">
+            <FileCheck className="h-10 w-10 text-success" />
+          </div>
+          <h3 className="text-2xl font-bold mb-2">Test Management</h3>
+          <p className="text-muted-foreground max-w-sm mx-auto mb-8">
+            Track student test results, schedule exams, and manage certifications. Coming soon to your dashboard.
+          </p>
+          <Badge variant="outline" className="bg-success/10 text-success border-success/20 px-4 py-1 text-sm">
+            Module in Development
+          </Badge>
+        </CardContent>
+      </Card>
+    </TabsContent>
+
+      </Tabs>
 
       {/* Dialogs */}
       <ServiceFormDialog
@@ -309,6 +551,17 @@ const Services = () => {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         service={selectedService}
+      />
+
+      <ClassFormDialog
+        open={classFormOpen}
+        onOpenChange={setClassFormOpen}
+        classData={selectedClass}
+      />
+      <DeleteClassDialog
+        open={classDeleteOpen}
+        onOpenChange={setClassDeleteOpen}
+        classData={selectedClass}
       />
     </DashboardLayout>
   );
