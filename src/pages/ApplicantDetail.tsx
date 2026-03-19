@@ -17,20 +17,50 @@ import {
     FileText,
     Edit,
     Trash2,
-    CreditCard
+    CreditCard,
+    File,
+    Download,
+    Eye,
+    ExternalLink,
+    MoreVertical,
+    Briefcase,
+    BookOpen,
+    ClipboardList,
+    UserMinus,
+    Loader2
 } from 'lucide-react';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useStudent, useStudentDocuments } from '@/hooks/useStudents';
+import { useUnenrollStudent } from '@/hooks/useClasses';
 import { ApplicantFormDialog } from '@/components/applicants/ApplicantFormDialog';
 import { DeleteApplicantDialog } from '@/components/applicants/DeleteApplicantDialog';
+import { DocumentUploadDialog } from '@/components/applicants/DocumentUploadDialog';
+import { AssignClassDialog } from '@/components/applicants/AssignClassDialog';
+import { AssignTestDialog } from '@/components/applicants/AssignTestDialog';
 import { useState } from 'react';
 import type { StudentStatus, StudentPriority } from '@/types/student.types';
 
-// Status colors
+// Action colors
 const statusColors: Record<StudentStatus, string> = {
     Prospective: 'bg-info/10 text-info border-info/20',
     Enrolled: 'bg-success/10 text-success border-success/20',
     Alumni: 'bg-muted text-muted-foreground border-muted',
 };
+
+const FILE_BASE_URL = 'http://crmapi.vizon-x.com/uploads';
 
 // Priority colors
 const priorityColors: Record<StudentPriority, string> = {
@@ -45,8 +75,19 @@ const ApplicantDetail = () => {
 
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+    const [assignClassDialogOpen, setAssignClassDialogOpen] = useState(false);
+    const [assignTestDialogOpen, setAssignTestDialogOpen] = useState(false);
 
     const { data: applicant, isLoading, isError, error } = useStudent(id || '');
+    const { mutate: unenroll, isPending: isUnenrolling } = useUnenrollStudent();
+
+    // Helper to get full file URL
+    const getFileUrl = (path: string) => {
+        if (!path) return '';
+        if (path.startsWith('http')) return path;
+        return `${FILE_BASE_URL}${path.startsWith('/') ? '' : '/'}${path}`;
+    };
 
     // Helper to get initials
     const getInitials = (firstName: string, lastName: string) => {
@@ -181,6 +222,13 @@ const ApplicantDetail = () => {
                         Documents
                     </TabsTrigger>
                     <TabsTrigger 
+                        value="service" 
+                        className="flex items-center gap-2 px-6 py-2 rounded-lg data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md transition-all font-medium"
+                    >
+                        <Briefcase className="h-4 w-4" />
+                        Service
+                    </TabsTrigger>
+                    <TabsTrigger 
                         value="payment" 
                         className="flex items-center gap-2 px-6 py-2 rounded-lg data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md transition-all font-medium"
                     >
@@ -230,17 +278,22 @@ const ApplicantDetail = () => {
                                     <div className="space-y-4">
                                         <h3 className="text-lg font-semibold flex items-center gap-2">
                                             <GraduationCap className="h-5 w-5 text-primary" />
-                                            Academic Records
+                                            Enrolled Classes
                                         </h3>
-                                        <div className="p-6 rounded-xl bg-muted/30 border border-dashed">
-                                            {applicant.academicRecords && Object.keys(applicant.academicRecords).length > 0 ? (
-                                                <pre className="text-sm font-mono text-muted-foreground whitespace-pre-wrap">
-                                                    {JSON.stringify(applicant.academicRecords, null, 2)}
-                                                </pre>
+                                        <div className="p-4 rounded-xl bg-muted/30 border border-dashed">
+                                            {applicant.classEnrollments && applicant.classEnrollments.length > 0 ? (
+                                                <div className="space-y-2">
+                                                    {applicant.classEnrollments.map((enrollment: any) => (
+                                                        <div key={enrollment.id} className="flex items-center justify-between text-sm">
+                                                            <span className="font-medium">{enrollment.class.name}</span>
+                                                            <Badge variant="outline" className="text-[10px] h-5">{enrollment.status}</Badge>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             ) : (
                                                 <div className="text-center py-4">
                                                     <GraduationCap className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
-                                                    <p className="text-muted-foreground text-sm">No academic records available</p>
+                                                    <p className="text-muted-foreground text-sm">No classes assigned yet</p>
                                                 </div>
                                             )}
                                         </div>
@@ -251,18 +304,23 @@ const ApplicantDetail = () => {
                                     {/* Test Scores */}
                                     <div className="space-y-4">
                                         <h3 className="text-lg font-semibold flex items-center gap-2">
-                                            <FileText className="h-5 w-5 text-primary" />
-                                            Test Scores
+                                            <ClipboardList className="h-5 w-5 text-primary" />
+                                            Test Assignments
                                         </h3>
-                                        <div className="p-6 rounded-xl bg-muted/30 border border-dashed">
-                                            {applicant.testScores && Object.keys(applicant.testScores).length > 0 ? (
-                                                <pre className="text-sm font-mono text-muted-foreground whitespace-pre-wrap">
-                                                    {JSON.stringify(applicant.testScores, null, 2)}
-                                                </pre>
+                                        <div className="p-4 rounded-xl bg-muted/30 border border-dashed">
+                                            {applicant.testAssignments && applicant.testAssignments.length > 0 ? (
+                                                <div className="space-y-2">
+                                                    {applicant.testAssignments.map((assignment: any) => (
+                                                        <div key={assignment.id} className="flex items-center justify-between text-sm">
+                                                            <span className="font-medium">{assignment.test.name}</span>
+                                                            <span className="text-muted-foreground text-xs">{assignment.test.type}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             ) : (
                                                 <div className="text-center py-4">
-                                                    <FileText className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
-                                                    <p className="text-muted-foreground text-sm">No test scores available</p>
+                                                    <ClipboardList className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
+                                                    <p className="text-muted-foreground text-sm">No test assignments found</p>
                                                 </div>
                                             )}
                                         </div>
@@ -310,19 +368,228 @@ const ApplicantDetail = () => {
 
                 <TabsContent value="documents" className="animate-in fade-in-50 duration-300">
                     <Card className="shadow-card border-none bg-background/50 backdrop-blur-sm">
-                        <CardHeader className="text-center py-10">
-                            <div className="h-20 w-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                                <FileText className="h-10 w-10 text-muted-foreground" />
+                        <CardHeader className="flex flex-row items-center justify-between pb-4">
+                            <div>
+                                <CardTitle className="text-xl flex items-center gap-2">
+                                    <FileText className="h-5 w-5 text-primary" />
+                                    Documents
+                                </CardTitle>
+                                <CardDescription>Manage and view uploaded files</CardDescription>
                             </div>
-                            <CardTitle className="text-2xl">Applicant Documents</CardTitle>
-                            <CardDescription>
-                                Document management for this applicant will appear here soon.
-                            </CardDescription>
+                            <Button size="sm" className="gap-2" onClick={() => setUploadDialogOpen(true)}>
+                                <FileText className="h-4 w-4" />
+                                Upload New
+                            </Button>
                         </CardHeader>
-                        <CardContent className="pb-10 text-center">
-                            <p className="text-muted-foreground max-w-sm mx-auto">
-                                You currently have no documents uploaded for this applicant. This section is being prepared for upcoming features.
-                            </p>
+                        <CardContent>
+                            {!applicant.documents || applicant.documents.length === 0 ? (
+                                <div className="text-center py-20">
+                                    <div className="h-20 w-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <FileText className="h-10 w-10 text-muted-foreground" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold">No Documents</h3>
+                                    <p className="text-muted-foreground max-w-sm mx-auto">
+                                        There are no documents uploaded for this applicant yet.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                    {applicant.documents.map((doc) => (
+                                        <Card key={doc.id} className="group border bg-background/50 hover:border-primary/50 transition-all shadow-sm">
+                                            <CardContent className="p-4">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="bg-primary/10 p-2.5 rounded-xl group-hover:bg-primary/20 transition-colors">
+                                                        <File className="h-6 w-6 text-primary" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="font-semibold text-sm truncate uppercase tracking-tight">
+                                                            {doc.documentType}
+                                                        </h4>
+                                                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                                                            Uploaded {new Date(doc.uploadedAt).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-1">
+                                                                <MoreVertical className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem onClick={() => window.open(getFileUrl(doc.filePath), '_blank')}>
+                                                                <Eye className="h-4 w-4 mr-2" />
+                                                                View
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => {
+                                                                const link = document.createElement('a');
+                                                                link.href = getFileUrl(doc.filePath);
+                                                                link.setAttribute('download', doc.filePath.split('/').pop() || 'document');
+                                                                link.click();
+                                                            }}>
+                                                                <Download className="h-4 w-4 mr-2" />
+                                                                Download
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                                Delete
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                                <div className="mt-4 flex items-center gap-2">
+                                                    <Button variant="secondary" size="sm" className="w-full text-xs h-8 gap-1.5" onClick={() => window.open(getFileUrl(doc.filePath), '_blank')}>
+                                                        <ExternalLink className="h-3.5 w-3.5" />
+                                                        Preview
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="service" className="animate-in fade-in-50 duration-300 space-y-6">
+                    {/* Academic Classes Table */}
+                    <Card className="shadow-card border-none bg-background/50 backdrop-blur-sm">
+                        <CardHeader className="flex flex-row items-center justify-between pb-4">
+                            <div>
+                                <CardTitle className="text-xl flex items-center gap-2">
+                                    <BookOpen className="h-5 w-5 text-primary" />
+                                    Academic Classes
+                                </CardTitle>
+                                <CardDescription>Classes enrolled by the student</CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                                    {applicant.classEnrollments?.length || 0} enrolled
+                                </Badge>
+                                <Button size="sm" variant="outline" className="gap-2" onClick={() => setAssignClassDialogOpen(true)}>
+                                    <BookOpen className="h-4 w-4" />
+                                    Assign Class
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="rounded-xl border border-muted-foreground/10 overflow-hidden">
+                                <Table>
+                                    <TableHeader className="bg-muted/50">
+                                        <TableRow>
+                                            <TableHead className="font-semibold">Class Name</TableHead>
+                                            <TableHead className="font-semibold">Instructor</TableHead>
+                                            <TableHead className="font-semibold">Schedule</TableHead>
+                                            <TableHead className="font-semibold">Status</TableHead>
+                                            <TableHead className="font-semibold text-right">Action</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {!applicant.classEnrollments?.length ? (
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                                    No classes assigned yet.
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            applicant.classEnrollments.map((enrollment: any) => {
+                                                const cls = enrollment.class;
+                                                return (
+                                                    <TableRow key={enrollment.id}>
+                                                        <TableCell className="font-medium">{cls.name}</TableCell>
+                                                        <TableCell>{cls.instructor?.name || 'N/A'}</TableCell>
+                                                        <TableCell className="max-w-[200px] truncate">
+                                                            {cls.schedule?.map((s: any) => `${s.day.substring(0, 3)}`).join(', ') || 'Flexible'}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Badge variant="secondary" className={`
+                                                                ${enrollment.status === 'Active' ? 'bg-success/10 text-success border-success/20' : 'bg-muted/50'}
+                                                            `}>
+                                                                {enrollment.status}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="sm" 
+                                                                className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
+                                                                onClick={() => unenroll({ classId: cls.id, studentId: applicant.id })}
+                                                                disabled={isUnenrolling}
+                                                            >
+                                                                {isUnenrolling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserMinus className="h-3.5 w-3.5" />}
+                                                                Unassign
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Testing Systems Table */}
+                    <Card className="shadow-card border-none bg-background/50 backdrop-blur-sm">
+                        <CardHeader className="flex flex-row items-center justify-between pb-4">
+                            <div>
+                                <CardTitle className="text-xl flex items-center gap-2">
+                                    <ClipboardList className="h-5 w-5 text-primary" />
+                                    Testing Systems
+                                </CardTitle>
+                                <CardDescription>Test registration and results</CardDescription>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="bg-warning/10 text-warning border-warning/20">
+                                    {applicant.testAssignments?.length || 0} Registered
+                                </Badge>
+                                <Button size="sm" variant="outline" className="gap-2" onClick={() => setAssignTestDialogOpen(true)}>
+                                    <ClipboardList className="h-4 w-4" />
+                                    Assign Test
+                                </Button>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="rounded-xl border border-muted-foreground/10 overflow-hidden">
+                                <Table>
+                                    <TableHeader className="bg-muted/50">
+                                        <TableRow>
+                                            <TableHead className="font-semibold">Test Name</TableHead>
+                                            <TableHead className="font-semibold">Type</TableHead>
+                                            <TableHead className="font-semibold">Date</TableHead>
+                                            <TableHead className="font-semibold">Score/Status</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {!applicant.testAssignments?.length ? (
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                                    No test records found.
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            applicant.testAssignments.map((assignment: any) => {
+                                                const test = assignment.test;
+                                                return (
+                                                    <TableRow key={assignment.id}>
+                                                        <TableCell className="font-medium">{test.name}</TableCell>
+                                                        <TableCell>{test.type}</TableCell>
+                                                        <TableCell>{new Date(assignment.createdAt).toLocaleDateString()}</TableCell>
+                                                        <TableCell>
+                                                            {assignment.score ? (
+                                                                <Badge className="bg-primary text-primary-foreground">{assignment.score}</Badge>
+                                                            ) : (
+                                                                <Badge variant="secondary">{assignment.status}</Badge>
+                                                            )}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -363,6 +630,24 @@ const ApplicantDetail = () => {
                     }
                 }}
                 applicant={applicant}
+            />
+
+            <DocumentUploadDialog
+                open={uploadDialogOpen}
+                onOpenChange={setUploadDialogOpen}
+                studentId={applicant.id}
+            />
+
+            <AssignClassDialog 
+                open={assignClassDialogOpen} 
+                onOpenChange={setAssignClassDialogOpen} 
+                studentId={id || ''} 
+            />
+
+            <AssignTestDialog 
+                open={assignTestDialogOpen} 
+                onOpenChange={setAssignTestDialogOpen} 
+                studentId={id || ''} 
             />
         </DashboardLayout>
     );

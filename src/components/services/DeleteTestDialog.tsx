@@ -8,24 +8,23 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useDeleteClass } from "@/hooks/useClasses";
-import { toast } from "sonner";
-import type { Class } from "@/types/class.types";
+import { useDeleteTest } from "@/hooks/useTests";
+import type { Test } from "@/types/test.types";
 
-interface DeleteClassDialogProps {
+interface DeleteTestDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    classData: Class | null;
+    testData: Test | null;
 }
 
-export function DeleteClassDialog({ open, onOpenChange, classData }: DeleteClassDialogProps) {
-    const deleteClass = useDeleteClass();
+export function DeleteTestDialog({ open, onOpenChange, testData }: DeleteTestDialogProps) {
+    const deleteTest = useDeleteTest();
 
     const handleDelete = async () => {
-        if (!classData) return;
+        if (!testData) return;
         
         try {
-            await deleteClass.mutateAsync(classData.id);
+            await deleteTest.mutateAsync(testData.id);
             onOpenChange(false);
         } catch {
             // Error is handled in the hook (toast)
@@ -38,27 +37,21 @@ export function DeleteClassDialog({ open, onOpenChange, classData }: DeleteClass
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will permanently delete the {classData?.name} class.
-                        {classData?.schedule && classData.schedule.length > 0 && (
-                            <span>
-                                {" "}Scheduled on:{" "}
-                                {classData.schedule.map(s => `${s.day} (${s.startTime}-${s.endTime})`).join(", ")}
-                            </span>
-                        )}
+                        This will permanently delete the {testData?.name} test.
                         This action cannot be undone.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel disabled={deleteClass.isPending}>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel disabled={deleteTest.isPending}>Cancel</AlertDialogCancel>
                     <AlertDialogAction
                         onClick={(e) => {
                             e.preventDefault();
                             handleDelete();
                         }}
-                        disabled={deleteClass.isPending}
+                        disabled={deleteTest.isPending}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                        {deleteClass.isPending ? "Deleting..." : "Delete Class"}
+                        {deleteTest.isPending ? "Deleting..." : "Delete Test"}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

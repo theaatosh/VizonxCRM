@@ -11,12 +11,52 @@ export interface Student {
     email: string;
     phone?: string;
     leadId?: string;
-    academicRecords?: Record<string, unknown>;
-    testScores?: Record<string, unknown>;
+    academicRecords?: {
+        enrolledClasses?: any[];
+        classes?: any[];
+    } & Record<string, any>;
+    testScores?: {
+        tests?: any[];
+    } & Record<string, any>;
     status: StudentStatus;
     priority: StudentPriority;
+    documents?: StudentDocument[];
+    classEnrollments?: ClassEnrollment[];
+    testAssignments?: TestAssignment[];
     createdAt: string;
     updatedAt: string;
+}
+
+export interface ClassEnrollment {
+    id: string;
+    classId: string;
+    studentId: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    class: {
+        id: string;
+        name: string;
+        instructor?: {
+            name: string;
+        };
+        schedule?: any[];
+    };
+}
+
+export interface TestAssignment {
+    id: string;
+    testId: string;
+    studentId: string;
+    status: string;
+    score?: number | null;
+    createdAt: string;
+    updatedAt: string;
+    test: {
+        id: string;
+        name: string;
+        type: string;
+    };
 }
 
 // DTO for creating a student

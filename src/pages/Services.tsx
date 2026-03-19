@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,15 +29,20 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useServices } from "@/hooks/useServices";
 import { useClasses } from "@/hooks/useClasses";
+import { useTests } from "@/hooks/useTests";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { ServiceFormDialog } from "@/components/services/ServiceFormDialog";
 import { DeleteServiceDialog } from "@/components/services/DeleteServiceDialog";
 import { ClassFormDialog } from "@/components/services/ClassFormDialog";
 import { DeleteClassDialog } from "@/components/services/DeleteClassDialog";
+import { TestFormDialog } from "@/components/services/TestFormDialog";
+import { DeleteTestDialog } from "@/components/services/DeleteTestDialog";
 import type { Service } from "@/types/service.types";
 import type { Class } from "@/types/class.types";
+import type { Test } from "@/types/test.types";
 
 const Services = () => {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const { data, isLoading, isError } = useServices({
@@ -57,6 +63,17 @@ const Services = () => {
     limit: classLimit,
   });
 
+  const [testPage, setTestPage] = useState(1);
+  const [testLimit, setTestLimit] = useState(10);
+  const {
+    data: testsData,
+    isLoading: isTestsLoading,
+    isError: isTestsError
+  } = useTests({
+    page: testPage,
+    limit: testLimit,
+  });
+
   const { canCreate, canUpdate, canDelete } = usePermissions();
 
   const services = data?.data || [];
@@ -64,6 +81,9 @@ const Services = () => {
 
   const classes = classesData?.data || [];
   const totalClasses = classesData?.total || 0;
+
+  const tests = testsData?.data || [];
+  const totalTests = testsData?.total || 0;
 
   // Dialog states
   const [formDialogOpen, setFormDialogOpen] = useState(false);
@@ -73,6 +93,10 @@ const Services = () => {
   const [classFormOpen, setClassFormOpen] = useState(false);
   const [classDeleteOpen, setClassDeleteOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
+
+  const [testFormOpen, setTestFormOpen] = useState(false);
+  const [testDeleteOpen, setTestDeleteOpen] = useState(false);
+  const [selectedTest, setSelectedTest] = useState<Test | null>(null);
 
   // Format price with currency
   const formatPrice = (price: number) => {
@@ -115,6 +139,22 @@ const Services = () => {
   const handleDeleteClass = (classData: Class) => {
     setSelectedClass(classData);
     setClassDeleteOpen(true);
+  };
+
+  // Test handlers
+  const handleAddTest = () => {
+    setSelectedTest(null);
+    setTestFormOpen(true);
+  };
+
+  const handleEditTest = (testData: Test) => {
+    setSelectedTest(testData);
+    setTestFormOpen(true);
+  };
+
+  const handleDeleteTest = (testData: Test) => {
+    setSelectedTest(testData);
+    setTestDeleteOpen(true);
   };
 
   // Loading skeleton for stats
@@ -306,7 +346,7 @@ const Services = () => {
                       </div>
                       {(canUpdate('services') || canDelete('services')) && (
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
                               <MoreVertical className="h-4 w-4" />
                               <span className="sr-only">Open menu</span>
@@ -429,7 +469,11 @@ const Services = () => {
           {!isClassesLoading && !isClassesError && classes.length > 0 && (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {classes.map((classData: Class) => (
-                <Card key={classData.id} className="border border-border hover:shadow-md transition-shadow">
+                <Card 
+                  key={classData.id} 
+                  className="border border-border hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => navigate(`/services/classes/${classData.id}`)}
+                >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
@@ -437,18 +481,15 @@ const Services = () => {
                           <BookOpen className="h-6 w-6 text-success" />
                         </div>
                         <div>
-                          <h3 className="font-semibold">{classData.level} Class</h3>
-                          <Badge
-                            variant="outline"
-                            className="bg-info/10 text-info border-info/20"
-                          >
-                            {classData.schedule.time}
-                          </Badge>
+                          <h3 className="font-semibold">{classData.name}</h3>
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {classData.description || "Academic Class"}
+                          </p>
                         </div>
                       </div>
                       {(canUpdate('services') || canDelete('services')) && (
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
                               <MoreVertical className="h-4 w-4" />
                               <span className="sr-only">Open menu</span>
@@ -475,17 +516,27 @@ const Services = () => {
                       )}
                     </div>
                     
-                    <div className="space-y-2 mb-4">
+                    <div className="space-y-3 mb-4">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Users className="h-4 w-4" />
                         <span>Instructor: {classData.instructorName || 'Assigned'}</span>
                       </div>
-                      <div className="flex flex-wrap gap-1">
-                        {classData.schedule.days.map(day => (
-                          <Badge key={day} variant="secondary" className="text-[10px] px-1.5 py-0">
-                            {day.substring(0, 3)}
-                          </Badge>
-                        ))}
+                      
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Schedule</p>
+                        <div className="flex flex-wrap gap-1">
+                          {classData.schedule.map((s, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0 flex flex-col items-start gap-0">
+                              <span className="font-bold">{s.day.substring(0, 3)}</span>
+                              <span className="opacity-80 font-normal">{s.startTime}-{s.endTime}</span>
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <GraduationCap className="h-4 w-4" />
+                        <span>Capacity: {classData.studentCapacity} students</span>
                       </div>
                     </div>
 
@@ -523,18 +574,138 @@ const Services = () => {
     </TabsContent>
 
     <TabsContent value="tests" className="animate-in fade-in-50 duration-300">
-      <Card className="shadow-card border-none bg-background/50 backdrop-blur-sm">
-        <CardContent className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="h-20 w-20 bg-success/10 rounded-full flex items-center justify-center mb-6">
-            <FileCheck className="h-10 w-10 text-success" />
+      <Card className="shadow-card">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold">Testing Systems</CardTitle>
+              <p className="text-sm text-muted-foreground">Manage various test types and capacities</p>
+            </div>
+            {canCreate('services') && (
+              <Button className="gap-2" onClick={handleAddTest}>
+                <Plus className="h-4 w-4" />
+                Add New Test
+              </Button>
+            )}
           </div>
-          <h3 className="text-2xl font-bold mb-2">Test Management</h3>
-          <p className="text-muted-foreground max-w-sm mx-auto mb-8">
-            Track student test results, schedule exams, and manage certifications. Coming soon to your dashboard.
-          </p>
-          <Badge variant="outline" className="bg-success/10 text-success border-success/20 px-4 py-1 text-sm">
-            Module in Development
-          </Badge>
+        </CardHeader>
+        <CardContent>
+          {/* Error State */}
+          {isTestsError && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Failed to load tests</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                An error occurred while fetching test options
+              </p>
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {isTestsLoading && (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <CardSkeleton key={i} />
+              ))}
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!isTestsLoading && !isTestsError && tests.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <FileCheck className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No tests configured</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Add your first testing system to start managing exams
+              </p>
+              {canCreate('services') && (
+                <Button className="gap-2" onClick={handleAddTest}>
+                  <Plus className="h-4 w-4" />
+                  Add New Test
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Tests Grid */}
+          {!isTestsLoading && !isTestsError && tests.length > 0 && (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {tests.map((testData: Test) => (
+                <Card key={testData.id} className="border border-border hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 rounded-xl bg-info/10 flex items-center justify-center">
+                          <FileCheck className="h-6 w-6 text-info" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">{testData.name}</h3>
+                          <Badge variant="secondary">{testData.type}</Badge>
+                        </div>
+                      </div>
+                      {(canUpdate('services') || canDelete('services')) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {canUpdate('services') && (
+                              <DropdownMenuItem onClick={() => handleEditTest(testData)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
+                            {canDelete('services') && (
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteTest(testData)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                      {testData.description}
+                    </p>
+                    <div className="flex items-center justify-between pt-4 border-t border-border">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">Cap: {testData.studentCapacity}</span>
+                      </div>
+                      <Badge variant="outline" className="text-[10px]">
+                        ID: {testData.id.substring(0, 8)}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {testsData && (
+            <DataTablePagination
+              pageIndex={testPage}
+              pageSize={testLimit}
+              totalItems={testsData.total}
+              totalPages={testsData.totalPages}
+              onPageChange={setTestPage}
+              onPageSizeChange={(newLimit) => {
+                setTestLimit(newLimit);
+                setTestPage(1);
+              }}
+            />
+          )}
         </CardContent>
       </Card>
     </TabsContent>
@@ -562,6 +733,17 @@ const Services = () => {
         open={classDeleteOpen}
         onOpenChange={setClassDeleteOpen}
         classData={selectedClass}
+      />
+
+      <TestFormDialog
+        open={testFormOpen}
+        onOpenChange={setTestFormOpen}
+        testData={selectedTest}
+      />
+      <DeleteTestDialog
+        open={testDeleteOpen}
+        onOpenChange={setTestDeleteOpen}
+        testData={selectedTest}
       />
     </DashboardLayout>
   );

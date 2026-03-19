@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { studentService } from '@/services/student.service';
+import { fileService } from '@/services/file.service';
 import type {
     Student,
     CreateStudentDto,
@@ -122,6 +123,49 @@ export function useAssignCounselor() {
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || `Failed to assign counselor: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to upload a document (Two-step process)
+ */
+export function useUploadStudentDocument() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ 
+            studentId, 
+            file, 
+            documentType, 
+            category 
+        }: { 
+            studentId: string; 
+            file: File; 
+            documentType: string;
+            category: string;
+        }) => {
+            // Step 1: Upload the physical file
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('category', category);
+            formData.append('studentId', studentId);
+
+            const uploadResponse = await fileService.uploadFile(formData);
+
+            // Step 2: Attach the document record to the student
+            return studentService.uploadDocument(studentId, {
+                documentType: documentType as any,
+                filePath: uploadResponse.filePath,
+            });
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: studentKeys.detail(variables.studentId) });
+            queryClient.invalidateQueries({ queryKey: studentKeys.documents(variables.studentId) });
+            toast.success('Document uploaded successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || `Failed to upload document: ${error.message}`);
         },
     });
 }

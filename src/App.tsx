@@ -19,6 +19,7 @@ import Workflow from "./pages/Workflow";
 import Tasks from "./pages/Tasks";
 import Scholarships from "./pages/Scholarships";
 import Services from "./pages/Services";
+import ClassDetail from "./pages/ClassDetail";
 import Settings from "./pages/Settings";
 import ContentManagement from "./pages/ContentManagement";
 import Messaging from "./pages/Messaging";
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="/tasks" element={<ProtectedRoute module="tasks"><Tasks /></ProtectedRoute>} />
               <Route path="/scholarships" element={<ProtectedRoute module="scholarships"><Scholarships /></ProtectedRoute>} />
               <Route path="/services" element={<ProtectedRoute module="services"><Services /></ProtectedRoute>} />
+              <Route path="/services/classes/:id" element={<ProtectedRoute module="services"><ClassDetail /></ProtectedRoute>} />
               <Route path="/content-management" element={<ProtectedRoute module="blogs"><ContentManagement /></ProtectedRoute>} />
               <Route path="/messaging" element={<ProtectedRoute><Messaging /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />

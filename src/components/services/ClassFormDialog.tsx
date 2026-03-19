@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {
@@ -27,7 +27,8 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { Plus, Trash2 } from 'lucide-react';
 import { useCreateClass, useUpdateClass } from '@/hooks/useClasses';
 import { useUsers } from '@/hooks/useUsers';
 import type { Class, CreateClassDto, UpdateClassDto } from '@/types/class.types';
@@ -43,10 +44,15 @@ const DAYS_OF_WEEK = [
 ];
 
 const classFormSchema = z.object({
-    level: z.string().min(1, 'Level is required'),
+    name: z.string().min(1, 'Name is required'),
+    description: z.string().optional(),
+    studentCapacity: z.coerce.number().min(1, 'Capacity must be at least 1'),
     instructorId: z.string().min(1, 'Instructor is required'),
-    days: z.array(z.string()).min(1, 'At least one day is required'),
-    time: z.string().min(1, 'Time is required'),
+    schedule: z.array(z.object({
+        day: z.string().min(1, 'Day is required'),
+        startTime: z.string().min(1, 'Start time is required'),
+        endTime: z.string().min(1, 'End time is required'),
+    })).min(1, 'At least one schedule item is required'),
 });
 
 type ClassFormValues = z.infer<typeof classFormSchema>;
@@ -73,48 +79,58 @@ export function ClassFormDialog({ open, onOpenChange, classData }: ClassFormDial
     const form = useForm<ClassFormValues>({
         resolver: zodResolver(classFormSchema),
         defaultValues: {
-            level: 'Beginner',
+            name: '',
+            description: '',
+            studentCapacity: 20,
             instructorId: '',
-            days: ['Monday'],
-            time: '10:00',
+            schedule: [{ day: 'Monday', startTime: '10:00', endTime: '11:00' }],
         },
+    });
+
+    const { fields, append, remove } = useFieldArray({
+        control: form.control,
+        name: 'schedule',
     });
 
     useEffect(() => {
         if (open && classData) {
             form.reset({
-                level: classData.level,
+                name: classData.name,
+                description: classData.description || '',
+                studentCapacity: classData.studentCapacity,
                 instructorId: classData.instructorId,
-                days: classData.schedule.days,
-                time: classData.schedule.time,
+                schedule: classData.schedule.map(item => ({
+                    day: item.day,
+                    startTime: item.startTime,
+                    endTime: item.endTime,
+                })),
             });
         } else if (open && !classData) {
             form.reset({
-                level: 'Beginner',
+                name: '',
+                description: '',
+                studentCapacity: 20,
                 instructorId: '',
-                days: ['Monday'],
-                time: '10:00',
+                schedule: [{ day: 'Monday', startTime: '10:00', endTime: '11:00' }],
             });
         }
     }, [open, classData, form]);
 
     const onSubmit = async (values: ClassFormValues) => {
         try {
-            const payload = {
-                level: values.level,
+            const payload: CreateClassDto = {
+                name: values.name,
+                description: values.description,
+                studentCapacity: values.studentCapacity,
                 instructorId: values.instructorId,
-                courseId: null, // As requested: course id is optional send null value
-                schedule: {
-                    days: values.days,
-                    time: values.time,
-                    // timezone is NOT added as requested
-                },
+                courseId: null, // Always pass null as requested
+                schedule: values.schedule as any[], // Casting to avoid lint error with Zod inference
             };
 
             if (isEditing && classData) {
                 await updateClass.mutateAsync({ id: classData.id, data: payload as UpdateClassDto });
             } else {
-                await createClass.mutateAsync(payload as CreateClassDto);
+                await createClass.mutateAsync(payload);
             }
             onOpenChange(false);
         } catch {
@@ -126,35 +142,58 @@ export function ClassFormDialog({ open, onOpenChange, classData }: ClassFormDial
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>{isEditing ? 'Edit Class' : 'Create New Class'}</DialogTitle>
                     <DialogDescription>
-                        Set up the schedule and instructor for this academic class.
+                        Set up the schedule and details for this academic class.
                     </DialogDescription>
                 </DialogHeader>
 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <FormField
                                 control={form.control}
-                                name="level"
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem className="col-span-1 sm:col-span-2">
+                                        <FormLabel>Class Name</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="e.g. IELTS Morning Batch" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="description"
+                                render={({ field }) => (
+                                    <FormItem className="col-span-1 sm:col-span-2">
+                                        <FormLabel>Description</FormLabel>
+                                        <FormControl>
+                                            <Textarea 
+                                                placeholder="Weekday class for IELTS preparation." 
+                                                className="resize-none" 
+                                                {...field} 
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="studentCapacity"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Level</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select level" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="Beginner">Beginner</SelectItem>
-                                                <SelectItem value="Intermediate">Intermediate</SelectItem>
-                                                <SelectItem value="Advanced">Advanced</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <FormLabel>Student Capacity</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" {...field} />
+                                        </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -186,67 +225,98 @@ export function ClassFormDialog({ open, onOpenChange, classData }: ClassFormDial
                             />
                         </div>
 
-                        <FormField
-                            control={form.control}
-                            name="time"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Class Time</FormLabel>
-                                    <FormControl>
-                                        <Input type="time" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={form.control}
-                            name="days"
-                            render={() => (
-                                <FormItem>
-                                    <div className="mb-4">
-                                        <FormLabel className="text-base">Schedule Days</FormLabel>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <FormLabel className="text-base font-semibold">Schedule</FormLabel>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => append({ day: 'Monday', startTime: '10:00', endTime: '11:00' })}
+                                    className="h-8 gap-1"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Add Day
+                                </Button>
+                            </div>
+                            
+                            {fields.map((field, index) => (
+                                <div key={field.id} className="grid grid-cols-7 gap-2 p-3 border rounded-lg bg-muted/30 items-end">
+                                    <div className="col-span-3">
+                                        <FormField
+                                            control={form.control}
+                                            name={`schedule.${index}.day`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-xs">Day</FormLabel>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger className="h-8">
+                                                                <SelectValue placeholder="Day" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {DAYS_OF_WEEK.map((day) => (
+                                                                <SelectItem key={day} value={day}>
+                                                                    {day}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                                        {DAYS_OF_WEEK.map((day) => (
-                                            <FormField
-                                                key={day}
-                                                control={form.control}
-                                                name="days"
-                                                render={({ field }) => {
-                                                    return (
-                                                        <FormItem
-                                                            key={day}
-                                                            className="flex flex-row items-start space-x-3 space-y-0"
-                                                        >
-                                                            <FormControl>
-                                                                <Checkbox
-                                                                    checked={field.value?.includes(day)}
-                                                                    onCheckedChange={(checked) => {
-                                                                        return checked
-                                                                            ? field.onChange([...field.value, day])
-                                                                            : field.onChange(
-                                                                                  field.value?.filter(
-                                                                                      (value) => value !== day
-                                                                                  )
-                                                                              );
-                                                                    }}
-                                                                />
-                                                            </FormControl>
-                                                            <FormLabel className="font-normal cursor-pointer">
-                                                                {day}
-                                                            </FormLabel>
-                                                        </FormItem>
-                                                    );
-                                                }}
-                                            />
-                                        ))}
+                                    <div className="col-span-2">
+                                        <FormField
+                                            control={form.control}
+                                            name={`schedule.${index}.startTime`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-xs">Start</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="time" className="h-8 px-2" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
                                     </div>
-                                    <FormMessage />
-                                </FormItem>
+                                    <div className="col-span-2 flex gap-2 items-center">
+                                        <FormField
+                                            control={form.control}
+                                            name={`schedule.${index}.endTime`}
+                                            render={({ field }) => (
+                                                <FormItem className="flex-1">
+                                                    <FormLabel className="text-xs">End</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="time" className="h-8 px-2" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        {fields.length > 1 && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => remove(index)}
+                                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                            {form.formState.errors.schedule?.message && (
+                                <p className="text-sm font-medium text-destructive">
+                                    {form.formState.errors.schedule.message}
+                                </p>
                             )}
-                        />
+                        </div>
 
                         <DialogFooter>
                             <Button

@@ -1,31 +1,43 @@
 import type { PaginationParams } from './service.types';
 
 export interface ClassSchedule {
-    days: string[];
-    time: string;
+    day: string;
+    startTime: string;
+    endTime: string;
 }
 
 export interface Class {
     id: string;
-    level: string;
-    schedule: ClassSchedule;
+    name: string;
+    description?: string;
+    studentCapacity: number;
+    schedule: ClassSchedule[];
     courseId?: string | null;
     instructorId: string;
     instructorName?: string;
     createdAt: string;
     updatedAt: string;
+    level?: string;
+    _count?: {
+        enrollments: number;
+        bookingRequests: number;
+    };
 }
 
 export interface CreateClassDto {
-    level: string;
-    schedule: ClassSchedule;
+    name: string;
+    description?: string;
+    studentCapacity: number;
+    schedule: ClassSchedule[];
     courseId?: string | null;
     instructorId: string;
 }
 
 export interface UpdateClassDto {
-    level?: string;
-    schedule?: Partial<ClassSchedule>;
+    name?: string;
+    description?: string;
+    studentCapacity?: number;
+    schedule?: ClassSchedule[];
     courseId?: string | null;
     instructorId?: string;
 }

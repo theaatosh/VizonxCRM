@@ -59,6 +59,40 @@ export const classService = {
     async deleteClass(id: string): Promise<void> {
         await api.delete(`${CLASSES_ENDPOINT}/${id}`);
     },
+
+    /**
+     * Enroll a student in a class
+     */
+    async enrollStudent(classId: string, studentId: string): Promise<void> {
+        await api.post(`${CLASSES_ENDPOINT}/${classId}/enroll`, { studentId });
+    },
+
+    /**
+     * Unenroll a student from a class
+     */
+    async unenrollStudent(classId: string, studentId: string): Promise<void> {
+        await api.delete(`${CLASSES_ENDPOINT}/${classId}/students/${studentId}`);
+    },
+
+    /**
+     * Get students enrolled in a class
+     */
+    async getClassStudents(classId: string, params?: PaginationParams): Promise<PaginatedResponse<any>> {
+        const response = await api.get<PaginatedResponse<any>>(`${CLASSES_ENDPOINT}/${classId}/students`, {
+            params,
+        });
+        return response.data;
+    },
+
+    /**
+     * Get booking requests for a class
+     */
+    async getClassBookingRequests(classId: string, params?: PaginationParams): Promise<PaginatedResponse<any>> {
+        const response = await api.get<PaginatedResponse<any>>(`${CLASSES_ENDPOINT}/${classId}/booking-requests`, {
+            params,
+        });
+        return response.data;
+    },
 };
 
 export default classService;

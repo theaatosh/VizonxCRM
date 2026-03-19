@@ -6,6 +6,7 @@ import type {
     PaginationParams,
 } from '@/types/class.types';
 import { toast } from 'sonner';
+import { studentKeys } from './useStudents';
 
 export const classKeys = {
     all: ['classes'] as const,
@@ -89,5 +90,67 @@ export function useDeleteClass() {
         onError: (error: Error) => {
             toast.error(`Failed to delete class: ${error.message}`);
         },
+    });
+}
+
+/**
+ * Hook to enroll a student in a class
+ */
+export function useEnrollStudent() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ classId, studentId }: { classId: string; studentId: string }) =>
+            classService.enrollStudent(classId, studentId),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: classKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: studentKeys.detail(variables.studentId) });
+            toast.success('Student enrolled successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || `Failed to enroll student: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to unenroll a student from a class
+ */
+export function useUnenrollStudent() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ classId, studentId }: { classId: string; studentId: string }) =>
+            classService.unenrollStudent(classId, studentId),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: classKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: studentKeys.detail(variables.studentId) });
+            toast.success('Student unenrolled successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || `Failed to unenroll student: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to fetch students enrolled in a class
+ */
+export function useClassStudents(classId: string, params?: PaginationParams) {
+    return useQuery({
+        queryKey: [...classKeys.all, 'students', classId, params],
+        queryFn: () => classService.getClassStudents(classId, params),
+        enabled: !!classId,
+    });
+}
+
+/**
+ * Hook to fetch booking requests for a class
+ */
+export function useClassBookingRequests(classId: string, params?: PaginationParams) {
+    return useQuery({
+        queryKey: [...classKeys.all, 'booking-requests', classId, params],
+        queryFn: () => classService.getClassBookingRequests(classId, params),
+        enabled: !!classId,
     });
 }
