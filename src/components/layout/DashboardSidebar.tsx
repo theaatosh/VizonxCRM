@@ -16,6 +16,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  History,
   GraduationCap as Logo,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,7 @@ const menuItems: MenuItem[] = [
   { title: "Services", icon: Wrench, path: "/services", module: "services" },
   { title: "Content Management", icon: FileText, path: "/content-management", module: "blogs" },
   { title: "Messaging", icon: MessageSquare, path: "/messaging" },
+  { title: "Logs", icon: History, path: "/logs", module: "logs" },
   { title: "Settings", icon: Settings, path: "/settings" },
 ];
 

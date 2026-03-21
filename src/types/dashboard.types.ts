@@ -1,4 +1,4 @@
-// Dashboard Types - Based on actual backend API response
+import type { ActivityLog } from './log.types';
 
 /**
  * Status count breakdown
@@ -16,14 +16,9 @@ export interface RecentLead {
     firstName: string;
     lastName: string;
     email: string;
-    status: 'New' | 'Contacted' | 'Qualified' | 'Converted';
-    priority: 'High' | 'Medium' | 'Low';
+    status: string;
+    priority: string;
     createdAt: string;
-    source?: string;
-    assignedUser?: {
-        id: string;
-        name: string;
-    };
 }
 
 /**
@@ -36,6 +31,47 @@ export interface RecentStudent {
     email: string;
     status: string;
     createdAt: string;
+}
+
+/**
+ * Recent visa application from API
+ */
+export interface RecentVisaApplication {
+    id: string;
+    studentId: string;
+    visaTypeId: string;
+    destinationCountry: string;
+    status: string;
+    submissionDate: string;
+    createdAt: string;
+    student: {
+        firstName: string;
+        lastName: string;
+        email: string;
+    };
+    visaType: {
+        name: string;
+    };
+}
+
+/**
+ * Recent payment from API
+ */
+export interface RecentPayment {
+    id: string;
+    studentId: string;
+    serviceId: string;
+    totalAmount: string;
+    paidAmount: string;
+    remainingAmount: string;
+    status: string;
+    invoiceNumber: string;
+    paymentDate: string;
+    createdAt: string;
+    student: {
+        firstName: string;
+        lastName: string;
+    };
 }
 
 /**
@@ -64,7 +100,7 @@ export interface VisaApplicationsData {
     total: number;
     active: number;
     byStatus: StatusCount[];
-    recent: any[];
+    recent: RecentVisaApplication[];
 }
 
 /**
@@ -73,14 +109,10 @@ export interface VisaApplicationsData {
 export interface UpcomingTask {
     id: string;
     title: string;
-    description?: string;
-    status: 'Pending' | 'InProgress' | 'Completed';
-    priority: 'High' | 'Medium' | 'Low';
+    status: string;
+    priority: string;
     dueDate: string;
-    assignedTo?: {
-        id: string;
-        name: string;
-    };
+    relatedEntityType?: string;
 }
 
 /**
@@ -94,35 +126,11 @@ export interface TasksData {
 }
 
 /**
- * Upcoming appointment
- */
-export interface UpcomingAppointment {
-    id: string;
-    tenantId: string;
-    studentId: string;
-    staffId: string;
-    scheduledAt: string;
-    status: string;
-    outcomeNotes?: string;
-    createdAt: string;
-    updatedAt: string;
-    student: {
-        firstName: string;
-        lastName: string;
-        email: string;
-    };
-    staff: {
-        name: string;
-        email: string;
-    };
-}
-
-/**
  * Appointments statistics
  */
 export interface AppointmentsData {
     total: number;
-    upcoming: UpcomingAppointment[];
+    upcoming: any[];
     byStatus: StatusCount[];
 }
 
@@ -169,7 +177,7 @@ export interface VisaTypesData {
 export interface PaymentsData {
     total: number;
     byStatus: StatusCount[];
-    recent: any[];
+    recent: RecentPayment[];
     revenue: {
         total: number;
         pending: number;
@@ -241,7 +249,7 @@ export interface DashboardOverview {
     cms: CMSData;
     templates: TemplatesData;
     messaging: MessagingData;
-    recentActivities: any[];
+    recentActivities: ActivityLog[];
 }
 
 /**
@@ -283,13 +291,4 @@ export interface DateRangeStats {
         total: number;
         completed: number;
     };
-}
-
-/**
- * Chart data point for pie charts
- */
-export interface ChartDataPoint {
-    name: string;
-    value: number;
-    color: string;
 }

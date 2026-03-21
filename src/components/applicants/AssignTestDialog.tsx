@@ -26,7 +26,7 @@ export const AssignTestDialog: React.FC<AssignTestDialogProps> = ({
 }) => {
     const [selectedTestId, setSelectedTestId] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState<string>('');
-    const { data: testsData, isLoading: isLoadingTests } = useTests({ limit: 100 });
+    const { data: testsData, isLoading: isLoadingTests } = useTests({ limit: 100 }, { enabled: open });
     const assignMutation = useAssignStudent();
 
     const filteredTests = testsData?.data.filter(test => 

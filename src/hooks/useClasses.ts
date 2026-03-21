@@ -19,10 +19,11 @@ export const classKeys = {
 /**
  * Hook to fetch paginated classes
  */
-export function useClasses(params?: PaginationParams) {
+export function useClasses(params?: PaginationParams, options?: { enabled?: boolean }) {
     return useQuery({
         queryKey: classKeys.list(params),
         queryFn: () => classService.getClasses(params),
+        ...options,
     });
 }
 

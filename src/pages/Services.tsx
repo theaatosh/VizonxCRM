@@ -519,18 +519,31 @@ const Services = () => {
                     <div className="space-y-3 mb-4">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Users className="h-4 w-4" />
-                        <span>Instructor: {classData.instructorName || 'Assigned'}</span>
+                        <span>Instructor: {(typeof classData.instructor === 'object' ? (classData.instructor as any)?.name : classData.instructor) || classData.instructorName || 'Assigned'}</span>
                       </div>
                       
                       <div className="space-y-1">
                         <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Schedule</p>
                         <div className="flex flex-wrap gap-1">
-                          {classData.schedule.map((s, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0 flex flex-col items-start gap-0">
-                              <span className="font-bold">{s.day.substring(0, 3)}</span>
-                              <span className="opacity-80 font-normal">{s.startTime}-{s.endTime}</span>
+                          {Array.isArray(classData.schedule) ? (
+                            classData.schedule.map((s, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0 flex flex-col items-start gap-0">
+                                <span className="font-bold">{s.day.substring(0, 3)}</span>
+                                <span className="opacity-80 font-normal">{s.startTime}-{s.endTime}</span>
+                              </Badge>
+                            ))
+                          ) : (classData.schedule && typeof classData.schedule === 'object' && Array.isArray((classData.schedule as any).days)) ? (
+                            (classData.schedule as any).days.map((day: string, idx: number) => (
+                              <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0 flex flex-col items-start gap-0">
+                                <span className="font-bold">{day.substring(0, 3)}</span>
+                                <span className="opacity-80 font-normal">{(classData.schedule as any).startTime}-{(classData.schedule as any).endTime}</span>
+                              </Badge>
+                            ))
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 flex flex-col items-start gap-0">
+                              <span className="font-bold">Flexible</span>
                             </Badge>
-                          ))}
+                          )}
                         </div>
                       </div>
 

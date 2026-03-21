@@ -71,9 +71,7 @@ export function ClassFormDialog({ open, onOpenChange, classData }: ClassFormDial
     
     // Filter users to only show instructors
     const instructors = (usersData?.data || []).filter(user => 
-        user.role?.name === 'Instructor' || 
-        (user as any).roleName === 'Instructor' || 
-        (user as any).role === 'Instructor'
+        user.role?.name?.toLowerCase() === 'instructor'
     );
 
     const form = useForm<ClassFormValues>({
@@ -123,7 +121,6 @@ export function ClassFormDialog({ open, onOpenChange, classData }: ClassFormDial
                 description: values.description,
                 studentCapacity: values.studentCapacity,
                 instructorId: values.instructorId,
-                courseId: null, // Always pass null as requested
                 schedule: values.schedule as any[], // Casting to avoid lint error with Zod inference
             };
 

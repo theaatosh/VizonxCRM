@@ -25,13 +25,14 @@ export const AssignClassDialog: React.FC<AssignClassDialogProps> = ({
 }) => {
     const [selectedClassId, setSelectedClassId] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState<string>('');
-    const { data: classesData, isLoading: isLoadingClasses } = useClasses({ limit: 100 });
+    const { data: classesData, isLoading: isLoadingClasses } = useClasses({ limit: 100 }, { enabled: open });
     const enrollMutation = useEnrollStudent();
 
-    const filteredClasses = classesData?.data.filter(cls => 
-        cls.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        cls.instructorName?.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
+    const filteredClasses = classesData?.data.filter(cls => {
+        const instructorName = (typeof cls.instructor === 'object' ? cls.instructor?.name : cls.instructor) || cls.instructorName || '';
+        return cls.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               instructorName.toLowerCase().includes(searchQuery.toLowerCase());
+    }) || [];
 
     const handleAssign = () => {
         if (!selectedClassId) return;
@@ -91,7 +92,7 @@ export const AssignClassDialog: React.FC<AssignClassDialogProps> = ({
                                     <div className="flex-1 min-w-0">
                                         <h4 className="font-semibold text-sm truncate">{cls.name}</h4>
                                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                            <span className="font-medium text-primary/80">{cls.instructorName || 'Unknown'}</span>
+                                            <span className="font-medium text-primary/80">{(typeof cls.instructor === 'object' ? cls.instructor?.name : cls.instructor) || cls.instructorName || 'Unknown'}</span>
                                             <span className="opacity-40">•</span>
                                             <span>{cls.schedule?.length ? `${cls.schedule.length} sessions` : 'No schedule'}</span>
                                         </p>

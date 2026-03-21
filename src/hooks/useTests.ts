@@ -12,10 +12,11 @@ export const TEST_KEYS = {
     detail: (id: string) => [...TEST_KEYS.details(), id] as const,
 };
 
-export function useTests(params: PaginationParams = {}) {
+export function useTests(params: PaginationParams = {}, options?: { enabled?: boolean }) {
     return useQuery({
         queryKey: TEST_KEYS.list(params),
         queryFn: () => testService.getTests(params),
+        ...options,
     });
 }
 

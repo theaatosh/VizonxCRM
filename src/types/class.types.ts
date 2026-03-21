@@ -13,6 +13,11 @@ export interface Class {
     studentCapacity: number;
     schedule: ClassSchedule[];
     courseId?: string | null;
+    instructor?: {
+        id: string;
+        name: string;
+        email: string;
+    };
     instructorId: string;
     instructorName?: string;
     createdAt: string;
@@ -29,7 +34,6 @@ export interface CreateClassDto {
     description?: string;
     studentCapacity: number;
     schedule: ClassSchedule[];
-    courseId?: string | null;
     instructorId: string;
 }
 
@@ -38,7 +42,6 @@ export interface UpdateClassDto {
     description?: string;
     studentCapacity?: number;
     schedule?: ClassSchedule[];
-    courseId?: string | null;
     instructorId?: string;
 }
 

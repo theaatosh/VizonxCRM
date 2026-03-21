@@ -9,6 +9,9 @@ import { QuickStatsGrid } from "@/components/dashboard/QuickStatsGrid";
 import { MessagingStats } from "@/components/dashboard/MessagingStats";
 import { ChatWidget } from "@/components/dashboard/ChatWidget";
 import { useDashboardOverview } from "@/hooks/useDashboard";
+import { RecentVisaApplications } from "@/components/dashboard/RecentVisaApplications";
+import { RecentPayments } from "@/components/dashboard/RecentPayments";
+import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import {
   Users,
   UserCheck,
@@ -256,6 +259,7 @@ const Index = () => {
         />
       </div>
 
+
       {/* Tables and Lists Row */}
       <div className="grid gap-4 md:gap-6 lg:grid-cols-3 mb-6">
         <div className="lg:col-span-2">
@@ -264,19 +268,39 @@ const Index = () => {
             isLoading={isLoading}
           />
         </div>
-        <UpcomingAppointments
-          appointments={dashboard?.appointments?.upcoming}
-          isLoading={isLoading}
+        <div className="grid gap-4 md:gap-6">
+            <UpcomingAppointments
+                appointments={dashboard?.appointments?.upcoming}
+                isLoading={isLoading}
+            />
+            <RecentVisaApplications 
+                applications={dashboard?.visaApplications?.recent}
+                isLoading={isLoading}
+            />
+        </div>
+      </div>
+
+      {/* Financial and Tasks Row */}
+      <div className="grid gap-4 md:gap-6 lg:grid-cols-3 mb-6">
+        <div className="lg:col-span-2">
+            <RecentPayments 
+                payments={dashboard?.payments?.recent}
+                isLoading={isLoading}
+            />
+        </div>
+        <UpcomingTasks
+            tasks={dashboard?.tasks?.upcoming}
+            isLoading={isLoading}
         />
       </div>
 
-      {/* Bottom Row */}
+      {/* Activity and Messaging Row */}
       <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <UpcomingTasks
-            tasks={dashboard?.tasks?.upcoming}
-            isLoading={isLoading}
-          />
+            <ActivityFeed 
+                activities={dashboard?.recentActivities}
+                isLoading={isLoading}
+            />
         </div>
         <MessagingStats
           messaging={dashboard?.messaging}

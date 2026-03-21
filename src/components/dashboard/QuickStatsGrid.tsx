@@ -136,6 +136,19 @@ export function QuickStatsGrid({
                         sublabel={`${cms?.blogs?.published || 0} published`}
                         color="bg-pink-500/10 text-pink-500"
                     />
+                    <StatItem
+                        icon={<Layout className="h-4 w-4" />}
+                        value={cms?.landingPages?.total || 0}
+                        label="Landing Pages"
+                        sublabel={`${cms?.landingPages?.published || 0} published`}
+                        color="bg-indigo-500/10 text-indigo-500"
+                    />
+                    <StatItem
+                        icon={<HelpCircle className="h-4 w-4" />}
+                        value={cms?.faqs?.total || 0}
+                        label="FAQs"
+                        color="bg-slate-500/10 text-slate-500"
+                    />
                 </div>
             </CardContent>
         </Card>

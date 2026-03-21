@@ -27,7 +27,9 @@ import {
     BookOpen,
     ClipboardList,
     UserMinus,
-    Loader2
+    Loader2,
+    Globe,
+    Plus
 } from 'lucide-react';
 import {
     Table,
@@ -50,6 +52,8 @@ import { DeleteApplicantDialog } from '@/components/applicants/DeleteApplicantDi
 import { DocumentUploadDialog } from '@/components/applicants/DocumentUploadDialog';
 import { AssignClassDialog } from '@/components/applicants/AssignClassDialog';
 import { AssignTestDialog } from '@/components/applicants/AssignTestDialog';
+import { VisaApplicationDialog } from '@/components/applicants/VisaApplicationDialog';
+import { useStudentVisaApplications, useDeleteVisaApplication } from '@/hooks/useVisaApplications';
 import { useState } from 'react';
 import type { StudentStatus, StudentPriority } from '@/types/student.types';
 
@@ -78,9 +82,12 @@ const ApplicantDetail = () => {
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
     const [assignClassDialogOpen, setAssignClassDialogOpen] = useState(false);
     const [assignTestDialogOpen, setAssignTestDialogOpen] = useState(false);
+    const [visaApplicationDialogOpen, setVisaApplicationDialogOpen] = useState(false);
 
     const { data: applicant, isLoading, isError, error } = useStudent(id || '');
     const { mutate: unenroll, isPending: isUnenrolling } = useUnenrollStudent();
+    const { data: visaApplications, isLoading: isLoadingVisas } = useStudentVisaApplications(id || '');
+    const { mutate: deleteVisaApplication } = useDeleteVisaApplication();
 
     // Helper to get full file URL
     const getFileUrl = (path: string) => {
@@ -234,6 +241,13 @@ const ApplicantDetail = () => {
                     >
                         <CreditCard className="h-4 w-4" />
                         Payment
+                    </TabsTrigger>
+                    <TabsTrigger 
+                        value="visa" 
+                        className="flex items-center gap-2 px-6 py-2 rounded-lg data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md transition-all font-medium"
+                    >
+                        <Globe className="h-4 w-4" />
+                        Visa
                     </TabsTrigger>
                 </TabsList>
 
@@ -497,9 +511,13 @@ const ApplicantDetail = () => {
                                                 return (
                                                     <TableRow key={enrollment.id}>
                                                         <TableCell className="font-medium">{cls.name}</TableCell>
-                                                        <TableCell>{cls.instructor?.name || 'N/A'}</TableCell>
+                                                        <TableCell>{(typeof cls.instructor === 'object' ? cls.instructor?.name : cls.instructor) || cls.instructorName || 'N/A'}</TableCell>
                                                         <TableCell className="max-w-[200px] truncate">
-                                                            {cls.schedule?.map((s: any) => `${s.day.substring(0, 3)}`).join(', ') || 'Flexible'}
+                                                            {Array.isArray(cls.schedule) && cls.schedule.length > 0 
+                                                                ? cls.schedule.map((s: any) => `${s.day.substring(0, 3)}`).join(', ') 
+                                                                : (cls.schedule && typeof cls.schedule === 'object' && Array.isArray(cls.schedule.days))
+                                                                    ? cls.schedule.days.map((d: string) => d.substring(0, 3)).join(', ')
+                                                                    : 'Flexible'}
                                                         </TableCell>
                                                         <TableCell>
                                                             <Badge variant="secondary" className={`
@@ -612,6 +630,76 @@ const ApplicantDetail = () => {
                         </CardContent>
                     </Card>
                 </TabsContent>
+
+                <TabsContent value="visa" className="animate-in fade-in-50 duration-300 space-y-6">
+                    <Card className="shadow-card border-none bg-background/50 backdrop-blur-sm">
+                        <CardHeader className="flex flex-row items-center justify-between pb-4">
+                            <div>
+                                <CardTitle className="text-xl flex items-center gap-2">
+                                    <Globe className="h-5 w-5 text-primary" />
+                                    Visa Applications
+                                </CardTitle>
+                                <CardDescription>Manage visa applications for this student</CardDescription>
+                            </div>
+                            <Button size="sm" variant="outline" className="gap-2" onClick={() => setVisaApplicationDialogOpen(true)}>
+                                <Plus className="h-4 w-4" />
+                                Create Application
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            {isLoadingVisas ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                </div>
+                            ) : !visaApplications || visaApplications.length === 0 ? (
+                                <div className="text-center py-12 border border-dashed rounded-xl bg-muted/20">
+                                    <Globe className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
+                                    <p className="text-muted-foreground text-sm">No visa applications found</p>
+                                </div>
+                            ) : (
+                                <div className="rounded-xl border border-muted-foreground/10 overflow-hidden">
+                                    <Table>
+                                        <TableHeader className="bg-muted/50">
+                                            <TableRow>
+                                                <TableHead className="font-semibold">Visa Type</TableHead>
+                                                <TableHead className="font-semibold">Destination</TableHead>
+                                                <TableHead className="font-semibold">Status</TableHead>
+                                                <TableHead className="font-semibold text-right">Action</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {visaApplications.map((visa) => (
+                                                <TableRow key={visa.id}>
+                                                    <TableCell className="font-medium">{visa.visaType?.name || 'Unknown Type'}</TableCell>
+                                                    <TableCell>{visa.destinationCountry}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="outline" className="bg-info/10 text-info border-info/20">
+                                                            {visa.status}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="sm" 
+                                                            className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                            onClick={() => {
+                                                                if (window.confirm('Are you sure you want to delete this visa application?')) {
+                                                                    deleteVisaApplication(visa.id);
+                                                                }
+                                                            }}
+                                                        >
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
             </Tabs>
 
             {/* Dialogs */}
@@ -648,6 +736,12 @@ const ApplicantDetail = () => {
                 open={assignTestDialogOpen} 
                 onOpenChange={setAssignTestDialogOpen} 
                 studentId={id || ''} 
+            />
+
+            <VisaApplicationDialog
+                open={visaApplicationDialogOpen}
+                onOpenChange={setVisaApplicationDialogOpen}
+                studentId={id || ''}
             />
         </DashboardLayout>
     );

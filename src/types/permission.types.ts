@@ -26,6 +26,7 @@ export type PermissionModule =
     | 'files'
     | 'landing-pages'
     | 'leads'
+    | 'logs'
     | 'messaging'
     | 'roles'
     | 'scholarships'
