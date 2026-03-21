@@ -32,4 +32,7 @@ export interface UpdateVisaApplicationDto {
 
 export interface VisaApplicationQueryParams extends PaginationParams {
     studentId?: string;
+    visaTypeId?: string;
+    courseApplicationId?: string;
+    status?: string;
 }

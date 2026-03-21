@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Globe } from 'lucide-react';
 import { useVisaTypes } from '@/hooks/useVisaTypes';
 import { useCreateVisaApplication } from '@/hooks/useVisaApplications';
+import type { CourseApplication } from '@/types/course-application.types';
 
 const formSchema = z.object({
     visaTypeId: z.string().min(1, 'Please select a visa type'),
@@ -41,12 +42,14 @@ interface VisaApplicationDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     studentId: string;
+    courseApplications?: CourseApplication[];
 }
 
 export const VisaApplicationDialog = ({
     open,
     onOpenChange,
     studentId,
+    courseApplications = [],
 }: VisaApplicationDialogProps) => {
     const { data: visaTypesData, isLoading: isLoadingVisaTypes } = useVisaTypes({ limit: 100 });
     const createMutation = useCreateVisaApplication();
@@ -126,10 +129,31 @@ export const VisaApplicationDialog = ({
                             name="courseApplicationId"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Course Application ID</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Enter course application ID" {...field} />
-                                    </FormControl>
+                                    <FormLabel>Course Application</FormLabel>
+                                    <Select 
+                                        onValueChange={field.onChange} 
+                                        defaultValue={field.value}
+                                        value={field.value}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select course application" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {courseApplications.length === 0 ? (
+                                                <div className="p-2 text-sm text-muted-foreground text-center">
+                                                    No course applications found
+                                                </div>
+                                            ) : (
+                                                courseApplications.map((app) => (
+                                                    <SelectItem key={app.id} value={app.id}>
+                                                        {app.course?.name || 'Unknown Course'} ({app.status})
+                                                    </SelectItem>
+                                                ))
+                                            )}
+                                        </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                 </FormItem>
                             )}

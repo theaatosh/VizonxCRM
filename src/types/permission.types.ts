@@ -28,6 +28,7 @@ export type PermissionModule =
     | 'leads'
     | 'logs'
     | 'messaging'
+    | 'payments'
     | 'roles'
     | 'scholarships'
     | 'services'

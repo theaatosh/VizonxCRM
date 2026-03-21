@@ -29,7 +29,10 @@ import {
     UserMinus,
     Loader2,
     Globe,
-    Plus
+    Plus,
+    UserCheck,
+    Shield,
+    CheckCircle2
 } from 'lucide-react';
 import {
     Table,
@@ -54,6 +57,7 @@ import { AssignClassDialog } from '@/components/applicants/AssignClassDialog';
 import { AssignTestDialog } from '@/components/applicants/AssignTestDialog';
 import { VisaApplicationDialog } from '@/components/applicants/VisaApplicationDialog';
 import { useStudentVisaApplications, useDeleteVisaApplication } from '@/hooks/useVisaApplications';
+import { StudentApplicationsTab } from '@/components/students/StudentApplicationsTab';
 import { useState } from 'react';
 import type { StudentStatus, StudentPriority } from '@/types/student.types';
 
@@ -86,7 +90,7 @@ const ApplicantDetail = () => {
 
     const { data: applicant, isLoading, isError, error } = useStudent(id || '');
     const { mutate: unenroll, isPending: isUnenrolling } = useUnenrollStudent();
-    const { data: visaApplications, isLoading: isLoadingVisas } = useStudentVisaApplications(id || '');
+    const { data: visaApplicationsData, isLoading: isLoadingVisas } = useStudentVisaApplications(id || '');
     const { mutate: deleteVisaApplication } = useDeleteVisaApplication();
 
     // Helper to get full file URL
@@ -146,6 +150,43 @@ const ApplicantDetail = () => {
             </DashboardLayout>
         );
     }
+
+    // Helper to render raw data beautifully
+    const renderFormattedData = (data: any, icon: React.ReactNode) => {
+        if (!data) return null;
+        
+        // Handle "raw" field if present, or "academicBackground" / "testScores" naming from forms
+        const rawContent = data.raw || (typeof data === 'string' ? data : null);
+        
+        if (typeof rawContent === 'string' && rawContent.trim() !== '') {
+            const lines = rawContent.split('\n').filter(line => line.trim() !== '');
+            if (lines.length > 0) {
+                return (
+                    <div className="space-y-3">
+                        {lines.map((line, index) => (
+                            <div key={index} className="flex items-start gap-4 p-4 rounded-xl bg-background/60 border border-border/50 shadow-sm hover:border-primary/30 transition-all duration-200">
+                                <div className="p-1.5 rounded-full bg-primary/10 mt-0.5">
+                                    {icon}
+                                </div>
+                                <p className="text-sm font-medium text-foreground/90 leading-relaxed pt-0.5">{line}</p>
+                            </div>
+                        ))}
+                    </div>
+                );
+            }
+        }
+        
+        // Fallback for objects that aren't strings
+        if (typeof data === 'object' && Object.keys(data).length > 0) {
+            return (
+                <div className="p-4 rounded-xl bg-muted/20 border font-mono text-xs overflow-auto max-h-[200px]">
+                    {JSON.stringify(data, null, 2)}
+                </div>
+            );
+        }
+        
+        return null;
+    };
 
     return (
         <DashboardLayout
@@ -249,6 +290,13 @@ const ApplicantDetail = () => {
                         <Globe className="h-4 w-4" />
                         Visa
                     </TabsTrigger>
+                    <TabsTrigger 
+                        value="applications" 
+                        className="flex items-center gap-2 px-6 py-2 rounded-lg data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-md transition-all font-medium"
+                    >
+                        <GraduationCap className="h-4 w-4" />
+                        Applications
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="profile" className="space-y-6 animate-in fade-in-50 duration-300">
@@ -288,26 +336,41 @@ const ApplicantDetail = () => {
 
                                     <Separator className="opacity-50" />
 
+                                    {/* Assigned Counselor */}
+                                    {applicant.assignedCounselor && (
+                                        <>
+                                            <div className="space-y-4">
+                                                <h3 className="text-lg font-semibold flex items-center gap-2">
+                                                    <UserCheck className="h-5 w-5 text-primary" />
+                                                    Assigned Counselor
+                                                </h3>
+                                                <div className="flex items-center gap-4 p-4 rounded-xl border bg-success/5 border-success/20 shadow-sm">
+                                                    <div className="p-2.5 rounded-lg bg-success/10">
+                                                        <Shield className="h-5 w-5 text-success" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-foreground text-base">{applicant.assignedCounselor.name}</p>
+                                                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mt-0.5">
+                                                            {applicant.assignedCounselor.role?.name || 'COUNSELOR'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <Separator className="opacity-50" />
+                                        </>
+                                    )}
+
                                     {/* Academic Records */}
                                     <div className="space-y-4">
                                         <h3 className="text-lg font-semibold flex items-center gap-2">
                                             <GraduationCap className="h-5 w-5 text-primary" />
-                                            Enrolled Classes
+                                            Academic Records
                                         </h3>
-                                        <div className="p-4 rounded-xl bg-muted/30 border border-dashed">
-                                            {applicant.classEnrollments && applicant.classEnrollments.length > 0 ? (
-                                                <div className="space-y-2">
-                                                    {applicant.classEnrollments.map((enrollment: any) => (
-                                                        <div key={enrollment.id} className="flex items-center justify-between text-sm">
-                                                            <span className="font-medium">{enrollment.class.name}</span>
-                                                            <Badge variant="outline" className="text-[10px] h-5">{enrollment.status}</Badge>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div className="text-center py-4">
+                                        <div className="p-1 rounded-xl">
+                                            {renderFormattedData(applicant.academicRecords, <CheckCircle2 className="h-3.5 w-3.5 text-primary" />) || (
+                                                <div className="text-center py-8 bg-muted/10 border border-dashed rounded-xl">
                                                     <GraduationCap className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
-                                                    <p className="text-muted-foreground text-sm">No classes assigned yet</p>
+                                                    <p className="text-muted-foreground text-sm">No academic records found</p>
                                                 </div>
                                             )}
                                         </div>
@@ -319,22 +382,13 @@ const ApplicantDetail = () => {
                                     <div className="space-y-4">
                                         <h3 className="text-lg font-semibold flex items-center gap-2">
                                             <ClipboardList className="h-5 w-5 text-primary" />
-                                            Test Assignments
+                                            Test Scores
                                         </h3>
-                                        <div className="p-4 rounded-xl bg-muted/30 border border-dashed">
-                                            {applicant.testAssignments && applicant.testAssignments.length > 0 ? (
-                                                <div className="space-y-2">
-                                                    {applicant.testAssignments.map((assignment: any) => (
-                                                        <div key={assignment.id} className="flex items-center justify-between text-sm">
-                                                            <span className="font-medium">{assignment.test.name}</span>
-                                                            <span className="text-muted-foreground text-xs">{assignment.test.type}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div className="text-center py-4">
+                                        <div className="p-1 rounded-xl">
+                                            {renderFormattedData(applicant.testScores, <CheckCircle2 className="h-3.5 w-3.5 text-primary" />) || (
+                                                <div className="text-center py-8 bg-muted/10 border border-dashed rounded-xl">
                                                     <ClipboardList className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
-                                                    <p className="text-muted-foreground text-sm">No test assignments found</p>
+                                                    <p className="text-muted-foreground text-sm">No test scores found</p>
                                                 </div>
                                             )}
                                         </div>
@@ -356,7 +410,7 @@ const ApplicantDetail = () => {
                                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/20">
                                         <span className="text-sm text-muted-foreground">Created On</span>
                                         <span className="text-sm font-semibold">
-                                            {new Date(applicant.createdAt).toLocaleDateString(undefined, {
+                                            {new Date(applicant.createdDate).toLocaleDateString(undefined, {
                                                 year: 'numeric',
                                                 month: 'long',
                                                 day: 'numeric'
@@ -651,7 +705,7 @@ const ApplicantDetail = () => {
                                 <div className="flex items-center justify-center py-8">
                                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                 </div>
-                            ) : !visaApplications || visaApplications.length === 0 ? (
+                            ) : !visaApplicationsData?.data || visaApplicationsData.data.length === 0 ? (
                                 <div className="text-center py-12 border border-dashed rounded-xl bg-muted/20">
                                     <Globe className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
                                     <p className="text-muted-foreground text-sm">No visa applications found</p>
@@ -668,7 +722,7 @@ const ApplicantDetail = () => {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {visaApplications.map((visa) => (
+                                            {visaApplicationsData.data.map((visa) => (
                                                 <TableRow key={visa.id}>
                                                     <TableCell className="font-medium">{visa.visaType?.name || 'Unknown Type'}</TableCell>
                                                     <TableCell>{visa.destinationCountry}</TableCell>
@@ -699,6 +753,10 @@ const ApplicantDetail = () => {
                             )}
                         </CardContent>
                     </Card>
+                </TabsContent>
+
+                <TabsContent value="applications" className="animate-in fade-in-50 duration-300">
+                    <StudentApplicationsTab studentId={id || ''} />
                 </TabsContent>
             </Tabs>
 
@@ -742,6 +800,7 @@ const ApplicantDetail = () => {
                 open={visaApplicationDialogOpen}
                 onOpenChange={setVisaApplicationDialogOpen}
                 studentId={id || ''}
+                courseApplications={applicant?.courseApplications}
             />
         </DashboardLayout>
     );

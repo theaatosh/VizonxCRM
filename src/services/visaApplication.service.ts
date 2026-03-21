@@ -22,6 +22,9 @@ export const visaApplicationService = {
                 sortOrder: params?.sortOrder || 'desc',
                 search: params?.search,
                 studentId: params?.studentId,
+                visaTypeId: params?.visaTypeId,
+                courseApplicationId: params?.courseApplicationId,
+                status: params?.status,
             },
         });
         return response.data;
@@ -58,13 +61,6 @@ export const visaApplicationService = {
         await api.delete(`${VISA_APPLICATIONS_ENDPOINT}/${id}`);
     },
 
-    /**
-     * Get visa applications for a specific student
-     */
-    async getStudentVisaApplications(studentId: string): Promise<VisaApplication[]> {
-        const response = await api.get<VisaApplication[]>(`${VISA_APPLICATIONS_ENDPOINT}/student/${studentId}`);
-        return response.data;
-    },
 };
 
 export default visaApplicationService;

@@ -24,6 +24,8 @@ import Settings from "./pages/Settings";
 import ContentManagement from "./pages/ContentManagement";
 import Messaging from "./pages/Messaging";
 import Logs from "./pages/Logs";
+import Payments from "./pages/Payments";
+import CourseApplications from "./pages/CourseApplications";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import NotificationsPage from "./pages/notifications/NotificationsPage";
@@ -59,6 +61,8 @@ const App = () => (
               <Route path="/content-management" element={<ProtectedRoute module="blogs"><ContentManagement /></ProtectedRoute>} />
               <Route path="/messaging" element={<ProtectedRoute><Messaging /></ProtectedRoute>} />
               <Route path="/logs" element={<ProtectedRoute module="logs"><Logs /></ProtectedRoute>} />
+              <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
+              <Route path="/course-applications" element={<ProtectedRoute><CourseApplications /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
 

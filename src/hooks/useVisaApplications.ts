@@ -29,10 +29,10 @@ export function useVisaApplications(params?: VisaApplicationQueryParams) {
 /**
  * Hook to fetch visa applications for a specific student
  */
-export function useStudentVisaApplications(studentId: string) {
+export function useStudentVisaApplications(studentId: string, params?: Omit<VisaApplicationQueryParams, 'studentId'>) {
     return useQuery({
         queryKey: visaApplicationKeys.byStudent(studentId),
-        queryFn: () => visaApplicationService.getStudentVisaApplications(studentId),
+        queryFn: () => visaApplicationService.getVisaApplications({ ...params, studentId }),
         enabled: !!studentId,
     });
 }

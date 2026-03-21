@@ -21,7 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, Plus, Mail, Phone, MoreVertical, UserPlus } from 'lucide-react';
+import { Search, Plus, Mail, Phone, MoreVertical, UserPlus, UserCheck } from 'lucide-react';
 import { useStudents } from '@/hooks/useStudents';
 import { usePermissions } from '@/contexts/PermissionContext';
 import { ApplicantFormDialog } from '@/components/applicants/ApplicantFormDialog';
@@ -292,23 +292,32 @@ const Applicants = () => {
                           <div className="text-sm">
                             <span className="text-muted-foreground">Created: </span>
                             <span className="font-medium">
-                              {new Date(applicant.createdAt).toLocaleDateString()}
+                              {new Date(applicant.createdDate).toLocaleDateString()}
                             </span>
                           </div>
                           <div className="flex gap-2">
+                            {applicant.assignedCounselor ? (
+                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-success/5 px-2.5 py-1 rounded-md border border-success/20">
+                                <UserCheck className="h-3.5 w-3.5 text-success" />
+                                <span className="font-medium truncate max-w-[120px]">
+                                  {applicant.assignedCounselor.name}
+                                </span>
+                              </div>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1 px-2 h-8"
+                                onClick={() => handleAssignCounselor(applicant)}
+                              >
+                                <UserPlus className="h-3.5 w-3.5" />
+                                <span className="hidden sm:inline">Assign</span>
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
-                              className="gap-1 px-2 h-8"
-                              onClick={() => handleAssignCounselor(applicant)}
-                            >
-                              <UserPlus className="h-3.5 w-3.5" />
-                              <span className="hidden sm:inline">Assign</span>
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8"
+                              className="h-8 shadow-sm"
                               onClick={() => handleViewProfile(applicant)}
                             >
                               View Profile

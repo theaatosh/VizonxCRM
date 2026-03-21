@@ -1,3 +1,5 @@
+import type { CourseApplication } from './course-application.types';
+
 // Student (Applicant) Types - Based on backend API schema
 
 export type StudentStatus = 'Prospective' | 'Enrolled' | 'Alumni';
@@ -8,9 +10,12 @@ export interface Student {
     id: string;
     firstName: string;
     lastName: string;
+    name?: string;
     email: string;
     phone?: string;
     leadId?: string;
+    isActive?: boolean;
+    emailVerified?: boolean;
     academicRecords?: {
         enrolledClasses?: any[];
         classes?: any[];
@@ -23,8 +28,17 @@ export interface Student {
     documents?: StudentDocument[];
     classEnrollments?: ClassEnrollment[];
     testAssignments?: TestAssignment[];
-    createdAt: string;
+    profileCompleteness?: number;
+    createdDate: string;
+    createdAt?: string; // Some endpoints might use createdAt
     updatedAt: string;
+    assignedCounselor?: {
+        name: string;
+        role?: {
+            name: string;
+        };
+    } | null;
+    courseApplications?: CourseApplication[];
 }
 
 export interface ClassEnrollment {

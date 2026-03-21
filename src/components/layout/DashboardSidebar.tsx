@@ -18,6 +18,7 @@ import {
   ChevronRight,
   History,
   GraduationCap as Logo,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,8 @@ const menuItems: MenuItem[] = [
   { title: "Tasks", icon: CheckSquare, path: "/tasks", module: "tasks" },
   { title: "Scholarships", icon: Award, path: "/scholarships", module: "scholarships" },
   { title: "Services", icon: Wrench, path: "/services", module: "services" },
+  { title: "Payments", icon: DollarSign, path: "/payments" },
+  { title: "Applications", icon: FileText, path: "/course-applications" },
   { title: "Content Management", icon: FileText, path: "/content-management", module: "blogs" },
   { title: "Messaging", icon: MessageSquare, path: "/messaging" },
   { title: "Logs", icon: History, path: "/logs", module: "logs" },
