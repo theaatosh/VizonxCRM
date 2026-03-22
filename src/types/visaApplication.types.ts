@@ -6,13 +6,44 @@ export interface VisaApplication {
     visaTypeId: string;
     courseApplicationId: string;
     destinationCountry: string;
+    workflowId?: string;
+    currentStepId?: string;
+    submissionDate?: string | null;
+    decisionDate?: string | null;
     status: string;
     tenantId: string;
     createdAt: string;
     updatedAt: string;
+    version?: number;
+    notes?: Array<{
+        status: string;
+        stepId: string;
+        remarks: string;
+        timestamp: string;
+        matchedSLA: boolean;
+    }>;
     visaType?: {
         id: string;
         name: string;
+        description?: string;
+        country?: {
+            id: string;
+            name: string;
+        };
+    };
+    student?: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone?: string;
+        status?: string;
+        priority?: string;
+    };
+    workflow?: {
+        id: string;
+        name: string;
+        description?: string;
     };
 }
 

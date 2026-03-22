@@ -56,9 +56,13 @@ import { DocumentUploadDialog } from '@/components/applicants/DocumentUploadDial
 import { AssignClassDialog } from '@/components/applicants/AssignClassDialog';
 import { AssignTestDialog } from '@/components/applicants/AssignTestDialog';
 import { VisaApplicationDialog } from '@/components/applicants/VisaApplicationDialog';
-import { useStudentVisaApplications, useDeleteVisaApplication } from '@/hooks/useVisaApplications';
+import { useStudentVisaApplications, useDeleteVisaApplication, useAdvanceVisaStep } from '@/hooks/useVisaApplications';
 import { StudentApplicationsTab } from '@/components/students/StudentApplicationsTab';
-import { useState } from 'react';
+import { WorkflowDetailModal } from '@/components/workflow/WorkflowDetailModal';
+import { AdvanceStepDialog } from '@/components/applicants/AdvanceStepDialog';
+import { Workflow } from '@/types/workflow.types';
+import { format } from 'date-fns';
+import { useState, useMemo } from 'react';
 import type { StudentStatus, StudentPriority } from '@/types/student.types';
 
 // Action colors
@@ -87,10 +91,18 @@ const ApplicantDetail = () => {
     const [assignClassDialogOpen, setAssignClassDialogOpen] = useState(false);
     const [assignTestDialogOpen, setAssignTestDialogOpen] = useState(false);
     const [visaApplicationDialogOpen, setVisaApplicationDialogOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState('profile');
+    const [workflowModalOpen, setWorkflowModalOpen] = useState(false);
+    const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+    const [advanceStepDialogOpen, setAdvanceStepDialogOpen] = useState(false);
+    const [selectedVisaId, setSelectedVisaId] = useState<string>('');
+    const [currentStepId, setCurrentStepId] = useState<string>('');
+    const [selectedWorkflowId, setSelectedWorkflowId] = useState<string>('');
+    const [editModalOpen, setEditModalOpen] = useState(false);
 
     const { data: applicant, isLoading, isError, error } = useStudent(id || '');
     const { mutate: unenroll, isPending: isUnenrolling } = useUnenrollStudent();
-    const { data: visaApplicationsData, isLoading: isLoadingVisas } = useStudentVisaApplications(id || '');
+    const { data: visaApplicationsData, isLoading: isLoadingVisas } = useStudentVisaApplications(id || '', {}, { enabled: activeTab === 'visa' });
     const { mutate: deleteVisaApplication } = useDeleteVisaApplication();
 
     // Helper to get full file URL
@@ -253,7 +265,7 @@ const ApplicantDetail = () => {
                 </CardContent>
             </Card>
 
-            <Tabs defaultValue="profile" className="space-y-6">
+            <Tabs defaultValue="profile" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="inline-flex h-12 items-center justify-start rounded-xl bg-muted/50 p-1 text-muted-foreground w-auto shadow-sm">
                     <TabsTrigger 
                         value="profile" 
@@ -695,7 +707,11 @@ const ApplicantDetail = () => {
                                 </CardTitle>
                                 <CardDescription>Manage visa applications for this student</CardDescription>
                             </div>
-                            <Button size="sm" variant="outline" className="gap-2" onClick={() => setVisaApplicationDialogOpen(true)}>
+                            <Button 
+                                size="sm" 
+                                className="gap-2 bg-red-600 hover:bg-red-700 text-white border-none shadow-md transition-all active:scale-95" 
+                                onClick={() => setVisaApplicationDialogOpen(true)}
+                            >
                                 <Plus className="h-4 w-4" />
                                 Create Application
                             </Button>
@@ -705,7 +721,7 @@ const ApplicantDetail = () => {
                                 <div className="flex items-center justify-center py-8">
                                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                 </div>
-                            ) : !visaApplicationsData?.data || visaApplicationsData.data.length === 0 ? (
+                            ) : !visaApplicationsData || visaApplicationsData.length === 0 ? (
                                 <div className="text-center py-12 border border-dashed rounded-xl bg-muted/20">
                                     <Globe className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
                                     <p className="text-muted-foreground text-sm">No visa applications found</p>
@@ -715,35 +731,102 @@ const ApplicantDetail = () => {
                                     <Table>
                                         <TableHeader className="bg-muted/50">
                                             <TableRow>
-                                                <TableHead className="font-semibold">Visa Type</TableHead>
+                                                <TableHead className="font-semibold">Visa Type & Workflow</TableHead>
                                                 <TableHead className="font-semibold">Destination</TableHead>
+                                                <TableHead className="font-semibold">Date</TableHead>
+                                                <TableHead className="font-semibold">Latest Remark</TableHead>
                                                 <TableHead className="font-semibold">Status</TableHead>
                                                 <TableHead className="font-semibold text-right">Action</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {visaApplicationsData.data.map((visa) => (
+                                            {visaApplicationsData.map((visa) => (
                                                 <TableRow key={visa.id}>
-                                                    <TableCell className="font-medium">{visa.visaType?.name || 'Unknown Type'}</TableCell>
-                                                    <TableCell>{visa.destinationCountry}</TableCell>
                                                     <TableCell>
-                                                        <Badge variant="outline" className="bg-info/10 text-info border-info/20">
+                                                        <div className="font-medium text-foreground">{visa.visaType?.name || 'Unknown Type'}</div>
+                                                        {visa.workflow && (
+                                                            <div className="text-[10px] text-muted-foreground mt-0.5 bg-muted/50 w-fit px-1.5 rounded border border-border/50">
+                                                                {visa.workflow.name}
+                                                            </div>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                                                            {visa.destinationCountry}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-xs text-muted-foreground font-medium">
+                                                        {visa.submissionDate 
+                                                            ? format(new Date(visa.submissionDate), 'MMM d, yyyy')
+                                                            : format(new Date(visa.createdAt), 'MMM d, yyyy')
+                                                        }
+                                                        <div className="text-[10px] opacity-70">
+                                                            {visa.submissionDate ? 'Submitted' : 'Created'}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                                                        {visa.notes && visa.notes.length > 0 
+                                                            ? visa.notes[visa.notes.length - 1].remarks 
+                                                            : 'No remarks'
+                                                        }
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="outline" className={`font-normal ${
+                                                            visa.status === 'Approved' ? 'bg-success/10 text-success border-success/20' :
+                                                            visa.status === 'Rejected' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                                                            'bg-info/10 text-info border-info/20'
+                                                        }`}>
                                                             {visa.status}
                                                         </Badge>
                                                     </TableCell>
                                                     <TableCell className="text-right">
-                                                        <Button 
-                                                            variant="ghost" 
-                                                            size="sm" 
-                                                            className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                            onClick={() => {
-                                                                if (window.confirm('Are you sure you want to delete this visa application?')) {
-                                                                    deleteVisaApplication(visa.id);
-                                                                }
-                                                            }}
-                                                        >
-                                                            <Trash2 className="h-3.5 w-3.5" />
-                                                        </Button>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                                    <MoreVertical className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" className="w-48">
+                                                                <DropdownMenuItem 
+                                                                    className="gap-2 cursor-pointer"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setSelectedVisaId(visa.id);
+                                                                        setCurrentStepId(visa.currentStepId || '');
+                                                                        setSelectedWorkflow(visa.workflow as any);
+                                                                        setWorkflowModalOpen(true);
+                                                                    }}
+                                                                >
+                                                                    <ExternalLink className="h-4 w-4" />
+                                                                    Go to workflow
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem 
+                                                                    className="gap-2 cursor-pointer text-primary"
+                                                                    disabled={visa.status === 'Approved' || visa.status === 'Rejected'}
+                                                                    onClick={() => {
+                                                                        setSelectedVisaId(visa.id);
+                                                                        setCurrentStepId(visa.currentStepId || '');
+                                                                        setSelectedWorkflowId(visa.workflowId || visa.workflow?.id || '');
+                                                                        setAdvanceStepDialogOpen(true);
+                                                                    }}
+                                                                >
+                                                                    <CheckCircle2 className="h-4 w-4" />
+                                                                    Advance step
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem 
+                                                                    className="gap-2 cursor-pointer text-destructive focus:text-destructive"
+                                                                    onClick={() => {
+                                                                        if (window.confirm('Are you sure you want to delete this visa application?')) {
+                                                                            deleteVisaApplication(visa.id);
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                    Delete application
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
@@ -801,6 +884,22 @@ const ApplicantDetail = () => {
                 onOpenChange={setVisaApplicationDialogOpen}
                 studentId={id || ''}
                 courseApplications={applicant?.courseApplications}
+            />
+
+            <WorkflowDetailModal
+                workflow={selectedWorkflow}
+                open={workflowModalOpen}
+                onOpenChange={setWorkflowModalOpen}
+                visaId={selectedVisaId}
+                currentStepId={currentStepId}
+            />
+
+            <AdvanceStepDialog
+                open={advanceStepDialogOpen}
+                onOpenChange={setAdvanceStepDialogOpen}
+                visaId={selectedVisaId}
+                currentStepId={currentStepId}
+                workflowId={selectedWorkflowId}
             />
         </DashboardLayout>
     );

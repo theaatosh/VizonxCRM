@@ -13,8 +13,8 @@ export const visaApplicationService = {
     /**
      * Get all visa applications with pagination and filters
      */
-    async getVisaApplications(params?: VisaApplicationQueryParams): Promise<PaginatedResponse<VisaApplication>> {
-        const response = await api.get<PaginatedResponse<VisaApplication>>(VISA_APPLICATIONS_ENDPOINT, {
+    async getVisaApplications(params?: VisaApplicationQueryParams): Promise<VisaApplication[]> {
+        const response = await api.get<VisaApplication[]>(VISA_APPLICATIONS_ENDPOINT, {
             params: {
                 page: params?.page || 1,
                 limit: params?.limit || 10,
@@ -61,6 +61,13 @@ export const visaApplicationService = {
         await api.delete(`${VISA_APPLICATIONS_ENDPOINT}/${id}`);
     },
 
+    /**
+     * Advance the step of a visa application
+     */
+    async advanceVisaStep(id: string, data: { expectedStepId: string; notes: string }): Promise<VisaApplication> {
+        const response = await api.post<VisaApplication>(`${VISA_APPLICATIONS_ENDPOINT}/${id}/advance-step`, data);
+        return response.data;
+    },
 };
 
 export default visaApplicationService;

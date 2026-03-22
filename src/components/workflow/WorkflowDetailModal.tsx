@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Workflow, WorkflowStep } from "@/types/workflow.types";
 import { useWorkflowSteps, useDeleteStep, useReorderSteps } from "@/hooks/useWorkflows";
+import { useAdvanceVisaStep } from "@/hooks/useVisaApplications";
+import { toast } from "sonner";
+import { useEffect } from "react";
 import {
     Loader2,
     Plus,
@@ -23,6 +26,13 @@ import {
 } from "lucide-react";
 import { CreateStepDialog } from "./CreateStepDialog";
 import { EditStepDialog } from "./EditStepDialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -39,18 +49,49 @@ interface WorkflowDetailModalProps {
     workflow: Workflow | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    visaId?: string;
+    currentStepId?: string;
 }
 
-export const WorkflowDetailModal = ({ workflow, open, onOpenChange }: WorkflowDetailModalProps) => {
+export const WorkflowDetailModal = ({ workflow, open, onOpenChange, visaId, currentStepId }: WorkflowDetailModalProps) => {
     const [selectedStep, setSelectedStep] = useState<WorkflowStep | null>(null);
     const [editStepOpen, setEditStepOpen] = useState(false);
     const [draggedStepId, setDraggedStepId] = useState<string | null>(null);
+    const [advanceNotes, setAdvanceNotes] = useState("");
+    const [advancingStepId, setAdvancingStepId] = useState<string>(currentStepId || "");
 
     const { data: steps = [], isLoading } = useWorkflowSteps(workflow?.id || "");
     const deleteStepMutation = useDeleteStep();
     const reorderStepsMutation = useReorderSteps();
+    const advanceStepMutation = useAdvanceVisaStep();
+
+    useEffect(() => {
+        if (open && currentStepId) {
+            setAdvancingStepId(currentStepId);
+        }
+    }, [open, currentStepId]);
 
     const sortedSteps = [...steps].sort((a, b) => a.stepOrder - b.stepOrder);
+
+    const handleAdvance = () => {
+        if (!visaId || !advancingStepId || !advanceNotes) {
+            toast.error("Please select a step and provide notes");
+            return;
+        }
+
+        advanceStepMutation.mutate({
+            id: visaId,
+            data: {
+                expectedStepId: advancingStepId,
+                notes: advanceNotes
+            }
+        }, {
+            onSuccess: () => {
+                setAdvanceNotes("");
+                onOpenChange(false);
+            }
+        });
+    };
 
     const handleDeleteStep = (stepId: string) => {
         if (!workflow) return;
@@ -143,7 +184,61 @@ export const WorkflowDetailModal = ({ workflow, open, onOpenChange }: WorkflowDe
                             <CreateStepDialog workflowId={workflow.id} />
                         </div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-6">
+                            {/* Advance Step Action Area */}
+                            {visaId && (
+                                <div className="bg-primary/5 border border-primary/20 rounded-xl p-6">
+                                    <div className="flex flex-col md:flex-row gap-6 items-end">
+                                        <div className="flex-1 space-y-2">
+                                            <label className="text-sm font-semibold flex items-center gap-2">
+                                                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                                Workflow Step
+                                            </label>
+                                            <Select 
+                                                value={advancingStepId} 
+                                                onValueChange={setAdvancingStepId}
+                                            >
+                                                <SelectTrigger className="bg-background">
+                                                    <SelectValue placeholder="Select Workflow Step" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {sortedSteps.map((step) => (
+                                                        <SelectItem key={step.id} value={step.id}>
+                                                            Step {step.stepOrder}: {step.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="flex-[2] space-y-2">
+                                            <label className="text-sm font-medium">Progress Notes</label>
+                                            <input 
+                                                className="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                placeholder="e.g. Document verified, moving to next stage..."
+                                                value={advanceNotes}
+                                                onChange={(e) => setAdvanceNotes(e.target.value)}
+                                            />
+                                        </div>
+                                        <Button 
+                                            onClick={handleAdvance}
+                                            disabled={advanceStepMutation.isPending || !advanceNotes}
+                                            className="px-8"
+                                        >
+                                            {advanceStepMutation.isPending ? (
+                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                            ) : (
+                                                <CheckCircle2 className="h-4 w-4 mr-2" />
+                                            )}
+                                            Advance
+                                        </Button>
+                                    </div>
+                                    <p className="text-[11px] text-muted-foreground mt-3 italic">
+                                        * Selecting a step will send its ID as the "expectedStepId" to safely advance the workflow.
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="space-y-3">
                             {sortedSteps.map((step, index) => (
                                 <div
                                     key={step.id}
@@ -229,6 +324,7 @@ export const WorkflowDetailModal = ({ workflow, open, onOpenChange }: WorkflowDe
                                     )}
                                 </div>
                             ))}
+                            </div>
                         </div>
                     )}
                 </div>

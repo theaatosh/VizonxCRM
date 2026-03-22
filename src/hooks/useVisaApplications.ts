@@ -29,11 +29,15 @@ export function useVisaApplications(params?: VisaApplicationQueryParams) {
 /**
  * Hook to fetch visa applications for a specific student
  */
-export function useStudentVisaApplications(studentId: string, params?: Omit<VisaApplicationQueryParams, 'studentId'>) {
+export function useStudentVisaApplications(
+    studentId: string, 
+    params?: Omit<VisaApplicationQueryParams, 'studentId'>,
+    options?: { enabled?: boolean }
+) {
     return useQuery({
         queryKey: visaApplicationKeys.byStudent(studentId),
         queryFn: () => visaApplicationService.getVisaApplications({ ...params, studentId }),
-        enabled: !!studentId,
+        enabled: (options?.enabled !== false) && !!studentId,
     });
 }
 
@@ -100,6 +104,25 @@ export function useDeleteVisaApplication() {
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || `Failed to delete visa application: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to advance the step of a visa application
+ */
+export function useAdvanceVisaStep() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string; data: { expectedStepId: string; notes: string } }) =>
+            visaApplicationService.advanceVisaStep(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: visaApplicationKeys.all });
+            toast.success('Visa application step advanced successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || `Failed to advance visa step: ${error.message}`);
         },
     });
 }

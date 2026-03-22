@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,8 +15,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Plus, Plane, Clock, CheckCircle, XCircle, Globe, FileX, Loader2 } from "lucide-react";
+import { Search, Plus, Plane, Clock, CheckCircle, XCircle, Globe, FileX, Loader2, ExternalLink } from "lucide-react";
+import { WorkflowDetailModal } from "@/components/workflow/WorkflowDetailModal";
+import { Workflow } from "@/types/workflow.types";
 import { useVisaTypes, useDeleteVisaType } from "@/hooks/useVisaTypes";
+import { useVisaApplications } from "@/hooks/useVisaApplications";
+import { useStudents } from "@/hooks/useStudents";
 import { VisaTypeCard } from "@/components/visaTypes/VisaTypeCard";
 import { CreateVisaTypeDialog } from "@/components/visaTypes/CreateVisaTypeDialog";
 import { EditVisaTypeDialog } from "@/components/visaTypes/EditVisaTypeDialog";
@@ -24,63 +29,9 @@ import { VisaType } from "@/types/visaType.types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import countryService from "@/services/country.service";
+import { format } from "date-fns";
 
-const visaApplications = [
-  {
-    id: 1,
-    applicant: "Sarah Johnson",
-    country: "United Kingdom",
-    visaType: "Student Visa (Tier 4)",
-    status: "Approved",
-    submittedDate: "2024-01-05",
-    decisionDate: "2024-01-12",
-  },
-  {
-    id: 2,
-    applicant: "Michael Chen",
-    country: "Canada",
-    visaType: "Study Permit",
-    status: "Pending",
-    submittedDate: "2024-01-10",
-    decisionDate: "-",
-  },
-  {
-    id: 3,
-    applicant: "Priya Sharma",
-    country: "Australia",
-    visaType: "Student Visa (Subclass 500)",
-    status: "In Process",
-    submittedDate: "2024-01-08",
-    decisionDate: "-",
-  },
-  {
-    id: 4,
-    applicant: "Ahmed Hassan",
-    country: "Germany",
-    visaType: "National Visa (Type D)",
-    status: "Approved",
-    submittedDate: "2024-01-02",
-    decisionDate: "2024-01-14",
-  },
-  {
-    id: 5,
-    applicant: "Lisa Wang",
-    country: "USA",
-    visaType: "F-1 Student Visa",
-    status: "Rejected",
-    submittedDate: "2023-12-20",
-    decisionDate: "2024-01-08",
-  },
-  {
-    id: 6,
-    applicant: "Carlos Rodriguez",
-    country: "Ireland",
-    visaType: "Study Visa",
-    status: "Pending",
-    submittedDate: "2024-01-14",
-    decisionDate: "-",
-  },
-];
+
 
 const countryStats = [
   { country: "United Kingdom", total: 45, approved: 32, pending: 10, rejected: 3, flag: "🇬🇧" },
@@ -96,16 +47,19 @@ const statusColors: Record<string, string> = {
   Pending: "bg-warning/10 text-warning border-warning/20",
   "In Process": "bg-info/10 text-info border-info/20",
   Rejected: "bg-destructive/10 text-destructive border-destructive/20",
+  UnderReview: "bg-info/10 text-info border-info/20",
 };
 
 const statusIcons: Record<string, React.ReactNode> = {
   Approved: <CheckCircle className="h-4 w-4 text-success" />,
   Pending: <Clock className="h-4 w-4 text-warning" />,
   "In Process": <Plane className="h-4 w-4 text-info" />,
+  "UnderReview": <Loader2 className="h-4 w-4 text-info animate-spin" />,
   Rejected: <XCircle className="h-4 w-4 text-destructive" />,
 };
 
 const Visas = () => {
+  const navigate = useNavigate();
   // Visa Types state
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -115,7 +69,18 @@ const Visas = () => {
   const [selectedVisaType, setSelectedVisaType] = useState<VisaType | null>(null);
   const [editVisaType, setEditVisaType] = useState<VisaType | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [workflowModalOpen, setWorkflowModalOpen] = useState(false);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+  const [selectedVisaId, setSelectedVisaId] = useState<string>("");
+  const [currentStepId, setCurrentStepId] = useState<string>("");
   const [editModalOpen, setEditModalOpen] = useState(false);
+
+  // Applications tab state
+  const [appPage, setAppPage] = useState(1);
+  const [appLimit, setAppLimit] = useState(12);
+  const [appSearch, setAppSearch] = useState("");
+  const [appStatus, setAppStatus] = useState<string>("all");
+  const [appStudentId, setAppStudentId] = useState<string>("all");
 
 
   const { data, isLoading, isError, error } = useVisaTypes({
@@ -127,6 +92,19 @@ const Visas = () => {
   });
 
   const deleteVisaTypeMutation = useDeleteVisaType();
+
+  // Fetch visa applications
+  const { data: appData, isLoading: isLoadingApps } = useVisaApplications({
+    page: appPage,
+    limit: appLimit,
+    search: appSearch || undefined,
+    status: appStatus !== "all" ? appStatus : undefined,
+    studentId: appStudentId !== "all" ? appStudentId : undefined,
+  });
+
+  // Fetch students for filter
+  const { data: studentsData } = useStudents({ limit: 100 });
+  const students = studentsData?.data || [];
 
   // Fetch countries for filter
   const { data: countries = [] } = useQuery({
@@ -147,8 +125,6 @@ const Visas = () => {
       statusFilter === "active" ? vt.isActive : !vt.isActive
     );
   }
-
-  const totalPages = Math.ceil((data?.totalPages || 0));
 
   const handleViewVisaType = (visaType: VisaType) => {
     setSelectedVisaType(visaType);
@@ -356,13 +332,52 @@ const Visas = () => {
         <TabsContent value="applications">
           <Card className="shadow-card">
             <CardHeader className="pb-4">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <CardTitle className="text-lg font-semibold">Visa Applications</CardTitle>
-                <div className="flex gap-2">
-                  <div className="relative">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                    <CardTitle className="text-lg font-semibold">Visa Applications</CardTitle>
+                    <p className="text-sm text-muted-foreground">Manage and track all visa filings</p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <div className="relative w-full sm:w-[250px]">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input placeholder="Search applications..." className="pl-9 w-[250px]" />
+                    <Input 
+                        placeholder="Search applications..." 
+                        className="pl-9"
+                        value={appSearch}
+                        onChange={(e) => {
+                            setAppSearch(e.target.value);
+                            setAppPage(1);
+                        }}
+                    />
                   </div>
+                  
+                  <Select value={appStatus} onValueChange={(v) => { setAppStatus(v); setAppPage(1); }}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="UnderReview">Under Review</SelectItem>
+                      <SelectItem value="Approved">Approved</SelectItem>
+                      <SelectItem value="Rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={appStudentId} onValueChange={(v) => { setAppStudentId(v); setAppPage(1); }}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Filter by student" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Students</SelectItem>
+                      {students.map((student) => (
+                        <SelectItem key={student.id} value={student.id}>
+                          {student.firstName} {student.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
                   <Button className="gap-2">
                     <Plus className="h-4 w-4" />
                     New Application
@@ -371,42 +386,105 @@ const Visas = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {visaApplications.map((visa) => (
-                  <div
-                    key={visa.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/50"
-                  >
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${visa.applicant}`} />
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          {visa.applicant
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-foreground">{visa.applicant}</p>
-                        <p className="text-sm text-muted-foreground">{visa.visaType}</p>
+              {isLoadingApps ? (
+                <div className="flex items-center justify-center py-20">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : !appData || appData.length === 0 ? (
+                <div className="text-center py-20 border-2 border-dashed rounded-xl bg-muted/20">
+                    <Globe className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold">No Applications Found</h3>
+                    <p className="text-muted-foreground">Try adjusting your filters or search terms.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {appData.map((visa) => (
+                    <div
+                      key={visa.id}
+                      className="flex items-center justify-between rounded-xl border border-border p-4 transition-all hover:shadow-md hover:border-primary/30 cursor-pointer group"
+                      onClick={() => visa.studentId && navigate(`/applicants/${visa.studentId}?tab=visa`)}
+                    >
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-11 w-11 border-2 border-background shadow-sm">
+                          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${visa.student?.firstName || 'User'}`} />
+                          <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                            {visa.student ? `${visa.student.firstName[0]}${visa.student.lastName[0]}` : 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                            {visa.student ? `${visa.student.firstName} ${visa.student.lastName}` : 'Unknown Student'}
+                          </p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                            <Plane className="h-3 w-3" />
+                            {visa.visaType?.name || 'Unknown Visa Type'}
+                            {visa.workflow && (
+                              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded ml-2 border border-border/50">
+                                {visa.workflow.name}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-8">
+                        <div className="text-right hidden sm:block">
+                          <p className="text-sm font-medium flex items-center justify-end gap-1.5">
+                            <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                            {visa.destinationCountry}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {visa.submissionDate 
+                              ? `Submitted: ${format(new Date(visa.submissionDate), 'MMM d, yyyy')}`
+                              : `Created: ${format(new Date(visa.createdAt), 'MMM d, yyyy')}`
+                            }
+                          </p>
+                        </div>
+                         <div className="flex items-center gap-2">
+                          <div className="flex flex-col items-end gap-2">
+                            <Badge variant="outline" className={`gap-1.5 py-1 px-3 ${statusColors[visa.status] || "bg-muted text-muted-foreground"}`}>
+                              {statusIcons[visa.status]}
+                              {visa.status}
+                            </Badge>
+                            {visa.workflow && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-7 text-[10px] gap-1 hover:bg-primary/10 text-primary-foreground/70 hover:text-primary transition-all pr-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedVisaId(visa.id);
+                                  setCurrentStepId(visa.currentStepId || "");
+                                  setSelectedWorkflow(visa.workflow as any);
+                                  setWorkflowModalOpen(true);
+                                }}
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                Go to workflow
+                              </Button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right hidden sm:block">
-                        <p className="text-sm font-medium">{visa.country}</p>
-                        <p className="text-xs text-muted-foreground">Submitted: {visa.submittedDate}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {statusIcons[visa.status]}
-                        <Badge variant="outline" className={statusColors[visa.status]}>
-                          {visa.status}
-                        </Badge>
-                      </div>
-                    </div>
+                  ))}
+
+                  {/* Pagination */}
+                  <div className="pt-4 mt-6 border-t">
+                      <DataTablePagination
+                          pageIndex={appPage}
+                          pageSize={appLimit}
+                          totalItems={appData.length}
+                          totalPages={1}
+                          onPageChange={setAppPage}
+                          onPageSizeChange={(newLimit) => {
+                              setAppLimit(newLimit);
+                              setAppPage(1);
+                          }}
+                          pageSizeOptions={[12, 24, 48]}
+                      />
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -463,9 +541,16 @@ const Visas = () => {
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
       />
+
+      <WorkflowDetailModal
+        workflow={selectedWorkflow}
+        open={workflowModalOpen}
+        onOpenChange={setWorkflowModalOpen}
+        visaId={selectedVisaId}
+        currentStepId={currentStepId}
+      />
     </DashboardLayout>
   );
 };
 
 export default Visas;
-
