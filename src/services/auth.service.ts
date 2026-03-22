@@ -3,7 +3,7 @@ import api from './api';
 import type { CurrentUser } from '@/types/permission.types';
 
 // API Base URL
-const API_BASE_URL = 'http://crmapi.vizon-x.com/api/v1';
+const API_BASE_URL = 'https://crmapi.vizon-x.com/api/v1';
 
 // Types
 export interface LoginDto {

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API Base URL - Change this for different environments
-const API_BASE_URL = 'http://crmapi.vizon-x.com/api/v1';
+const API_BASE_URL = 'https://crmapi.vizon-x.com/api/v1';
 
 // Create axios instance
 const api = axios.create({
