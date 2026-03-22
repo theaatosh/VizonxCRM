@@ -31,6 +31,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2 } from 'lucide-react';
 import { useCreateClass, useUpdateClass } from '@/hooks/useClasses';
 import { useUsers } from '@/hooks/useUsers';
+import { useServices } from '@/hooks/useServices';
 import type { Class, CreateClassDto, UpdateClassDto } from '@/types/class.types';
 
 const DAYS_OF_WEEK = [
@@ -46,6 +47,7 @@ const DAYS_OF_WEEK = [
 const classFormSchema = z.object({
     name: z.string().min(1, 'Name is required'),
     description: z.string().optional(),
+    serviceId: z.string().min(1, 'Service is required'),
     studentCapacity: z.coerce.number().min(1, 'Capacity must be at least 1'),
     instructorId: z.string().min(1, 'Instructor is required'),
     schedule: z.array(z.object({
@@ -68,17 +70,21 @@ export function ClassFormDialog({ open, onOpenChange, classData }: ClassFormDial
     const createClass = useCreateClass();
     const updateClass = useUpdateClass();
     const { data: usersData } = useUsers({ limit: 100 });
+    const { data: servicesData } = useServices({ limit: 100 });
     
     // Filter users to only show instructors
     const instructors = (usersData?.data || []).filter(user => 
         user.role?.name?.toLowerCase() === 'instructor'
     );
 
+    const services = servicesData?.data || [];
+
     const form = useForm<ClassFormValues>({
         resolver: zodResolver(classFormSchema),
         defaultValues: {
             name: '',
             description: '',
+            serviceId: '',
             studentCapacity: 20,
             instructorId: '',
             schedule: [{ day: 'Monday', startTime: '10:00', endTime: '11:00' }],
@@ -95,6 +101,7 @@ export function ClassFormDialog({ open, onOpenChange, classData }: ClassFormDial
             form.reset({
                 name: classData.name,
                 description: classData.description || '',
+                serviceId: classData.serviceId,
                 studentCapacity: classData.studentCapacity,
                 instructorId: classData.instructorId,
                 schedule: classData.schedule.map(item => ({
@@ -107,6 +114,7 @@ export function ClassFormDialog({ open, onOpenChange, classData }: ClassFormDial
             form.reset({
                 name: '',
                 description: '',
+                serviceId: '',
                 studentCapacity: 20,
                 instructorId: '',
                 schedule: [{ day: 'Monday', startTime: '10:00', endTime: '11:00' }],
@@ -119,6 +127,7 @@ export function ClassFormDialog({ open, onOpenChange, classData }: ClassFormDial
             const payload: CreateClassDto = {
                 name: values.name,
                 description: values.description,
+                serviceId: values.serviceId,
                 studentCapacity: values.studentCapacity,
                 instructorId: values.instructorId,
                 schedule: values.schedule as any[], // Casting to avoid lint error with Zod inference
@@ -191,6 +200,31 @@ export function ClassFormDialog({ open, onOpenChange, classData }: ClassFormDial
                                         <FormControl>
                                             <Input type="number" {...field} />
                                         </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="serviceId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Service</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select service" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {services.map((service) => (
+                                                    <SelectItem key={service.id} value={service.id}>
+                                                        {service.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                         <FormMessage />
                                     </FormItem>
                                 )}

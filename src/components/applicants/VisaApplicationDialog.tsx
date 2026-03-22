@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2, Globe } from 'lucide-react';
 import { useVisaTypes } from '@/hooks/useVisaTypes';
+import { useCountries } from '@/hooks/useCountries';
 import { useCreateVisaApplication } from '@/hooks/useVisaApplications';
 import type { CourseApplication } from '@/types/course-application.types';
 
@@ -52,6 +53,7 @@ export const VisaApplicationDialog = ({
     courseApplications = [],
 }: VisaApplicationDialogProps) => {
     const { data: visaTypesData, isLoading: isLoadingVisaTypes } = useVisaTypes({ limit: 100 });
+    const { data: countriesData, isLoading: isLoadingCountries } = useCountries({ limit: 100 });
     const createMutation = useCreateVisaApplication();
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -62,6 +64,11 @@ export const VisaApplicationDialog = ({
             destinationCountry: '',
         },
     });
+
+    const selectedCountry = form.watch('destinationCountry');
+    const isCountrySelected = !!selectedCountry;
+
+    const countries = countriesData?.data || [];
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         createMutation.mutate({
@@ -91,6 +98,41 @@ export const VisaApplicationDialog = ({
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                         <FormField
                             control={form.control}
+                            name="destinationCountry"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Destination Country</FormLabel>
+                                    <Select 
+                                        onValueChange={field.onChange} 
+                                        defaultValue={field.value}
+                                        value={field.value}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select destination country" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {isLoadingCountries ? (
+                                                <div className="p-2 text-center">
+                                                    <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                                                </div>
+                                            ) : (
+                                                countries.map((country) => (
+                                                    <SelectItem key={country.id} value={country.name}>
+                                                        {country.name}
+                                                    </SelectItem>
+                                                ))
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
                             name="visaTypeId"
                             render={({ field }) => (
                                 <FormItem>
@@ -99,10 +141,11 @@ export const VisaApplicationDialog = ({
                                         onValueChange={field.onChange} 
                                         defaultValue={field.value}
                                         value={field.value}
+                                        disabled={!isCountrySelected}
                                     >
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select visa type" />
+                                                <SelectValue placeholder={isCountrySelected ? "Select visa type" : "Select country first"} />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
@@ -111,11 +154,13 @@ export const VisaApplicationDialog = ({
                                                     <Loader2 className="h-4 w-4 animate-spin mx-auto" />
                                                 </div>
                                             ) : (
-                                                visaTypesData?.data.map((vt) => (
-                                                    <SelectItem key={vt.id} value={vt.id}>
-                                                        {vt.name} ({vt.country?.name || 'Any Country'})
-                                                    </SelectItem>
-                                                ))
+                                                visaTypesData?.data
+                                                    .filter(vt => !selectedCountry || vt.country?.name === selectedCountry || !vt.country)
+                                                    .map((vt) => (
+                                                        <SelectItem key={vt.id} value={vt.id}>
+                                                            {vt.name} ({vt.country?.name || 'Any Country'})
+                                                        </SelectItem>
+                                                    ))
                                             )}
                                         </SelectContent>
                                     </Select>
@@ -134,10 +179,11 @@ export const VisaApplicationDialog = ({
                                         onValueChange={field.onChange} 
                                         defaultValue={field.value}
                                         value={field.value}
+                                        disabled={!isCountrySelected}
                                     >
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select course application" />
+                                                <SelectValue placeholder={isCountrySelected ? "Select course application" : "Select country first"} />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
@@ -154,20 +200,6 @@ export const VisaApplicationDialog = ({
                                             )}
                                         </SelectContent>
                                     </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={form.control}
-                            name="destinationCountry"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Destination Country</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="e.g. Australia" {...field} />
-                                    </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}

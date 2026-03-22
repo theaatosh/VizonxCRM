@@ -20,6 +20,8 @@ export interface Class {
     };
     instructorId: string;
     instructorName?: string;
+    serviceId: string;
+    serviceName?: string;
     createdAt: string;
     updatedAt: string;
     level?: string;
@@ -35,6 +37,7 @@ export interface CreateClassDto {
     studentCapacity: number;
     schedule: ClassSchedule[];
     instructorId: string;
+    serviceId: string;
 }
 
 export interface UpdateClassDto {
@@ -43,6 +46,7 @@ export interface UpdateClassDto {
     studentCapacity?: number;
     schedule?: ClassSchedule[];
     instructorId?: string;
+    serviceId?: string;
 }
 
 export type { PaginationParams };

@@ -6,6 +6,7 @@ export interface Test {
     type: string;
     description: string;
     studentCapacity: number;
+    serviceId: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -15,6 +16,7 @@ export interface CreateTestDto {
     type: string;
     description: string;
     studentCapacity: number;
+    serviceId: string;
 }
 
 export interface UpdateTestDto {
@@ -22,6 +24,7 @@ export interface UpdateTestDto {
     type?: string;
     description?: string;
     studentCapacity?: number;
+    serviceId?: string;
 }
 
 export type { PaginationParams };

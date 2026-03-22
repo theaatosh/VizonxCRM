@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useCreateTest, useUpdateTest } from '@/hooks/useTests';
+import { useServices } from '@/hooks/useServices';
 import type { Test, CreateTestDto, UpdateTestDto } from '@/types/test.types';
 
 const TEST_TYPES = [
@@ -43,6 +44,7 @@ const TEST_TYPES = [
 const testFormSchema = z.object({
     name: z.string().min(1, 'Name is required'),
     type: z.string().min(1, 'Type is required'),
+    serviceId: z.string().min(1, 'Service is required'),
     description: z.string().min(1, 'Description is required'),
     studentCapacity: z.coerce.number().min(1, 'Capacity must be at least 1'),
 });
@@ -59,12 +61,15 @@ export function TestFormDialog({ open, onOpenChange, testData }: TestFormDialogP
     const isEditing = !!testData;
     const createTest = useCreateTest();
     const updateTest = useUpdateTest();
+    const { data: servicesData } = useServices({ limit: 100 });
+    const services = servicesData?.data || [];
 
     const form = useForm<TestFormValues>({
         resolver: zodResolver(testFormSchema),
         defaultValues: {
             name: '',
             type: '',
+            serviceId: '',
             description: '',
             studentCapacity: 100,
         },
@@ -75,6 +80,7 @@ export function TestFormDialog({ open, onOpenChange, testData }: TestFormDialogP
             form.reset({
                 name: testData.name,
                 type: testData.type,
+                serviceId: testData.serviceId,
                 description: testData.description,
                 studentCapacity: testData.studentCapacity,
             });
@@ -82,6 +88,7 @@ export function TestFormDialog({ open, onOpenChange, testData }: TestFormDialogP
             form.reset({
                 name: '',
                 type: '',
+                serviceId: '',
                 description: '',
                 studentCapacity: 100,
             });
@@ -93,6 +100,7 @@ export function TestFormDialog({ open, onOpenChange, testData }: TestFormDialogP
             const payload: CreateTestDto = {
                 name: values.name,
                 type: values.type,
+                serviceId: values.serviceId,
                 description: values.description,
                 studentCapacity: values.studentCapacity,
             };
@@ -131,6 +139,31 @@ export function TestFormDialog({ open, onOpenChange, testData }: TestFormDialogP
                                     <FormControl>
                                         <Input placeholder="e.g. IELTS Academic" {...field} />
                                     </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="serviceId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Service</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select service" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {services.map((service) => (
+                                                <SelectItem key={service.id} value={service.id}>
+                                                    {service.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                 </FormItem>
                             )}
