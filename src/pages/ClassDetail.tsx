@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import {
     ArrowLeft,
     Users,
@@ -25,7 +27,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { useClass, useClassStudents, useClassBookingRequests } from '@/hooks/useClasses';
+import { useClass, useClassStudents, useClassBookingRequests, useApproveBookingRequest, useRejectBookingRequest } from '@/hooks/useClasses';
 import { useState } from 'react';
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
 
@@ -40,6 +42,34 @@ const ClassDetail = () => {
     // Bookings state
     const [bookingPage, setBookingPage] = useState(1);
     const [bookingLimit, setBookingLimit] = useState(10);
+
+    // Reject dialog state
+    const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+    const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
+    const [rejectReason, setRejectReason] = useState('');
+
+    const { mutate: approveRequest, isPending: isApproving } = useApproveBookingRequest();
+    const { mutate: rejectRequest, isPending: isRejecting } = useRejectBookingRequest();
+
+    const handleApprove = (requestId: string) => {
+        approveRequest(requestId);
+    };
+
+    const handleRejectClick = (requestId: string) => {
+        setSelectedRequestId(requestId);
+        setRejectReason('');
+        setRejectDialogOpen(true);
+    };
+
+    const handleRejectConfirm = () => {
+        if (selectedRequestId && rejectReason.trim()) {
+            rejectRequest({ requestId: selectedRequestId, reason: rejectReason.trim() }, {
+                onSuccess: () => {
+                    setRejectDialogOpen(false);
+                }
+            });
+        }
+    };
 
     const { data: classData, isLoading: isClassLoading, isError: isClassError } = useClass(id || '');
     
@@ -321,10 +351,24 @@ const ClassDetail = () => {
                                                         </TableCell>
                                                         <TableCell className="text-right">
                                                             <div className="flex justify-end gap-2">
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-success hover:bg-success/10">
+                                                                <Button 
+                                                                    variant="ghost" 
+                                                                    size="icon" 
+                                                                    className="h-8 w-8 text-success hover:bg-success/10"
+                                                                    onClick={() => handleApprove(request.id)}
+                                                                    disabled={isApproving || isRejecting || request.status?.toUpperCase() !== 'PENDING'}
+                                                                    title="Approve Request"
+                                                                >
                                                                     <CheckCircle2 className="h-4 w-4" />
                                                                 </Button>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10">
+                                                                <Button 
+                                                                    variant="ghost" 
+                                                                    size="icon" 
+                                                                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                                                    onClick={() => handleRejectClick(request.id)}
+                                                                    disabled={isApproving || isRejecting || request.status?.toUpperCase() !== 'PENDING'}
+                                                                    title="Reject Request"
+                                                                >
                                                                     <XCircle className="h-4 w-4" />
                                                                 </Button>
                                                             </div>
@@ -352,6 +396,34 @@ const ClassDetail = () => {
                     </TabsContent>
                 </Tabs>
             </div>
+
+            {/* Reject Request Dialog */}
+            <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reject Booking Request</DialogTitle>
+                        <DialogDescription>
+                            Please provide a reason for rejecting this booking request. This will be visible to the student.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Textarea
+                            placeholder="Reason for rejection (e.g. Class prerequisites are not met yet)"
+                            value={rejectReason}
+                            onChange={(e) => setRejectReason(e.target.value)}
+                            className="min-h-[100px]"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setRejectDialogOpen(false)} disabled={isRejecting}>
+                            Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleRejectConfirm} disabled={!rejectReason.trim() || isRejecting}>
+                            {isRejecting ? 'Rejecting...' : 'Reject Request'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </DashboardLayout>
     );
 };

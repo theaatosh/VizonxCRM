@@ -93,6 +93,20 @@ export const classService = {
         });
         return response.data;
     },
+
+    /**
+     * Approve a class booking request
+     */
+    async approveBookingRequest(requestId: string): Promise<void> {
+        await api.post(`${CLASSES_ENDPOINT}/booking-requests/${requestId}/approve`);
+    },
+
+    /**
+     * Reject a class booking request
+     */
+    async rejectBookingRequest(requestId: string, reason: string): Promise<void> {
+        await api.post(`${CLASSES_ENDPOINT}/booking-requests/${requestId}/reject`, { reason });
+    },
 };
 
 export default classService;
