@@ -26,10 +26,6 @@ export const paymentService = {
         return response.data;
     },
 
-    async getStudentPaymentSummary(studentId: string): Promise<PaymentSummary> {
-        const response = await api.get<PaymentSummary>(`${PAYMENTS_ENDPOINT}/student/${studentId}/summary`);
-        return response.data;
-    },
 
     async getPaymentById(id: string): Promise<Payment> {
         const response = await api.get<Payment>(`${PAYMENTS_ENDPOINT}/${id}`);

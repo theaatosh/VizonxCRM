@@ -58,6 +58,7 @@ import { AssignTestDialog } from '@/components/applicants/AssignTestDialog';
 import { VisaApplicationDialog } from '@/components/applicants/VisaApplicationDialog';
 import { useStudentVisaApplications, useDeleteVisaApplication, useAdvanceVisaStep } from '@/hooks/useVisaApplications';
 import { StudentApplicationsTab } from '@/components/students/StudentApplicationsTab';
+import { StudentPaymentsTab } from '@/components/students/StudentPaymentsTab';
 import { WorkflowDetailModal } from '@/components/workflow/WorkflowDetailModal';
 import { AdvanceStepDialog } from '@/components/applicants/AdvanceStepDialog';
 import { Workflow } from '@/types/workflow.types';
@@ -679,22 +680,7 @@ const ApplicantDetail = () => {
                 </TabsContent>
 
                 <TabsContent value="payment" className="animate-in fade-in-50 duration-300">
-                    <Card className="shadow-card border-none bg-background/50 backdrop-blur-sm">
-                        <CardHeader className="text-center py-10">
-                            <div className="h-20 w-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                                <CreditCard className="h-10 w-10 text-muted-foreground" />
-                            </div>
-                            <CardTitle className="text-2xl">Payment & Billing</CardTitle>
-                            <CardDescription>
-                                Track application fees and payment history.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="pb-10 text-center">
-                            <p className="text-muted-foreground max-w-sm mx-auto">
-                                Payment tracking functionality is currently under development. Check back soon for updates on transaction history.
-                            </p>
-                        </CardContent>
-                    </Card>
+                    <StudentPaymentsTab studentId={id || ''} />
                 </TabsContent>
 
                 <TabsContent value="visa" className="animate-in fade-in-50 duration-300 space-y-6">

@@ -29,13 +29,6 @@ export const useStudentPaymentHistory = (studentId: string, filters?: PaymentFil
     });
 };
 
-export const useStudentPaymentSummary = (studentId: string) => {
-    return useQuery({
-        queryKey: ['payments', 'student', studentId, 'summary'],
-        queryFn: () => paymentService.getStudentPaymentSummary(studentId),
-        enabled: !!studentId,
-    });
-};
 
 export const usePayment = (id: string) => {
     return useQuery({
