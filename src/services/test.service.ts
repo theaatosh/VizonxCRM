@@ -61,6 +61,35 @@ export const testService = {
     async assignStudent(testId: string, studentId: string): Promise<void> {
         await api.post(`${TESTS_ENDPOINT}/${testId}/assign`, { studentId });
     },
+
+    /**
+     * Get all student assignments for a test
+     */
+    async getTestAssignments(testId: string, params?: PaginationParams): Promise<PaginatedResponse<any>> {
+        const response = await api.get<PaginatedResponse<any>>(`${TESTS_ENDPOINT}/${testId}/assignments`, {
+            params: {
+                page: params?.page || 1,
+                limit: params?.limit || 10,
+                sortBy: params?.sortBy,
+                sortOrder: params?.sortOrder || 'desc',
+                search: params?.search,
+            },
+        });
+        return response.data;
+    },
+
+    /**
+     * Get all test booking requests
+     */
+    async getTestBookingRequests(testId: string, params?: PaginationParams): Promise<PaginatedResponse<any>> {
+        const response = await api.get<PaginatedResponse<any>>(`${TESTS_ENDPOINT}/booking-requests/all`, {
+            params: {
+                ...params,
+                testId,
+            },
+        });
+        return response.data;
+    },
 };
 
 export default testService;

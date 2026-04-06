@@ -647,7 +647,11 @@ const Services = () => {
           {!isTestsLoading && !isTestsError && tests.length > 0 && (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {tests.map((testData: Test) => (
-                <Card key={testData.id} className="border border-border hover:shadow-md transition-shadow">
+                <Card 
+                  key={testData.id} 
+                  className="border border-border hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => navigate(`/services/tests/${testData.id}`)}
+                >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">

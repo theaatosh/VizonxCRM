@@ -49,7 +49,7 @@ const menuItems: MenuItem[] = [
   { title: "Applications", icon: FileText, path: "/course-applications" },
   { title: "Content Management", icon: FileText, path: "/content-management", module: "blogs" },
   { title: "Messaging", icon: MessageSquare, path: "/messaging" },
-  { title: "Logs", icon: History, path: "/logs", module: "logs" },
+  { title: "Activity Logs", icon: History, path: "/activity-logs" },
   { title: "Settings", icon: Settings, path: "/settings" },
 ];
 

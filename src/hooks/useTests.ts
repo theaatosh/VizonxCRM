@@ -94,3 +94,25 @@ export function useAssignStudent() {
         },
     });
 }
+
+/**
+ * Hook to get assignments for a test
+ */
+export function useTestAssignments(testId: string, params: PaginationParams = {}) {
+    return useQuery({
+        queryKey: [...TEST_KEYS.detail(testId), 'assignments', params],
+        queryFn: () => testService.getTestAssignments(testId, params),
+        enabled: !!testId,
+    });
+}
+
+/**
+ * Hook to get booking requests for a test
+ */
+export function useTestBookingRequests(testId: string, params: PaginationParams = {}) {
+    return useQuery({
+        queryKey: [...TEST_KEYS.detail(testId), 'booking-requests', params],
+        queryFn: () => testService.getTestBookingRequests(testId, params),
+        enabled: !!testId,
+    });
+}

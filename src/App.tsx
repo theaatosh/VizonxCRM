@@ -23,6 +23,7 @@ import ClassDetail from "./pages/ClassDetail";
 import Settings from "./pages/Settings";
 import ContentManagement from "./pages/ContentManagement";
 import Messaging from "./pages/Messaging";
+import TestDetail from "./pages/TestDetail";
 import Logs from "./pages/Logs";
 import Payments from "./pages/Payments";
 import CourseApplications from "./pages/CourseApplications";
@@ -58,9 +59,10 @@ const App = () => (
               <Route path="/scholarships" element={<ProtectedRoute module="scholarships"><Scholarships /></ProtectedRoute>} />
               <Route path="/services" element={<ProtectedRoute module="services"><Services /></ProtectedRoute>} />
               <Route path="/services/classes/:id" element={<ProtectedRoute module="services"><ClassDetail /></ProtectedRoute>} />
+              <Route path="/services/tests/:id" element={<ProtectedRoute module="services"><TestDetail /></ProtectedRoute>} />
               <Route path="/content-management" element={<ProtectedRoute module="blogs"><ContentManagement /></ProtectedRoute>} />
               <Route path="/messaging" element={<ProtectedRoute><Messaging /></ProtectedRoute>} />
-              <Route path="/logs" element={<ProtectedRoute module="logs"><Logs /></ProtectedRoute>} />
+              <Route path="/activity-logs" element={<ProtectedRoute><Logs /></ProtectedRoute>} />
               <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
               <Route path="/course-applications" element={<ProtectedRoute><CourseApplications /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />

@@ -6,9 +6,19 @@ export interface Test {
     type: string;
     description: string;
     studentCapacity: number;
+    reservationDurationMinutes?: number;
     serviceId: string;
     createdAt: string;
     updatedAt: string;
+    service?: {
+        id: string;
+        name: string;
+    };
+    assignments?: any[];
+    _count?: {
+        assignments: number;
+        bookingRequests?: number;
+    };
 }
 
 export interface CreateTestDto {
