@@ -47,6 +47,8 @@ const testFormSchema = z.object({
     serviceId: z.string().min(1, 'Service is required'),
     description: z.string().min(1, 'Description is required'),
     studentCapacity: z.coerce.number().min(1, 'Capacity must be at least 1'),
+    scheduledDate: z.string().min(1, 'Scheduled Date is required'),
+    reservationDurationMinutes: z.coerce.number().min(1, 'Duration must be at least 1'),
 });
 
 type TestFormValues = z.infer<typeof testFormSchema>;
@@ -72,6 +74,8 @@ export function TestFormDialog({ open, onOpenChange, testData }: TestFormDialogP
             serviceId: '',
             description: '',
             studentCapacity: 100,
+            scheduledDate: '',
+            reservationDurationMinutes: 15,
         },
     });
 
@@ -83,6 +87,8 @@ export function TestFormDialog({ open, onOpenChange, testData }: TestFormDialogP
                 serviceId: testData.serviceId,
                 description: testData.description,
                 studentCapacity: testData.studentCapacity,
+                scheduledDate: testData.scheduledDate ? testData.scheduledDate.slice(0, 16) : '',
+                reservationDurationMinutes: testData.reservationDurationMinutes || 15,
             });
         } else if (open && !testData) {
             form.reset({
@@ -91,18 +97,28 @@ export function TestFormDialog({ open, onOpenChange, testData }: TestFormDialogP
                 serviceId: '',
                 description: '',
                 studentCapacity: 100,
+                scheduledDate: '',
+                reservationDurationMinutes: 15,
             });
         }
     }, [open, testData, form]);
 
     const onSubmit = async (values: TestFormValues) => {
         try {
+            const formatScheduledDate = (dateStr: string) => {
+                if (!dateStr) return '';
+                if (dateStr.endsWith('Z')) return dateStr;
+                return new Date(dateStr).toISOString();
+            };
+
             const payload: CreateTestDto = {
                 name: values.name,
                 type: values.type,
                 serviceId: values.serviceId,
                 description: values.description,
                 studentCapacity: values.studentCapacity,
+                scheduledDate: formatScheduledDate(values.scheduledDate),
+                reservationDurationMinutes: values.reservationDurationMinutes,
             };
 
             if (isEditing && testData) {
@@ -201,6 +217,36 @@ export function TestFormDialog({ open, onOpenChange, testData }: TestFormDialogP
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Student Capacity</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="scheduledDate"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Scheduled Date</FormLabel>
+                                        <FormControl>
+                                            <Input type="datetime-local" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="reservationDurationMinutes"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Reservation Duration (mins)</FormLabel>
                                         <FormControl>
                                             <Input type="number" {...field} />
                                         </FormControl>

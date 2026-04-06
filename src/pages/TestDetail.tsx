@@ -23,7 +23,7 @@ import {
     AlertCircle,
     Package
 } from 'lucide-react';
-import { useTest, useTestAssignments, useTestBookingRequests } from '@/hooks/useTests';
+import { useTest, useTestAssignments, useTestBookingRequests, useApproveTestBookingRequest, useRejectTestBookingRequest } from '@/hooks/useTests';
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { CheckCircle2, XCircle } from 'lucide-react';
 
@@ -50,6 +50,9 @@ const TestDetail = () => {
         data: bookingsData,
         isLoading: isBookingsLoading
     } = useTestBookingRequests(id || '', { page: bookingPage, limit: bookingLimit });
+
+    const { mutate: approveRequest, isPending: isApproving } = useApproveTestBookingRequest(id || '');
+    const { mutate: rejectRequest, isPending: isRejecting } = useRejectTestBookingRequest(id || '');
 
     if (isTestLoading) {
         return (
@@ -322,8 +325,8 @@ const TestDetail = () => {
                                                         <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
                                                         <TableCell>
                                                             <Badge variant="secondary" className={`capitalize ${
-                                                                request.status === 'PENDING' ? 'bg-warning/10 text-warning border-warning/20' : 
-                                                                request.status === 'APPROVED' ? 'bg-success/10 text-success border-success/20' : 
+                                                                request.status?.toUpperCase() === 'PENDING' ? 'bg-warning/10 text-warning border-warning/20' : 
+                                                                request.status?.toUpperCase() === 'APPROVED' ? 'bg-success/10 text-success border-success/20' : 
                                                                 'bg-destructive/10 text-destructive border-destructive/20'
                                                             }`}>
                                                                 {request.status?.toLowerCase()}
@@ -331,10 +334,22 @@ const TestDetail = () => {
                                                         </TableCell>
                                                         <TableCell className="text-right">
                                                             <div className="flex justify-end gap-2">
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-success hover:bg-success/10">
+                                                                <Button 
+                                                                    variant="ghost" 
+                                                                    size="icon" 
+                                                                    className="h-8 w-8 text-success hover:bg-success/10"
+                                                                    onClick={() => approveRequest(request.id)}
+                                                                    disabled={isApproving || isRejecting || request.status?.toUpperCase() !== 'PENDING'}
+                                                                >
                                                                     <CheckCircle2 className="h-4 w-4" />
                                                                 </Button>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10">
+                                                                <Button 
+                                                                    variant="ghost" 
+                                                                    size="icon" 
+                                                                    className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                                                                    onClick={() => rejectRequest(request.id)}
+                                                                    disabled={isApproving || isRejecting || request.status?.toUpperCase() !== 'PENDING'}
+                                                                >
                                                                     <XCircle className="h-4 w-4" />
                                                                 </Button>
                                                             </div>

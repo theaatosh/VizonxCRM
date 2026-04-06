@@ -14,6 +14,7 @@ export interface Payment {
     status: PaymentStatus;
     currency: string;
     invoiceNumber: string;
+    paymentCycle: number;
     transactionReference?: string;
     notes?: string;
     paymentDate: string;
@@ -37,12 +38,9 @@ export interface CreatePaymentDto {
     serviceId?: string;
     totalAmount: number;
     paidAmount: number;
-    remainingAmount?: number;
-    paymentType: PaymentType;
+    paymentType?: PaymentType;
     paymentMethod: PaymentMethod;
-    status?: PaymentStatus;
     currency?: string;
-    invoiceNumber?: string;
     transactionReference?: string;
     notes?: string;
     paymentDate?: string;
@@ -85,4 +83,65 @@ export interface PaymentFilters {
     dueDateFrom?: string;
     dueDateTo?: string;
     invoiceNumber?: string;
+}
+
+export interface PaymentStatisticsFilters {
+    fromDate?: string;
+    toDate?: string;
+    comparisonFromDate?: string;
+    comparisonToDate?: string;
+    status?: string | PaymentStatus;
+    paymentMethod?: string | PaymentMethod;
+    studentId?: string;
+    serviceId?: string;
+}
+
+export interface PaymentMetrics {
+    totalRevenue: number;
+    revenueChange: number;
+    collectionRate: number;
+    totalInvoicedAmount: number;
+    totalPendingAmount: number;
+    totalOverdueAmount: number;
+    averagePaymentAmount: number;
+    medianPaymentAmount: number;
+    largestPaymentAmount: number;
+    averageDaysToComplete: number;
+    uniqueCustomerCount: number;
+    averagePaymentPerCustomer: number;
+}
+
+export interface StatusBreakdown {
+    status: PaymentStatus;
+    count: number;
+    totalAmount: number;
+    percentage: number;
+}
+
+export interface MethodBreakdown {
+    paymentMethod: PaymentMethod;
+    count: number;
+    totalAmount: number;
+    percentage: number;
+}
+
+export interface DailyRevenue {
+    date: string;
+    revenue: number;
+    paymentCount: number;
+}
+
+export interface PaymentStatisticsResponse {
+    metrics: PaymentMetrics;
+    statusBreakdown: StatusBreakdown[];
+    methodBreakdown: MethodBreakdown[];
+    dailyRevenue: DailyRevenue[];
+    appliedFilters: any;
+}
+
+export interface PaymentCycleSummary {
+    cycleNumber: number;
+    totalPaid: number;
+    remainingAmount: number;
+    status: PaymentStatus;
 }

@@ -3,7 +3,8 @@ import { paymentService } from '@/services/payment.service';
 import type { 
     PaymentFilters, 
     CreatePaymentDto, 
-    UpdatePaymentDto 
+    UpdatePaymentDto,
+    PaymentStatisticsFilters
 } from '@/types/payment.types';
 import { toast } from 'sonner';
 
@@ -29,6 +30,21 @@ export const useStudentPaymentHistory = (studentId: string, filters?: PaymentFil
     });
 };
 
+export const usePendingPayments = (studentId: string, serviceId?: string) => {
+    return useQuery({
+        queryKey: ['payments', 'pending', studentId, serviceId],
+        queryFn: () => paymentService.getPendingPayments(studentId, serviceId),
+        enabled: !!studentId,
+    });
+};
+
+export const usePaymentCycles = (studentId: string, serviceId?: string) => {
+    return useQuery({
+        queryKey: ['payments', 'cycles', studentId, serviceId],
+        queryFn: () => paymentService.getPaymentCycles(studentId, serviceId),
+        enabled: !!studentId,
+    });
+};
 
 export const usePayment = (id: string) => {
     return useQuery({
@@ -79,5 +95,12 @@ export const useDeletePayment = () => {
         onError: (error: any) => {
             toast.error(error.response?.data?.message || 'Failed to delete payment');
         },
+    });
+};
+
+export const usePaymentSummary = (filters?: PaymentStatisticsFilters) => {
+    return useQuery({
+        queryKey: ['payments', 'summary', filters],
+        queryFn: () => paymentService.getPaymentSummary(filters),
     });
 };

@@ -41,7 +41,7 @@ const paymentFormSchema = z.object({
     paidAmount: z.coerce.number().min(0, 'Paid amount must be positive'),
     paymentType: z.enum(['Full', 'Advance', 'Partial', 'Balance']),
     paymentMethod: z.enum(['Cash', 'BankTransfer', 'Card', 'Cheque', 'Online', 'Other']),
-    status: z.enum(['Pending', 'Completed', 'Failed', 'Refunded', 'PartiallyPaid', 'Overdue']),
+    status: z.enum(['Pending', 'Completed', 'Failed', 'Refunded', 'PartiallyPaid', 'Overdue']).optional(),
     currency: z.string().min(1, 'Currency is required'),
     invoiceNumber: z.string().optional(),
     transactionReference: z.string().optional(),
@@ -150,8 +150,11 @@ export function PaymentFormDialog({ open, onOpenChange, payment }: PaymentFormDi
                     } as UpdatePaymentDto 
                 });
             } else {
+                // Backend automatically handles status, invoiceNumber, and cycles for creation
+                const { status, invoiceNumber, ...creationData } = values;
+                
                 await createPayment.mutateAsync({
-                    ...values,
+                    ...creationData,
                     serviceId: values.serviceId === 'none' ? undefined : values.serviceId
                 } as CreatePaymentDto);
             }
@@ -331,32 +334,34 @@ export function PaymentFormDialog({ open, onOpenChange, payment }: PaymentFormDi
                                 )}
                             />
 
-                            {/* Status */}
-                            <FormField
-                                control={form.control}
-                                name="status"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Status</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value} defaultValue="Pending">
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select status" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="Pending">Pending</SelectItem>
-                                                <SelectItem value="Completed">Completed</SelectItem>
-                                                <SelectItem value="Failed">Failed</SelectItem>
-                                                <SelectItem value="Refunded">Refunded</SelectItem>
-                                                <SelectItem value="PartiallyPaid">Partially Paid</SelectItem>
-                                                <SelectItem value="Overdue">Overdue</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            {/* Status (Only for editing) */}
+                            {isEditing && (
+                                <FormField
+                                    control={form.control}
+                                    name="status"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Status</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value} defaultValue="Pending">
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select status" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="Pending">Pending</SelectItem>
+                                                    <SelectItem value="Completed">Completed</SelectItem>
+                                                    <SelectItem value="Failed">Failed</SelectItem>
+                                                    <SelectItem value="Refunded">Refunded</SelectItem>
+                                                    <SelectItem value="PartiallyPaid">Partially Paid</SelectItem>
+                                                    <SelectItem value="Overdue">Overdue</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
 
                             {/* Currency */}
                             <FormField
@@ -402,19 +407,21 @@ export function PaymentFormDialog({ open, onOpenChange, payment }: PaymentFormDi
                                 )}
                             />
 
-                            <FormField
-                                control={form.control}
-                                name="invoiceNumber"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Invoice Number (Optional)</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Auto-generated if empty" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            {isEditing && (
+                                <FormField
+                                    control={form.control}
+                                    name="invoiceNumber"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Invoice Number</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="Auto-generated if empty" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
 
                             <FormField
                                 control={form.control}

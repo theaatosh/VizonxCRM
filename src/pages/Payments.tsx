@@ -1,4 +1,19 @@
 import { useState } from 'react';
+import { DateRange } from "react-day-picker";
+import { subDays, format } from "date-fns";
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip as RechartsTooltip,
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    Legend
+} from 'recharts';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { 
     Card, 
@@ -36,12 +51,12 @@ import {
     CheckCircle2,
     AlertCircle,
 } from 'lucide-react';
-import { usePayments } from '@/hooks/usePayments';
+import { DatePickerWithRange } from '@/components/ui/date-range-picker';
+import { usePayments, usePaymentSummary } from '@/hooks/usePayments';
 import { PaymentFormDialog } from '@/components/payments/PaymentFormDialog';
 import { DeletePaymentDialog } from '@/components/payments/DeletePaymentDialog';
 import { PaymentFilters } from '@/components/payments/PaymentFilters';
 import type { Payment, PaymentStatus, PaymentFilters as PaymentFiltersType } from '@/types/payment.types';
-import { format } from 'date-fns';
 
 const statusColors: Record<PaymentStatus, string> = {
     Pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
@@ -53,6 +68,11 @@ const statusColors: Record<PaymentStatus, string> = {
 };
 
 export default function Payments() {
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({
+        from: subDays(new Date(), 90),
+        to: new Date(),
+    });
+
     const [filters, setFilters] = useState<PaymentFiltersType>({
         search: '',
         page: 1,
@@ -63,6 +83,11 @@ export default function Payments() {
     const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
 
     const { data: paymentsData, isLoading } = usePayments(filters);
+    
+    const { data: summaryData, isLoading: isLoadingSummary } = usePaymentSummary({
+        fromDate: dateRange?.from?.toISOString(),
+        toDate: dateRange?.to?.toISOString(),
+    });
 
     const handleEdit = (payment: Payment) => {
         setSelectedPayment(payment);
@@ -84,6 +109,17 @@ export default function Payments() {
             title="Payments" 
             subtitle="Manage student billing and transactions"
         >
+            {/* Dashboard Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Financial Overview</h2>
+                    <p className="text-muted-foreground text-sm">Monitor revenue, collection rates, and payment trends.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+                </div>
+            </div>
+
             {/* Summary Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
                 <Card className="shadow-sm border-none bg-primary/5">
@@ -92,8 +128,16 @@ export default function Payments() {
                         <DollarSign className="h-4 w-4 text-primary" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">$45,231.89</div>
-                        <p className="text-xs text-muted-foreground mt-1">+20.1% from last month</p>
+                        {isLoadingSummary ? (
+                            <div className="h-10 w-24 bg-muted animate-pulse rounded" />
+                        ) : (
+                            <>
+                                <div className="text-2xl font-bold">${summaryData?.metrics.totalRevenue?.toLocaleString() || 0}</div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    {(summaryData?.metrics.revenueChange || 0) >= 0 ? '+' : ''}{(summaryData?.metrics.revenueChange || 0).toFixed(1)}% vs previous period
+                                </p>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
                 <Card className="shadow-sm border-none bg-yellow-50">
@@ -102,18 +146,30 @@ export default function Payments() {
                         <Clock className="h-4 w-4 text-yellow-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">12</div>
-                        <p className="text-xs text-muted-foreground mt-1">4 payments due this week</p>
+                        {isLoadingSummary ? (
+                            <div className="h-10 w-24 bg-muted animate-pulse rounded" />
+                        ) : (
+                            <>
+                                <div className="text-2xl font-bold">{summaryData?.metrics.totalPendingAmount ? `$${summaryData.metrics.totalPendingAmount.toLocaleString()}` : '$0'}</div>
+                                <p className="text-xs text-muted-foreground mt-1">Pending collection</p>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
                 <Card className="shadow-sm border-none bg-green-50">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-sm font-medium">Completed</CardTitle>
+                        <CardTitle className="text-sm font-medium">Collection Rate</CardTitle>
                         <CheckCircle2 className="h-4 w-4 text-green-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">156</div>
-                        <p className="text-xs text-muted-foreground mt-1">98% collection rate</p>
+                        {isLoadingSummary ? (
+                            <div className="h-10 w-24 bg-muted animate-pulse rounded" />
+                        ) : (
+                            <>
+                                <div className="text-2xl font-bold">{summaryData?.metrics.collectionRate?.toFixed(1) || 0}%</div>
+                                <p className="text-xs text-muted-foreground mt-1">Of total invoiced amount</p>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
                 <Card className="shadow-sm border-none bg-orange-50">
@@ -122,8 +178,106 @@ export default function Payments() {
                         <AlertCircle className="h-4 w-4 text-orange-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">3</div>
-                        <p className="text-xs text-muted-foreground mt-1">Totaling $1,250.00</p>
+                        {isLoadingSummary ? (
+                            <div className="h-10 w-24 bg-muted animate-pulse rounded" />
+                        ) : (
+                            <>
+                                <div className="text-2xl font-bold">{summaryData?.metrics.totalOverdueAmount ? `$${summaryData.metrics.totalOverdueAmount.toLocaleString()}` : '$0'}</div>
+                                <p className="text-xs text-muted-foreground mt-1">Immediate attention required</p>
+                            </>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid gap-4 md:grid-cols-7 mb-6">
+                <Card className="col-span-1 md:col-span-4 shadow-sm border-none">
+                    <CardHeader>
+                        <CardTitle className="text-base font-semibold">Daily Revenue Trend</CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-[300px]">
+                        {isLoadingSummary ? (
+                            <div className="w-full h-full bg-muted/20 animate-pulse rounded-xl" />
+                        ) : summaryData?.dailyRevenue && summaryData.dailyRevenue.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={summaryData.dailyRevenue} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                    <XAxis 
+                                        dataKey="date" 
+                                        tickLine={false} 
+                                        axisLine={false} 
+                                        tickFormatter={(value) => format(new Date(value), 'MMM dd')}
+                                        stroke="#888888" 
+                                        fontSize={12} 
+                                    />
+                                    <YAxis 
+                                        tickLine={false} 
+                                        axisLine={false} 
+                                        tickFormatter={(value) => `$${value}`} 
+                                        stroke="#888888" 
+                                        fontSize={12} 
+                                        width={60}
+                                    />
+                                    <RechartsTooltip 
+                                        formatter={(value: number) => [`$${value.toLocaleString()}`, 'Revenue']}
+                                        labelFormatter={(label) => format(new Date(label), 'MMM dd, yyyy')}
+                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
+                                    />
+                                    <Line type="monotone" dataKey="revenue" stroke="#2563eb" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                                No revenue data for selected period
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+                <Card className="col-span-1 md:col-span-3 shadow-sm border-none">
+                    <CardHeader>
+                        <CardTitle className="text-base font-semibold">Payment Status Breakdown</CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-[300px] flex items-center justify-center">
+                        {isLoadingSummary ? (
+                            <div className="w-full h-full bg-muted/20 animate-pulse rounded-xl" />
+                        ) : summaryData?.statusBreakdown && summaryData.statusBreakdown.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={summaryData.statusBreakdown}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={90}
+                                        paddingAngle={5}
+                                        dataKey="totalAmount"
+                                        nameKey="status"
+                                    >
+                                        {summaryData.statusBreakdown.map((entry, index) => {
+                                            const colors: Record<string, string> = {
+                                                'Completed': '#22c55e',
+                                                'Pending': '#eab308',
+                                                'Overdue': '#f97316',
+                                                'Failed': '#ef4444',
+                                                'Refunded': '#6b7280',
+                                                'PartiallyPaid': '#3b82f6'
+                                            };
+                                            return <Cell key={`cell-${index}`} fill={colors[entry.status] || '#94a3b8'} />;
+                                        })}
+                                    </Pie>
+                                    <RechartsTooltip 
+                                        formatter={(value: number, name: string, props: any) => [`$${value.toLocaleString()} (${props.payload.percentage.toFixed(1)}%)`, name]}
+                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
+                                    />
+                                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                                No status data for selected period
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
@@ -169,6 +323,7 @@ export default function Payments() {
                                     <TableHead className="w-[120px] font-semibold">Invoice #</TableHead>
                                     <TableHead className="font-semibold">Student</TableHead>
                                     <TableHead className="font-semibold">Service</TableHead>
+                                    <TableHead className="font-semibold px-2 text-center">Cycle</TableHead>
                                     <TableHead className="font-semibold text-right">Total</TableHead>
                                     <TableHead className="font-semibold text-right">Paid</TableHead>
                                     <TableHead className="font-semibold">Status</TableHead>
@@ -183,6 +338,7 @@ export default function Payments() {
                                             <TableCell><div className="h-4 w-20 bg-muted animate-pulse rounded" /></TableCell>
                                             <TableCell><div className="h-4 w-32 bg-muted animate-pulse rounded" /></TableCell>
                                             <TableCell><div className="h-4 w-24 bg-muted animate-pulse rounded" /></TableCell>
+                                            <TableCell><div className="h-4 w-8 bg-muted animate-pulse rounded mx-auto" /></TableCell>
                                             <TableCell><div className="h-4 w-16 bg-muted animate-pulse rounded ml-auto" /></TableCell>
                                             <TableCell><div className="h-4 w-16 bg-muted animate-pulse rounded ml-auto" /></TableCell>
                                             <TableCell><div className="h-6 w-20 bg-muted animate-pulse rounded-full" /></TableCell>
@@ -192,7 +348,7 @@ export default function Payments() {
                                     ))
                                 ) : !paymentsData?.data || paymentsData.data.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={8} className="h-64 text-center">
+                                        <TableCell colSpan={9} className="h-64 text-center">
                                             <div className="flex flex-col items-center justify-center space-y-3">
                                                 <div className="p-4 rounded-full bg-muted/30">
                                                     <DollarSign className="h-10 w-10 text-muted-foreground/30" />
@@ -228,6 +384,11 @@ export default function Payments() {
                                                 <span className="text-sm text-muted-foreground">
                                                     {payment.service?.name || '-'}
                                                 </span>
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                                                    {payment.paymentCycle || 1}
+                                                </Badge>
                                             </TableCell>
                                             <TableCell className="text-right font-medium">
                                                 ${payment.totalAmount.toLocaleString()}

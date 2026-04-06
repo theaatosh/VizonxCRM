@@ -116,3 +116,39 @@ export function useTestBookingRequests(testId: string, params: PaginationParams 
         enabled: !!testId,
     });
 }
+
+/**
+ * Hook to approve a test booking request
+ */
+export function useApproveTestBookingRequest(testId: string) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (requestId: string) => testService.approveTestBookingRequest(requestId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [...TEST_KEYS.detail(testId), 'booking-requests'] });
+            toast.success('Booking request approved successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || `Failed to approve booking request: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to reject a test booking request
+ */
+export function useRejectTestBookingRequest(testId: string) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (requestId: string) => testService.rejectTestBookingRequest(requestId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [...TEST_KEYS.detail(testId), 'booking-requests'] });
+            toast.success('Booking request rejected successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || `Failed to reject booking request: ${error.message}`);
+        },
+    });
+}

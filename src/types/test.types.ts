@@ -7,6 +7,7 @@ export interface Test {
     description: string;
     studentCapacity: number;
     reservationDurationMinutes?: number;
+    scheduledDate?: string;
     serviceId: string;
     createdAt: string;
     updatedAt: string;
@@ -27,6 +28,8 @@ export interface CreateTestDto {
     description: string;
     studentCapacity: number;
     serviceId: string;
+    scheduledDate: string;
+    reservationDurationMinutes: number;
 }
 
 export interface UpdateTestDto {
@@ -35,6 +38,8 @@ export interface UpdateTestDto {
     description?: string;
     studentCapacity?: number;
     serviceId?: string;
+    scheduledDate?: string;
+    reservationDurationMinutes?: number;
 }
 
 export type { PaginationParams };

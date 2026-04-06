@@ -4,7 +4,10 @@ import type {
     CreatePaymentDto, 
     UpdatePaymentDto, 
     PaymentFilters, 
-    PaymentSummary 
+    PaymentSummary,
+    PaymentStatisticsFilters,
+    PaymentStatisticsResponse,
+    PaymentCycleSummary
 } from '@/types/payment.types';
 import type { PaginatedResponse } from '@/types/student.types';
 
@@ -26,6 +29,17 @@ export const paymentService = {
         return response.data;
     },
 
+    async getPendingPayments(studentId: string, serviceId?: string): Promise<Payment[]> {
+        const url = serviceId ? `${PAYMENTS_ENDPOINT}/pending/${studentId}/${serviceId}` : `${PAYMENTS_ENDPOINT}/pending/${studentId}`;
+        const response = await api.get<Payment[]>(url);
+        return response.data;
+    },
+
+    async getPaymentCycles(studentId: string, serviceId?: string): Promise<PaymentCycleSummary> {
+        const url = serviceId ? `${PAYMENTS_ENDPOINT}/cycles/${studentId}/${serviceId}` : `${PAYMENTS_ENDPOINT}/cycles/${studentId}`;
+        const response = await api.get<PaymentCycleSummary>(url);
+        return response.data;
+    },
 
     async getPaymentById(id: string): Promise<Payment> {
         const response = await api.get<Payment>(`${PAYMENTS_ENDPOINT}/${id}`);
@@ -44,5 +58,10 @@ export const paymentService = {
 
     async deletePayment(id: string): Promise<void> {
         await api.delete(`${PAYMENTS_ENDPOINT}/${id}`);
+    },
+
+    async getPaymentSummary(params?: PaymentStatisticsFilters): Promise<PaymentStatisticsResponse> {
+        const response = await api.get<PaymentStatisticsResponse>(`${PAYMENTS_ENDPOINT}/statistics/summary`, { params });
+        return response.data;
     },
 };

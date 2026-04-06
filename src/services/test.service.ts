@@ -82,13 +82,24 @@ export const testService = {
      * Get all test booking requests
      */
     async getTestBookingRequests(testId: string, params?: PaginationParams): Promise<PaginatedResponse<any>> {
-        const response = await api.get<PaginatedResponse<any>>(`${TESTS_ENDPOINT}/booking-requests/all`, {
-            params: {
-                ...params,
-                testId,
-            },
+        const response = await api.get<PaginatedResponse<any>>(`${TESTS_ENDPOINT}/${testId}/booking-requests`, {
+            params,
         });
         return response.data;
+    },
+
+    /**
+     * Approve a test booking request
+     */
+    async approveTestBookingRequest(requestId: string): Promise<void> {
+        await api.post(`${TESTS_ENDPOINT}/booking-requests/${requestId}/approve`);
+    },
+
+    /**
+     * Reject a test booking request
+     */
+    async rejectTestBookingRequest(requestId: string): Promise<void> {
+        await api.post(`${TESTS_ENDPOINT}/booking-requests/${requestId}/reject`);
     },
 };
 
