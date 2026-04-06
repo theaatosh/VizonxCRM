@@ -155,3 +155,40 @@ export function useClassBookingRequests(classId: string, params?: PaginationPara
         enabled: !!classId,
     });
 }
+
+/**
+ * Hook to approve a booking request
+ */
+export function useApproveBookingRequest() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (requestId: string) => classService.approveBookingRequest(requestId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: classKeys.all });
+            toast.success('Booking request approved successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || `Failed to approve booking request: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to reject a booking request
+ */
+export function useRejectBookingRequest() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ requestId, reason }: { requestId: string; reason: string }) => 
+            classService.rejectBookingRequest(requestId, reason),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: classKeys.all });
+            toast.success('Booking request rejected successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || `Failed to reject booking request: ${error.message}`);
+        },
+    });
+}
