@@ -36,8 +36,9 @@ import { useLogs, useLogStats } from '@/hooks/useLogs';
 import { useUsers } from '@/hooks/useUsers';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LogAction } from '@/types/log.types';
+import { LogAction, ActivityLog } from '@/types/log.types';
 import { cn } from '@/lib/utils';
+import { LogDetailsDialog } from '@/components/logs/LogDetailsDialog';
 
 const entityTypes = [
     'Task', 'Appointment', 'Lead', 'Student', 'Service', 'VisaApplication', 
@@ -60,6 +61,10 @@ const Logs = () => {
     const [fromDate, setFromDate] = useState<string>('');
     const [toDate, setToDate] = useState<string>('');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+    // State for details dialog
+    const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
     // Data fetching
     const { data: logsData, isLoading: isLoadingLogs, isFetching, refetch } = useLogs({
@@ -113,7 +118,7 @@ const Logs = () => {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {isLoadingStats ? <Skeleton className="h-8 w-16" /> : stats?.totalLogs.toLocaleString()}
+                                {isLoadingStats ? <Skeleton className="h-8 w-16" /> : stats?.totalLogs?.toLocaleString()}
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">Across all modules</p>
                         </CardContent>
@@ -125,9 +130,9 @@ const Logs = () => {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {isLoadingStats ? <Skeleton className="h-8 w-16" /> : stats?.recentActivityCount.toLocaleString()}
+                                {isLoadingStats ? <Skeleton className="h-8 w-16" /> : stats?.recentActivity?.length?.toLocaleString() ?? 0}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">Activity in last 24 hours</p>
+                            <p className="text-xs text-muted-foreground mt-1">Recent activity entries</p>
                         </CardContent>
                     </Card>
                     <Card className="shadow-sm border-none bg-background/50 backdrop-blur-sm">
@@ -137,7 +142,7 @@ const Logs = () => {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold truncate">
-                                {isLoadingStats ? <Skeleton className="h-8 w-24" /> : Object.keys(stats?.entityTypeCounts || {}).sort((a, b) => (stats?.entityTypeCounts[b] || 0) - (stats?.entityTypeCounts[a] || 0))[0] || 'N/A'}
+                                {isLoadingStats ? <Skeleton className="h-8 w-24" /> : [...(stats?.byEntityType || [])].sort((a, b) => b.count - a.count)[0]?.entityType || 'N/A'}
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">By volume of logs</p>
                         </CardContent>
@@ -149,7 +154,7 @@ const Logs = () => {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">
-                                {isLoadingStats ? <Skeleton className="h-8 w-12" /> : (stats?.actionCounts?.['AccessDenied'] || 0)}
+                                {isLoadingStats ? <Skeleton className="h-8 w-12" /> : (stats?.byAction?.find(a => a.action === 'AccessDenied')?.count || 0).toLocaleString()}
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">Access denied events</p>
                         </CardContent>
@@ -248,7 +253,7 @@ const Logs = () => {
                             <div className="space-y-2">
                                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">From Date</label>
                                 <Input 
-                                    type="datetime-local" 
+                                    type="date" 
                                     className="bg-background/50" 
                                     value={fromDate}
                                     onChange={(e) => setFromDate(e.target.value)}
@@ -257,7 +262,7 @@ const Logs = () => {
                             <div className="space-y-2">
                                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">To Date</label>
                                 <Input 
-                                    type="datetime-local" 
+                                    type="date" 
                                     className="bg-background/50" 
                                     value={toDate}
                                     onChange={(e) => setToDate(e.target.value)}
@@ -346,7 +351,15 @@ const Logs = () => {
                                                     </span>
                                                 </TableCell>
                                                 <TableCell className="text-right">
-                                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="sm" 
+                                                        className="h-8 w-8 p-0"
+                                                        onClick={() => {
+                                                            setSelectedLog(log);
+                                                            setIsDetailsOpen(true);
+                                                        }}
+                                                    >
                                                         <Search className="h-3.5 w-3.5 text-muted-foreground" />
                                                     </Button>
                                                 </TableCell>
@@ -406,6 +419,12 @@ const Logs = () => {
                     </CardContent>
                 </Card>
             </div>
+
+            <LogDetailsDialog 
+                log={selectedLog} 
+                open={isDetailsOpen} 
+                onOpenChange={setIsDetailsOpen} 
+            />
         </DashboardLayout>
     );
 };

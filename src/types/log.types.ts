@@ -40,9 +40,9 @@ export interface ActivityLog {
 
 export interface ActivityStats {
     totalLogs: number;
-    actionCounts: Record<LogAction, number>;
-    entityTypeCounts: Record<string, number>;
-    recentActivityCount: number;
+    byAction: { action: LogAction; count: number }[];
+    byEntityType: { entityType: string; count: number }[];
+    recentActivity: ActivityLog[];
 }
 
 export interface LogQueryParams extends PaginationParams {
