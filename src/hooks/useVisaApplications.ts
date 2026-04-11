@@ -1,9 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import visaApplicationService from '@/services/visaApplication.service';
+import visaDocumentService from '@/services/visaDocument.service';
+import { fileService } from '@/services/file.service';
 import type { 
     CreateVisaApplicationDto, 
     UpdateVisaApplicationDto,
-    VisaApplicationQueryParams
+    VisaApplicationQueryParams,
+    VisaDocument,
+    CreateVisaDocumentDto,
+    UpdateVisaDocumentDto
 } from '@/types/visaApplication.types';
 import { toast } from 'sonner';
 
@@ -126,3 +131,115 @@ export function useAdvanceVisaStep() {
         },
     });
 }
+
+/**
+ * Hook to fetch visa documents
+ */
+export function useVisaDocuments(params?: { visaApplicationId?: string; studentId?: string; workflowId?: string }) {
+    return useQuery({
+        queryKey: ['visa-documents', params],
+        queryFn: () => visaDocumentService.getVisaDocuments(params),
+        enabled: !!(params?.visaApplicationId || params?.studentId || params?.workflowId),
+    });
+}
+
+/**
+ * Hook to create a new visa document
+ */
+export function useCreateVisaDocument() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (data: CreateVisaDocumentDto) => visaDocumentService.createVisaDocument(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: visaApplicationKeys.all });
+            toast.success('Visa document linked successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || `Failed to link visa document: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to update an existing visa document
+ */
+export function useUpdateVisaDocument() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string; data: UpdateVisaDocumentDto }) =>
+            visaDocumentService.updateVisaDocument(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: visaApplicationKeys.all });
+            toast.success('Visa document updated successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || `Failed to update visa document: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to delete a visa document
+ */
+export function useDeleteVisaDocument() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (id: string) => visaDocumentService.deleteVisaDocument(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: visaApplicationKeys.all });
+            toast.success('Visa document removed successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || `Failed to remove visa document: ${error.message}`);
+        },
+    });
+}
+
+/**
+ * Hook to upload and create a visa document
+ */
+export function useUploadVisaDocument() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ 
+            visaApplicationId, 
+            studentId, // Added studentId
+            file, 
+            documentType, 
+            workflowId 
+        }: { 
+            visaApplicationId: string; 
+            studentId: string; // Added studentId
+            file: File; 
+            documentType: string;
+            workflowId?: string;
+        }) => {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('category', 'Other'); // Changed from 'Visa' to 'Other'
+            formData.append('studentId', studentId); // Added studentId
+            formData.append('visaApplicationId', visaApplicationId);
+
+            const uploadResponse = await fileService.uploadFile(formData);
+
+            return visaDocumentService.createVisaDocument({
+                visaApplicationId,
+                documentType,
+                filePath: uploadResponse.filePath,
+                workflowId
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: visaApplicationKeys.all });
+            toast.success('Visa document uploaded successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || `Failed to upload visa document: ${error.message}`);
+        },
+    });
+}
+

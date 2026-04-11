@@ -462,6 +462,18 @@ const Visas = () => {
                                 Go to workflow
                               </Button>
                             )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-[10px] gap-1 hover:bg-primary/10 text-primary-foreground/70 hover:text-primary transition-all pr-0 lg:pr-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/visas/${visa.id}`);
+                              }}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              View Details
+                            </Button>
                           </div>
                         </div>
                       </div>

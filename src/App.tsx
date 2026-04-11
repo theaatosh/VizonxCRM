@@ -9,6 +9,7 @@ import { NotificationProvider } from "./contexts/NotificationContext";
 import Index from "./pages/Index";
 import Leads from "./pages/Leads";
 import Visas from "./pages/Visas";
+import VisaDetail from "./pages/VisaDetail";
 import Vacancies from "./pages/Vacancies";
 import Applicants from "./pages/Applicants";
 import ApplicantDetail from "./pages/ApplicantDetail";
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="/" element={<ProtectedRoute module="dashboard"><Index /></ProtectedRoute>} />
               <Route path="/leads" element={<ProtectedRoute module="leads"><Leads /></ProtectedRoute>} />
               <Route path="/visas" element={<ProtectedRoute module="visa-types"><Visas /></ProtectedRoute>} />
+              <Route path="/visas/:id" element={<ProtectedRoute module="visa-types"><VisaDetail /></ProtectedRoute>} />
               <Route path="/applicants" element={<ProtectedRoute module="students"><Applicants /></ProtectedRoute>} />
               <Route path="/applicants/:id" element={<ProtectedRoute module="students"><ApplicantDetail /></ProtectedRoute>} />
               <Route path="/countries" element={<ProtectedRoute module="countries"><Countries /></ProtectedRoute>} />

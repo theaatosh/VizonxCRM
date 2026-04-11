@@ -44,7 +44,34 @@ export interface VisaApplication {
         id: string;
         name: string;
         description?: string;
+        steps?: Array<{
+            id: string;
+            name: string;
+            description?: string;
+            stepOrder: number;
+        }>;
     };
+    workflowProgress?: {
+        totalSteps: number;
+        currentStepIndex: number;
+        percentageComplete: number;
+    };
+    documents?: Array<{
+        id: string;
+        documentType: string;
+        filePath: string;
+        uploadedAt: string;
+    }>;
+    currentStep?: {
+        id: string;
+        name: string;
+        description?: string;
+    } | null;
+    nextStep?: {
+        id: string;
+        name: string;
+        description?: string;
+    } | null;
 }
 
 export interface CreateVisaApplicationDto {
@@ -66,4 +93,35 @@ export interface VisaApplicationQueryParams extends PaginationParams {
     visaTypeId?: string;
     courseApplicationId?: string;
     status?: string;
+}
+
+export interface VisaDocument {
+    id: string;
+    visaApplicationId: string;
+    studentDocumentId?: string | null;
+    documentType: string;
+    filePath: string;
+    workflowId?: string | null;
+    uploadedAt: string;
+    studentDocument?: {
+        id: string;
+        documentType: string;
+        filePath: string;
+    } | null;
+}
+
+export interface CreateVisaDocumentDto {
+    visaApplicationId: string;
+    studentDocumentId?: string;
+    documentType?: string;
+    filePath?: string;
+    workflowId?: string;
+}
+
+export interface UpdateVisaDocumentDto {
+    visaApplicationId?: string;
+    studentDocumentId?: string;
+    documentType?: string;
+    filePath?: string;
+    workflowId?: string;
 }
