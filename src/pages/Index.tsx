@@ -48,18 +48,6 @@ const Index = () => {
     <DashboardLayout
       title="Dashboard"
       subtitle="Welcome back! Here's your overview"
-      action={
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isRefetching}
-          className="gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      }
     >
       {/* Error State */}
       {isError && (

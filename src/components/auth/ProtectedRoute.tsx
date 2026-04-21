@@ -1,11 +1,12 @@
-import { ReactNode, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { ReactNode } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
 import authService from "@/services/auth.service";
 import { usePermissions } from "@/contexts/PermissionContext";
 import type { PermissionModule } from "@/types/permission.types";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FullPageLoader } from "@/components/shared/FullPageLoader";
 
 interface ProtectedRouteProps {
     children: ReactNode;
@@ -17,21 +18,14 @@ export function ProtectedRoute({ children, module }: ProtectedRouteProps) {
     const navigate = useNavigate();
     const { canRead, isLoading } = usePermissions();
 
-    useEffect(() => {
-        // Check if user has a valid token
-        if (!authService.isAuthenticated()) {
-            navigate("/login", { replace: true });
-        }
-    }, [navigate]);
-
-    // If not authenticated, don't render children
+    // If not authenticated, redirect to login immediately using declarative Navigate
     if (!authService.isAuthenticated()) {
-        return null;
+        return <Navigate to="/login" replace />;
     }
 
-    // While loading permissions, show nothing (or could show a loader)
+    // While loading permissions, show a professional loader instead of a blank screen
     if (isLoading) {
-        return null;
+        return <FullPageLoader message="Establishing your session..." />;
     }
 
     // If module is specified, check for read permission
