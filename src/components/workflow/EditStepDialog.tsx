@@ -18,9 +18,11 @@ interface EditStepDialogProps {
     step: WorkflowStep | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onUpdateLocal?: (stepId: string, data: UpdateStepDto) => void;
+    isDraftMode?: boolean;
 }
 
-export const EditStepDialog = ({ workflowId, step, open, onOpenChange }: EditStepDialogProps) => {
+export const EditStepDialog = ({ workflowId, step, open, onOpenChange, onUpdateLocal, isDraftMode }: EditStepDialogProps) => {
     const [formData, setFormData] = useState<UpdateStepDto>({
         name: "",
         description: "",
@@ -48,6 +50,12 @@ export const EditStepDialog = ({ workflowId, step, open, onOpenChange }: EditSte
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!step) return;
+
+        if ((step.id.startsWith("temp-") || isDraftMode) && onUpdateLocal) {
+            onUpdateLocal(step.id, formData);
+            onOpenChange(false);
+            return;
+        }
 
         try {
             await updateStepMutation.mutateAsync({

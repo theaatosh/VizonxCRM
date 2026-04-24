@@ -11,44 +11,70 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { useCreateStep } from "@/hooks/useWorkflows";
-import { CreateStepDto } from "@/types/workflow.types";
+import { useEffect } from "react";
+import { CreateStepDto, WorkflowStep } from "@/types/workflow.types";
 
 interface CreateStepDialogProps {
     workflowId: string;
+    onAddLocal?: (step: WorkflowStep) => void;
+    nextOrder?: number;
 }
 
-export const CreateStepDialog = ({ workflowId }: CreateStepDialogProps) => {
+export const CreateStepDialog = ({ workflowId, onAddLocal, nextOrder = 1 }: CreateStepDialogProps) => {
     const [open, setOpen] = useState(false);
     const [formData, setFormData] = useState<CreateStepDto>({
         name: "",
         description: "",
-        stepOrder: 1,
+        stepOrder: nextOrder,
         requiresDocument: false,
         isActive: true,
         expectedDurationDays: 7,
     });
+
+    useEffect(() => {
+        if (open) {
+            setFormData(prev => ({ ...prev, stepOrder: nextOrder }));
+        }
+    }, [open, nextOrder]);
 
     const createStepMutation = useCreateStep();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        try {
-            await createStepMutation.mutateAsync({ workflowId, data: formData });
+        if (onAddLocal) {
+            onAddLocal({
+                id: `temp-${Date.now()}`,
+                workflowId,
+                ...formData
+            } as WorkflowStep);
             setOpen(false);
-            // Reset form
             setFormData({
                 name: "",
                 description: "",
-                stepOrder: 1,
+                stepOrder: nextOrder + 1,
+                requiresDocument: false,
+                isActive: true,
+                expectedDurationDays: 7,
+            });
+            return;
+        }
+
+        try {
+            await createStepMutation.mutateAsync({ workflowId, data: formData });
+            setOpen(false);
+            setFormData({
+                name: "",
+                description: "",
+                stepOrder: nextOrder + 1,
                 requiresDocument: false,
                 isActive: true,
                 expectedDurationDays: 7,
             });
         } catch (error) {
-            // Error is handled by the mutation hook
+            // Error handled by hook
         }
     };
 
@@ -151,7 +177,7 @@ export const CreateStepDialog = ({ workflowId }: CreateStepDialogProps) => {
                             Cancel
                         </Button>
                         <Button type="submit" disabled={createStepMutation.isPending}>
-                            {createStepMutation.isPending ? "Creating..." : "Create Step"}
+                            {createStepMutation.isPending ? "Creating..." : onAddLocal ? "Add to Draft" : "Create Step"}
                         </Button>
                     </div>
                 </form>

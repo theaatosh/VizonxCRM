@@ -37,14 +37,32 @@ export interface Workflow {
 export interface WorkflowStep {
     id: string;
     workflowId: string;
+    versionId?: string;
+    tenantId?: string;
     name: string;
     description: string;
     stepOrder: number;
     requiresDocument: boolean;
     isActive: boolean;
     expectedDurationDays: number;
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+// Workflow Version entity
+export interface WorkflowVersion {
+    id: string;
+    workflowId: string;
+    versionNumber: number;
+    status: 'Draft' | 'Active' | 'Deprecated';
+    description: string;
+    steps: WorkflowStep[];
+    applicationCount: number;
+    createdBy?: string | null;
     createdAt: string;
     updatedAt: string;
+    deprecatedAt?: string | null;
+    deprecatedReason?: string | null;
 }
 
 // DTOs for creating workflows
@@ -73,6 +91,13 @@ export interface CreateStepDto {
     expectedDurationDays: number;
 }
 
+// DTOs for versioning
+export interface CreateVersionDto {
+    workflowId: string;
+    description: string;
+    steps: Partial<WorkflowStep>[];
+}
+
 // DTOs for updating steps
 export interface UpdateStepDto {
     name?: string;
@@ -83,9 +108,22 @@ export interface UpdateStepDto {
     expectedDurationDays?: number;
 }
 
+export interface MigrateUserDto {
+    oldVersionId: string;
+    newVersionId: string;
+}
+
 // Response types - matches actual API response
 export interface WorkflowsResponse {
     data: Workflow[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+}
+
+export interface WorkflowVersionsResponse {
+    data: WorkflowVersion[];
     total: number;
     page: number;
     limit: number;

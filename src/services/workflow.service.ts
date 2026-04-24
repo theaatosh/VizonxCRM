@@ -9,6 +9,9 @@ import {
     WorkflowsResponse,
     WorkflowStepsResponse,
     WorkflowQueryParams,
+    WorkflowVersion,
+    CreateVersionDto,
+    WorkflowVersionsResponse,
 } from '@/types/workflow.types';
 
 /**
@@ -115,6 +118,53 @@ class WorkflowService {
     async reorderSteps(workflowId: string, steps: { id: string; order: number }[]): Promise<WorkflowStep[]> {
         const response = await api.put<WorkflowStep[]>(`${this.baseUrl}/${workflowId}/steps/reorder`, steps);
         return response.data;
+    }
+
+    // ==================== Workflow Versioning ====================
+
+    /**
+     * Create a new workflow version
+     */
+    async createVersion(data: any): Promise<WorkflowVersion> {
+        const response = await api.post<WorkflowVersion>('/workflow-versions', data);
+        return response.data;
+    }
+
+    /**
+     * Get workflow version details
+     */
+    async getVersionById(versionId: string): Promise<WorkflowVersion> {
+        const response = await api.get<WorkflowVersion>(`/workflow-versions/${versionId}`);
+        return response.data;
+    }
+
+    /**
+     * Delete a workflow version
+     */
+    async deleteVersion(versionId: string): Promise<void> {
+        await api.delete(`/workflow-versions/${versionId}`);
+    }
+
+    /**
+     * Get all versions of a workflow
+     */
+    async getWorkflowVersions(workflowId: string, params?: WorkflowQueryParams): Promise<WorkflowVersionsResponse> {
+        const response = await api.get<WorkflowVersionsResponse>(`/workflow-versions/workflow/${workflowId}/versions`, { params });
+        return response.data;
+    }
+
+    /**
+     * Activate a workflow version
+     */
+    async activateVersion(versionId: string): Promise<void> {
+        await api.put(`/workflow-versions/${versionId}/activate`, { versionId });
+    }
+
+    /**
+     * Deprecate a workflow version
+     */
+    async deprecateVersion(data: { versionId: string; deprecatedReason: string; allowMigration: boolean }): Promise<void> {
+        await api.put(`/workflow-versions/${data.versionId}/deprecate`, data);
     }
 }
 
