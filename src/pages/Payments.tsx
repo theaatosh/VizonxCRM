@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { DateRange } from "react-day-picker";
 import { subDays, format } from "date-fns";
 import {
@@ -38,6 +38,22 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from "@/components/ui/pagination";
 import { 
     Plus, 
     Search, 
@@ -436,6 +452,86 @@ export default function Payments() {
                             </TableBody>
                         </Table>
                     </div>
+
+                    {/* Pagination UI */}
+                    {paymentsData && paymentsData.totalPages > 0 && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t gap-4">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground order-2 sm:order-1">
+                                <span>Rows per page</span>
+                                <Select
+                                    value={filters.limit?.toString()}
+                                    onValueChange={(value) => setFilters(prev => ({ ...prev, limit: parseInt(value), page: 1 }))}
+                                >
+                                    <SelectTrigger className="h-8 w-[70px] rounded-lg">
+                                        <SelectValue placeholder={filters.limit} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="5">5</SelectItem>
+                                        <SelectItem value="10">10</SelectItem>
+                                        <SelectItem value="25">25</SelectItem>
+                                        <SelectItem value="50">50</SelectItem>
+                                        <SelectItem value="100">100</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <span className="ml-4 tabular-nums">
+                                    Showing {((filters.page || 1) - 1) * (filters.limit || 10) + 1} - {Math.min((filters.page || 1) * (filters.limit || 10), paymentsData.total)} of {paymentsData.total}
+                                </span>
+                            </div>
+
+                            <div className="order-1 sm:order-2">
+                                <Pagination>
+                                    <PaginationContent>
+                                        <PaginationItem>
+                                            <PaginationPrevious 
+                                                className={filters.page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                                                onClick={() => setFilters(prev => ({ ...prev, page: Math.max(1, (prev.page || 1) - 1) }))} 
+                                            />
+                                        </PaginationItem>
+                                        
+                                        {/* Page Numbers Logic */}
+                                        {Array.from({ length: paymentsData.totalPages }, (_, i) => i + 1)
+                                            .filter(page => {
+                                                const currentPage = filters.page || 1;
+                                                return page === 1 || 
+                                                       page === paymentsData.totalPages || 
+                                                       (page >= currentPage - 1 && page <= currentPage + 1);
+                                            })
+                                            .map((page, index, array) => {
+                                                const currentPage = filters.page || 1;
+                                                const prevPage = array[index - 1];
+                                                
+                                                return (
+                                                    <React.Fragment key={page}>
+                                                        {prevPage && page - prevPage > 1 && (
+                                                            <PaginationItem>
+                                                                <PaginationEllipsis />
+                                                            </PaginationItem>
+                                                        )}
+                                                        <PaginationItem>
+                                                            <PaginationLink 
+                                                                isActive={currentPage === page}
+                                                                className="cursor-pointer"
+                                                                onClick={() => setFilters(prev => ({ ...prev, page }))}
+                                                            >
+                                                                {page}
+                                                            </PaginationLink>
+                                                        </PaginationItem>
+                                                    </React.Fragment>
+                                                );
+                                            })
+                                        }
+
+                                        <PaginationItem>
+                                            <PaginationNext 
+                                                className={filters.page === paymentsData.totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                                                onClick={() => setFilters(prev => ({ ...prev, page: Math.min(paymentsData.totalPages, (prev.page || 1) + 1) }))}
+                                            />
+                                        </PaginationItem>
+                                    </PaginationContent>
+                                </Pagination>
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
