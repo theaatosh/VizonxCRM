@@ -79,6 +79,8 @@ export interface CreateVisaApplicationDto {
     visaTypeId: string;
     courseApplicationId: string;
     destinationCountry: string;
+    workflowId?: string;
+    workflowVersionId?: string;
 }
 
 export interface UpdateVisaApplicationDto {
