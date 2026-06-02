@@ -9,8 +9,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
 import { useUpdateWorkflow } from "@/hooks/useWorkflows";
+import { useVisaTypes } from "@/hooks/useVisaTypes";
 import { Workflow, UpdateWorkflowDto } from "@/types/workflow.types";
 
 interface EditWorkflowDialogProps {
@@ -28,6 +36,8 @@ export const EditWorkflowDialog = ({ workflow, open, onOpenChange }: EditWorkflo
     });
 
     const updateMutation = useUpdateWorkflow();
+    const { data: visaTypesResponse, isLoading: loadingVisaTypes } = useVisaTypes({ limit: 100 });
+    const visaTypes = visaTypesResponse?.data || [];
 
     useEffect(() => {
         if (workflow) {
@@ -43,12 +53,11 @@ export const EditWorkflowDialog = ({ workflow, open, onOpenChange }: EditWorkflo
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!workflow) return;
-
         try {
             await updateMutation.mutateAsync({ id: workflow.id, data: formData });
             onOpenChange(false);
-        } catch (error) {
-            // Error is handled by the mutation hook
+        } catch {
+            // handled by mutation hook
         }
     };
 
@@ -56,13 +65,13 @@ export const EditWorkflowDialog = ({ workflow, open, onOpenChange }: EditWorkflo
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
                     <DialogTitle>Edit Workflow</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                     <div className="space-y-2">
-                        <Label htmlFor="edit-name">Workflow Name *</Label>
+                        <Label htmlFor="edit-name">Name *</Label>
                         <Input
                             id="edit-name"
                             placeholder="e.g., Student Visa Application Process"
@@ -78,37 +87,41 @@ export const EditWorkflowDialog = ({ workflow, open, onOpenChange }: EditWorkflo
                             id="edit-description"
                             placeholder="Describe the purpose of this workflow..."
                             value={formData.description || ""}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            onChange={(e) =>
+                                setFormData({ ...formData, description: e.target.value })
+                            }
                             rows={3}
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="edit-visaTypeId">Visa Type ID *</Label>
-                        <Input
-                            id="edit-visaTypeId"
-                            placeholder="Enter visa type UUID"
-                            value={formData.visaTypeId || ""}
-                            onChange={(e) => setFormData({ ...formData, visaTypeId: e.target.value })}
-                            required
-                        />
+                        <Label htmlFor="edit-visaTypeId">Visa Type *</Label>
+                        {loadingVisaTypes ? (
+                            <div className="flex items-center gap-2 p-3 border rounded-md text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Loading visa types…
+                            </div>
+                        ) : (
+                            <Select
+                                value={formData.visaTypeId || ""}
+                                onValueChange={(v) => setFormData({ ...formData, visaTypeId: v })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a visa type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {visaTypes.map((vt) => (
+                                        <SelectItem key={vt.id} value={vt.id}>
+                                            {vt.name}
+                                            {vt.country ? ` (${vt.country.name})` : ""}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
                     </div>
 
-                    <div className="flex items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                            <Label htmlFor="edit-isActive">Active Status</Label>
-                            <p className="text-sm text-muted-foreground">
-                                Set whether this workflow is currently active
-                            </p>
-                        </div>
-                        <Switch
-                            id="edit-isActive"
-                            checked={formData.isActive}
-                            onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                        />
-                    </div>
-
-                    <div className="flex gap-2 justify-end pt-4">
+                    <div className="flex gap-2 justify-end pt-2">
                         <Button
                             type="button"
                             variant="outline"
@@ -118,7 +131,7 @@ export const EditWorkflowDialog = ({ workflow, open, onOpenChange }: EditWorkflo
                             Cancel
                         </Button>
                         <Button type="submit" disabled={updateMutation.isPending}>
-                            {updateMutation.isPending ? "Saving..." : "Save Changes"}
+                            {updateMutation.isPending ? "Saving…" : "Save Changes"}
                         </Button>
                     </div>
                 </form>

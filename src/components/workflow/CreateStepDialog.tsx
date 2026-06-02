@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
@@ -13,7 +13,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Plus } from "lucide-react";
 import { useCreateStep } from "@/hooks/useWorkflows";
-import { useEffect } from "react";
 import { CreateStepDto, WorkflowStep } from "@/types/workflow.types";
 
 interface CreateStepDialogProps {
@@ -22,7 +21,11 @@ interface CreateStepDialogProps {
     nextOrder?: number;
 }
 
-export const CreateStepDialog = ({ workflowId, onAddLocal, nextOrder = 1 }: CreateStepDialogProps) => {
+export const CreateStepDialog = ({
+    workflowId,
+    onAddLocal,
+    nextOrder = 1,
+}: CreateStepDialogProps) => {
     const [open, setOpen] = useState(false);
     const [formData, setFormData] = useState<CreateStepDto>({
         name: "",
@@ -35,7 +38,7 @@ export const CreateStepDialog = ({ workflowId, onAddLocal, nextOrder = 1 }: Crea
 
     useEffect(() => {
         if (open) {
-            setFormData(prev => ({ ...prev, stepOrder: nextOrder }));
+            setFormData((prev) => ({ ...prev, stepOrder: nextOrder }));
         }
     }, [open, nextOrder]);
 
@@ -45,11 +48,7 @@ export const CreateStepDialog = ({ workflowId, onAddLocal, nextOrder = 1 }: Crea
         e.preventDefault();
 
         if (onAddLocal) {
-            onAddLocal({
-                id: `temp-${Date.now()}`,
-                workflowId,
-                ...formData
-            } as WorkflowStep);
+            onAddLocal({ id: `temp-${Date.now()}`, workflowId, ...formData } as WorkflowStep);
             setOpen(false);
             setFormData({
                 name: "",
@@ -73,8 +72,8 @@ export const CreateStepDialog = ({ workflowId, onAddLocal, nextOrder = 1 }: Crea
                 isActive: true,
                 expectedDurationDays: 7,
             });
-        } catch (error) {
-            // Error handled by hook
+        } catch {
+            // handled by hook
         }
     };
 
@@ -86,9 +85,9 @@ export const CreateStepDialog = ({ workflowId, onAddLocal, nextOrder = 1 }: Crea
                     Add Step
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
-                    <DialogTitle>Add New Step</DialogTitle>
+                    <DialogTitle>Add Step</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                     <div className="space-y-2">
@@ -99,6 +98,7 @@ export const CreateStepDialog = ({ workflowId, onAddLocal, nextOrder = 1 }: Crea
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             required
+                            autoFocus
                         />
                     </div>
 
@@ -108,35 +108,28 @@ export const CreateStepDialog = ({ workflowId, onAddLocal, nextOrder = 1 }: Crea
                             id="step-description"
                             placeholder="Describe what happens in this step..."
                             value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            onChange={(e) =>
+                                setFormData({ ...formData, description: e.target.value })
+                            }
                             rows={3}
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="step-order">Step Order *</Label>
-                            <Input
-                                id="step-order"
-                                type="number"
-                                min="1"
-                                value={formData.stepOrder}
-                                onChange={(e) => setFormData({ ...formData, stepOrder: parseInt(e.target.value) || 1 })}
-                                required
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="duration-days">Duration (Days) *</Label>
-                            <Input
-                                id="duration-days"
-                                type="number"
-                                min="1"
-                                value={formData.expectedDurationDays}
-                                onChange={(e) => setFormData({ ...formData, expectedDurationDays: parseInt(e.target.value) || 1 })}
-                                required
-                            />
-                        </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="duration-days">Expected Duration (days) *</Label>
+                        <Input
+                            id="duration-days"
+                            type="number"
+                            min="1"
+                            value={formData.expectedDurationDays}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    expectedDurationDays: parseInt(e.target.value) || 1,
+                                })
+                            }
+                            required
+                        />
                     </div>
 
                     <div className="flex items-center justify-between rounded-lg border p-4">
@@ -149,25 +142,13 @@ export const CreateStepDialog = ({ workflowId, onAddLocal, nextOrder = 1 }: Crea
                         <Switch
                             id="requires-doc"
                             checked={formData.requiresDocument}
-                            onCheckedChange={(checked) => setFormData({ ...formData, requiresDocument: checked })}
+                            onCheckedChange={(checked) =>
+                                setFormData({ ...formData, requiresDocument: checked })
+                            }
                         />
                     </div>
 
-                    <div className="flex items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                            <Label htmlFor="step-active">Active Status</Label>
-                            <p className="text-sm text-muted-foreground">
-                                Set whether this step is currently active
-                            </p>
-                        </div>
-                        <Switch
-                            id="step-active"
-                            checked={formData.isActive}
-                            onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                        />
-                    </div>
-
-                    <div className="flex gap-2 justify-end pt-4">
+                    <div className="flex gap-2 justify-end pt-2">
                         <Button
                             type="button"
                             variant="outline"
@@ -177,7 +158,11 @@ export const CreateStepDialog = ({ workflowId, onAddLocal, nextOrder = 1 }: Crea
                             Cancel
                         </Button>
                         <Button type="submit" disabled={createStepMutation.isPending}>
-                            {createStepMutation.isPending ? "Creating..." : onAddLocal ? "Add to Draft" : "Create Step"}
+                            {createStepMutation.isPending
+                                ? "Adding…"
+                                : onAddLocal
+                                  ? "Add to Draft"
+                                  : "Add Step"}
                         </Button>
                     </div>
                 </form>

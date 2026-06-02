@@ -71,8 +71,6 @@ const Visas = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [workflowModalOpen, setWorkflowModalOpen] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
-  const [selectedVisaId, setSelectedVisaId] = useState<string>("");
-  const [currentStepId, setCurrentStepId] = useState<string>("");
   const [editModalOpen, setEditModalOpen] = useState(false);
 
   // Applications tab state
@@ -452,8 +450,6 @@ const Visas = () => {
                                 className="h-7 text-[10px] gap-1 hover:bg-primary/10 text-primary-foreground/70 hover:text-primary transition-all pr-0"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedVisaId(visa.id);
-                                  setCurrentStepId(visa.currentStepId || "");
                                   setSelectedWorkflow(visa.workflow as any);
                                   setWorkflowModalOpen(true);
                                 }}
@@ -558,8 +554,6 @@ const Visas = () => {
         workflow={selectedWorkflow}
         open={workflowModalOpen}
         onOpenChange={setWorkflowModalOpen}
-        visaId={selectedVisaId}
-        currentStepId={currentStepId}
       />
     </DashboardLayout>
   );

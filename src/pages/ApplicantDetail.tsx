@@ -56,7 +56,7 @@ import { DocumentUploadDialog } from '@/components/applicants/DocumentUploadDial
 import { AssignClassDialog } from '@/components/applicants/AssignClassDialog';
 import { AssignTestDialog } from '@/components/applicants/AssignTestDialog';
 import { VisaApplicationDialog } from '@/components/applicants/VisaApplicationDialog';
-import { useStudentVisaApplications, useDeleteVisaApplication, useAdvanceVisaStep } from '@/hooks/useVisaApplications';
+import { useStudentVisaApplications, useDeleteVisaApplication } from '@/hooks/useVisaApplications';
 import { StudentApplicationsTab } from '@/components/students/StudentApplicationsTab';
 import { StudentPaymentsTab } from '@/components/students/StudentPaymentsTab';
 import { WorkflowDetailModal } from '@/components/workflow/WorkflowDetailModal';
@@ -99,7 +99,6 @@ const ApplicantDetail = () => {
     const [selectedVisaId, setSelectedVisaId] = useState<string>('');
     const [currentStepId, setCurrentStepId] = useState<string>('');
     const [selectedWorkflowId, setSelectedWorkflowId] = useState<string>('');
-    const [editModalOpen, setEditModalOpen] = useState(false);
 
     const { data: applicant, isLoading, isError, error } = useStudent(id || '');
     const { mutate: unenroll, isPending: isUnenrolling } = useUnenrollStudent();
@@ -876,8 +875,6 @@ const ApplicantDetail = () => {
                 workflow={selectedWorkflow}
                 open={workflowModalOpen}
                 onOpenChange={setWorkflowModalOpen}
-                visaId={selectedVisaId}
-                currentStepId={currentStepId}
             />
 
             <AdvanceStepDialog

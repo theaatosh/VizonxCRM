@@ -254,7 +254,9 @@ export const useActivateVersion = () => {
     return useMutation({
         mutationFn: (versionId: string) => workflowService.activateVersion(versionId),
         onSuccess: () => {
+            // Invalidate both version caches AND the workflow list so cards reflect the new currentVersionId
             queryClient.invalidateQueries({ queryKey: workflowKeys.versions() });
+            queryClient.invalidateQueries({ queryKey: workflowKeys.all });
             toast.success("Version activated successfully");
         },
         onError: (error: any) => {
@@ -269,10 +271,11 @@ export const useActivateVersion = () => {
 export const useDeprecateVersion = () => {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: (data: { versionId: string; deprecatedReason: string; allowMigration: boolean }) => 
+        mutationFn: (data: { versionId: string; deprecatedReason: string; allowMigration: boolean }) =>
             workflowService.deprecateVersion(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: workflowKeys.versions() });
+            queryClient.invalidateQueries({ queryKey: workflowKeys.all });
             toast.success("Version deprecated successfully");
         },
         onError: (error: any) => {

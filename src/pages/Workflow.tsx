@@ -29,23 +29,23 @@ const Workflow = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
+  const isActiveParam =
+    statusFilter === "active" ? true :
+    statusFilter === "inactive" ? false :
+    undefined;
 
   const { data, isLoading, isError, error } = useWorkflows({
     page,
     limit,
     search: search || undefined,
+    isActive: isActiveParam,
     sortBy: "createdAt",
     sortOrder: "desc",
   });
 
   const deleteWorkflowMutation = useDeleteWorkflow();
 
-  // Filter by status on client side for now
-  const workflows = data?.data || [];
-  const filteredWorkflows = statusFilter === "all"
-    ? workflows
-    : workflows.filter(w => statusFilter === "active" ? w.isActive : !w.isActive);
-
+  const filteredWorkflows = data?.data || [];
   const totalPages = Math.ceil((data?.totalPages || 0));
 
   const handleViewWorkflow = (workflow: WorkflowType) => {
@@ -89,7 +89,7 @@ const Workflow = () => {
 
         {/* Filters */}
         <div className="flex gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>

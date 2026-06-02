@@ -22,7 +22,14 @@ interface EditStepDialogProps {
     isDraftMode?: boolean;
 }
 
-export const EditStepDialog = ({ workflowId, step, open, onOpenChange, onUpdateLocal, isDraftMode }: EditStepDialogProps) => {
+export const EditStepDialog = ({
+    workflowId,
+    step,
+    open,
+    onOpenChange,
+    onUpdateLocal,
+    isDraftMode,
+}: EditStepDialogProps) => {
     const [formData, setFormData] = useState<UpdateStepDto>({
         name: "",
         description: "",
@@ -64,8 +71,8 @@ export const EditStepDialog = ({ workflowId, step, open, onOpenChange, onUpdateL
                 data: formData,
             });
             onOpenChange(false);
-        } catch (error) {
-            // Error is handled by the mutation hook
+        } catch {
+            // handled by hook
         }
     };
 
@@ -73,7 +80,7 @@ export const EditStepDialog = ({ workflowId, step, open, onOpenChange, onUpdateL
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
                     <DialogTitle>Edit Step</DialogTitle>
                 </DialogHeader>
@@ -86,6 +93,7 @@ export const EditStepDialog = ({ workflowId, step, open, onOpenChange, onUpdateL
                             value={formData.name || ""}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             required
+                            autoFocus
                         />
                     </div>
 
@@ -95,35 +103,28 @@ export const EditStepDialog = ({ workflowId, step, open, onOpenChange, onUpdateL
                             id="edit-step-description"
                             placeholder="Describe what happens in this step..."
                             value={formData.description || ""}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            onChange={(e) =>
+                                setFormData({ ...formData, description: e.target.value })
+                            }
                             rows={3}
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-step-order">Step Order *</Label>
-                            <Input
-                                id="edit-step-order"
-                                type="number"
-                                min="1"
-                                value={formData.stepOrder || 1}
-                                onChange={(e) => setFormData({ ...formData, stepOrder: parseInt(e.target.value) || 1 })}
-                                required
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-duration-days">Duration (Days) *</Label>
-                            <Input
-                                id="edit-duration-days"
-                                type="number"
-                                min="1"
-                                value={formData.expectedDurationDays || 1}
-                                onChange={(e) => setFormData({ ...formData, expectedDurationDays: parseInt(e.target.value) || 1 })}
-                                required
-                            />
-                        </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="edit-duration-days">Expected Duration (days) *</Label>
+                        <Input
+                            id="edit-duration-days"
+                            type="number"
+                            min="1"
+                            value={formData.expectedDurationDays || 1}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    expectedDurationDays: parseInt(e.target.value) || 1,
+                                })
+                            }
+                            required
+                        />
                     </div>
 
                     <div className="flex items-center justify-between rounded-lg border p-4">
@@ -135,26 +136,14 @@ export const EditStepDialog = ({ workflowId, step, open, onOpenChange, onUpdateL
                         </div>
                         <Switch
                             id="edit-requires-doc"
-                            checked={formData.requiresDocument}
-                            onCheckedChange={(checked) => setFormData({ ...formData, requiresDocument: checked })}
+                            checked={!!formData.requiresDocument}
+                            onCheckedChange={(checked) =>
+                                setFormData({ ...formData, requiresDocument: checked })
+                            }
                         />
                     </div>
 
-                    <div className="flex items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                            <Label htmlFor="edit-step-active">Active Status</Label>
-                            <p className="text-sm text-muted-foreground">
-                                Set whether this step is currently active
-                            </p>
-                        </div>
-                        <Switch
-                            id="edit-step-active"
-                            checked={formData.isActive}
-                            onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                        />
-                    </div>
-
-                    <div className="flex gap-2 justify-end pt-4">
+                    <div className="flex gap-2 justify-end pt-2">
                         <Button
                             type="button"
                             variant="outline"
@@ -164,7 +153,7 @@ export const EditStepDialog = ({ workflowId, step, open, onOpenChange, onUpdateL
                             Cancel
                         </Button>
                         <Button type="submit" disabled={updateStepMutation.isPending}>
-                            {updateStepMutation.isPending ? "Saving..." : "Save Changes"}
+                            {updateStepMutation.isPending ? "Saving…" : "Save Changes"}
                         </Button>
                     </div>
                 </form>

@@ -49,12 +49,14 @@ export interface WorkflowStep {
     updatedAt?: string;
 }
 
+export type WorkflowVersionStatus = 'Draft' | 'Active' | 'Deprecated';
+
 // Workflow Version entity
 export interface WorkflowVersion {
     id: string;
     workflowId: string;
     versionNumber: number;
-    status: 'Draft' | 'Active' | 'Deprecated';
+    status: WorkflowVersionStatus;
     description: string;
     steps: WorkflowStep[];
     applicationCount: number;
@@ -141,5 +143,6 @@ export interface WorkflowQueryParams {
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
     search?: string;
+    isActive?: boolean;
 }
 
