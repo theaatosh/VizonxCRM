@@ -45,8 +45,10 @@ const Workflow = () => {
 
   const deleteWorkflowMutation = useDeleteWorkflow();
 
-  const filteredWorkflows = data?.data || [];
-  const totalPages = Math.ceil((data?.totalPages || 0));
+  // data is WorkflowsResponse: { data: Workflow[], total, page, limit, totalPages, hasMore }
+  const filteredWorkflows = data?.data ?? [];
+  const totalItems = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 0;
 
   const handleViewWorkflow = (workflow: WorkflowType) => {
     setSelectedWorkflow(workflow);
@@ -159,8 +161,8 @@ const Workflow = () => {
             <DataTablePagination
               pageIndex={page}
               pageSize={limit}
-              totalItems={data.total}
-              totalPages={data.totalPages}
+              totalItems={totalItems}
+              totalPages={totalPages}
               onPageChange={setPage}
               onPageSizeChange={(newLimit) => {
                 setLimit(newLimit);

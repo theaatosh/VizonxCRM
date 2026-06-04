@@ -93,10 +93,10 @@ export const WorkflowVersionHistory = ({ workflowId }: WorkflowVersionHistoryPro
                             <div className="flex items-center gap-3 shrink-0">
                                 <div className="text-right">
                                     <p className="text-sm font-medium text-muted-foreground">
-                                        {version.steps.length}{" "}
-                                        {version.steps.length === 1 ? "step" : "steps"}
+                                        {version.steps?.length ?? 0}{" "}
+                                        {(version.steps?.length ?? 0) === 1 ? "step" : "steps"}
                                     </p>
-                                    {version.applicationCount > 0 && (
+                                    {(version.applicationCount ?? 0) > 0 && (
                                         <p className="text-[11px] text-muted-foreground">
                                             {version.applicationCount} application
                                             {version.applicationCount !== 1 ? "s" : ""}
@@ -137,17 +137,17 @@ export const WorkflowVersionHistory = ({ workflowId }: WorkflowVersionHistoryPro
                         </div>
 
                         {/* Step pills */}
-                        {version.steps.length > 0 && (
+                        {(version.steps?.length ?? 0) > 0 && (
                             <div className="flex items-center gap-1 overflow-x-auto py-1 no-scrollbar">
-                                {version.steps
+                                {(version.steps ?? [])
                                     .slice()
                                     .sort((a, b) => a.stepOrder - b.stepOrder)
-                                    .map((step, idx) => (
+                                    .map((step, idx, arr) => (
                                         <div key={step.id} className="flex items-center shrink-0">
                                             <div className="h-6 px-2.5 bg-muted rounded-full flex items-center text-[11px] font-medium border">
                                                 {step.name}
                                             </div>
-                                            {idx < version.steps.length - 1 && (
+                                            {idx < arr.length - 1 && (
                                                 <div className="w-3 h-px bg-border mx-0.5" />
                                             )}
                                         </div>

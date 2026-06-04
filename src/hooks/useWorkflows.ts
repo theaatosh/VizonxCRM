@@ -212,9 +212,11 @@ export const useCreateVersion = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (data: any) => workflowService.createVersion(data),
+        mutationFn: workflowService.createVersion.bind(workflowService),
         onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: workflowKeys.steps(variables.workflowId) });
+            // Invalidate both the version list and the workflow detail so the step
+            // editor picks up the newly published version immediately.
+            queryClient.invalidateQueries({ queryKey: workflowKeys.byWorkflow(variables.workflowId) });
             queryClient.invalidateQueries({ queryKey: workflowKeys.detail(variables.workflowId) });
             toast.success('New workflow version created successfully');
         },
