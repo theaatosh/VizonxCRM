@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Loader2, Workflow as WorkflowIcon, FileX } from "lucide-react";
-import { useWorkflows, useDeleteWorkflow } from "@/hooks/useWorkflows";
+import { useWorkflows, useDeleteWorkflow, useActivateWorkflow, useDeactivateWorkflow } from "@/hooks/useWorkflows";
 import { WorkflowCard } from "@/components/workflow/WorkflowCard";
 import { CreateWorkflowDialog } from "@/components/workflow/CreateWorkflowDialog";
 import { EditWorkflowDialog } from "@/components/workflow/EditWorkflowDialog";
@@ -44,6 +44,8 @@ const Workflow = () => {
   });
 
   const deleteWorkflowMutation = useDeleteWorkflow();
+  const activateWorkflowMutation = useActivateWorkflow();
+  const deactivateWorkflowMutation = useDeactivateWorkflow();
 
   // data is WorkflowsResponse: { data: Workflow[], total, page, limit, totalPages, hasMore }
   const filteredWorkflows = data?.data ?? [];
@@ -62,6 +64,14 @@ const Workflow = () => {
 
   const handleDeleteWorkflow = (id: string) => {
     deleteWorkflowMutation.mutate(id);
+  };
+
+  const handleActivateWorkflow = (id: string) => {
+    activateWorkflowMutation.mutate(id);
+  };
+
+  const handleDeactivateWorkflow = (id: string) => {
+    deactivateWorkflowMutation.mutate(id);
   };
 
   return (
@@ -152,6 +162,8 @@ const Workflow = () => {
                 onView={handleViewWorkflow}
                 onEdit={handleEditWorkflow}
                 onDelete={handleDeleteWorkflow}
+                onActivate={handleActivateWorkflow}
+                onDeactivate={handleDeactivateWorkflow}
               />
             ))}
           </div>

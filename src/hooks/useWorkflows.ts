@@ -268,6 +268,40 @@ export const useActivateVersion = () => {
 };
 
 /**
+ * Activate a workflow (set isActive = true)
+ */
+export const useActivateWorkflow = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => workflowService.activateWorkflow(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: workflowKeys.all });
+            toast.success('Workflow activated successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to activate workflow');
+        },
+    });
+};
+
+/**
+ * Deactivate a workflow (set isActive = false)
+ */
+export const useDeactivateWorkflow = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => workflowService.deactivateWorkflow(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: workflowKeys.all });
+            toast.success('Workflow deactivated successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to deactivate workflow');
+        },
+    });
+};
+
+/**
  * Deprecate a workflow version
  */
 export const useDeprecateVersion = () => {

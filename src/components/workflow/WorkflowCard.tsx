@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Workflow } from "@/types/workflow.types";
-import { Layers, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Layers, MoreHorizontal, Pencil, Power, PowerOff, Trash2 } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -27,9 +27,11 @@ interface WorkflowCardProps {
     onView: (workflow: Workflow) => void;
     onEdit: (workflow: Workflow) => void;
     onDelete: (id: string) => void;
+    onActivate: (id: string) => void;
+    onDeactivate: (id: string) => void;
 }
 
-export const WorkflowCard = ({ workflow, onView, onEdit, onDelete }: WorkflowCardProps) => {
+export const WorkflowCard = ({ workflow, onView, onEdit, onDelete, onActivate, onDeactivate }: WorkflowCardProps) => {
     const [deleteOpen, setDeleteOpen] = useState(false);
     const stepCount = workflow._count?.steps || workflow.steps?.length || 0;
 
@@ -81,6 +83,28 @@ export const WorkflowCard = ({ workflow, onView, onEdit, onDelete }: WorkflowCar
                                     <Pencil className="h-4 w-4 mr-2" />
                                     Edit
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                {workflow.isActive ? (
+                                    <DropdownMenuItem
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDeactivate(workflow.id);
+                                        }}
+                                    >
+                                        <PowerOff className="h-4 w-4 mr-2" />
+                                        Deactivate Workflow
+                                    </DropdownMenuItem>
+                                ) : (
+                                    <DropdownMenuItem
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onActivate(workflow.id);
+                                        }}
+                                    >
+                                        <Power className="h-4 w-4 mr-2" />
+                                        Activate Workflow
+                                    </DropdownMenuItem>
+                                )}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                     className="text-destructive focus:text-destructive"

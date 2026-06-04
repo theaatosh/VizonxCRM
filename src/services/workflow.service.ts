@@ -57,6 +57,16 @@ class WorkflowService {
         await api.delete(`${this.baseUrl}/${id}`);
     }
 
+    async activateWorkflow(id: string): Promise<Workflow> {
+        const response = await api.put(`${this.baseUrl}/${id}/activate`);
+        return response.data.data;
+    }
+
+    async deactivateWorkflow(id: string): Promise<Workflow> {
+        const response = await api.put(`${this.baseUrl}/${id}/deactivate`);
+        return response.data.data;
+    }
+
     // ==================== Workflow Steps Management ====================
 
     async getWorkflowSteps(workflowId: string): Promise<WorkflowStep[]> {
