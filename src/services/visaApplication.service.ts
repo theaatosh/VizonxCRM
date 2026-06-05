@@ -50,7 +50,7 @@ export const visaApplicationService = {
      * Update an existing visa application
      */
     async updateVisaApplication(id: string, data: UpdateVisaApplicationDto): Promise<VisaApplication> {
-        const response = await api.put<VisaApplication>(`${VISA_APPLICATIONS_ENDPOINT}/${id}`, data);
+        const response = await api.patch<VisaApplication>(`${VISA_APPLICATIONS_ENDPOINT}/${id}`, data);
         return response.data;
     },
 
@@ -64,7 +64,7 @@ export const visaApplicationService = {
     /**
      * Advance the step of a visa application
      */
-    async advanceVisaStep(id: string, data: { expectedStepId: string; notes: string }): Promise<VisaApplication> {
+    async advanceVisaStep(id: string, data: { notes: string }): Promise<VisaApplication> {
         const response = await api.post<VisaApplication>(`${VISA_APPLICATIONS_ENDPOINT}/${id}/advance-step`, data);
         return response.data;
     },

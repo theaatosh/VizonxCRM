@@ -88,6 +88,9 @@ export interface UpdateVisaApplicationDto {
     courseApplicationId?: string;
     destinationCountry?: string;
     status?: string;
+    currentStepId?: string;
+    submissionDate?: string | null;
+    decisionDate?: string | null;
 }
 
 export interface VisaApplicationQueryParams extends PaginationParams {

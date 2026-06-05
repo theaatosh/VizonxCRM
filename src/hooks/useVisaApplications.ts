@@ -120,7 +120,7 @@ export function useAdvanceVisaStep() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ id, data }: { id: string; data: { expectedStepId: string; notes: string } }) =>
+        mutationFn: ({ id, data }: { id: string; data: { notes: string } }) =>
             visaApplicationService.advanceVisaStep(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: visaApplicationKeys.all });
