@@ -821,7 +821,7 @@ const ApplicantDetail = () => {
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem 
                                                                     className="gap-2 cursor-pointer text-primary"
-                                                                    disabled={visa.status === 'Approved' || visa.status === 'Rejected'}
+                                                                    disabled={visa.status === 'Approved' || visa.status === 'Rejected' || !visa.currentStepId}
                                                                     onClick={() => {
                                                                         const steps = (visa as any).workflowVersion?.steps || [];
                                                                         const isLast = steps.length > 0 && steps[steps.length - 1].id === visa.currentStepId;
