@@ -81,5 +81,10 @@ export const taskService = {
     getOverdueTasks: async (params?: PaginationParams) => {
         const response = await api.get<TasksResponse>('/tasks/overdue', { params });
         return response.data;
-    }
+    },
+
+    getMyTasks: async (params?: PaginationParams) => {
+        const response = await api.get<TasksResponse>('/tasks/my-tasks', { params });
+        return response.data;
+    },
 };

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Plus, Filter, MoreHorizontal, Loader2 } from "lucide-react";
+import { Search, Plus, Filter, MoreHorizontal, Loader2, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +39,16 @@ import { DataTablePagination } from "@/components/shared/DataTablePagination";
 import { usePermissions } from "@/contexts/PermissionContext";
 import { LeadFormDialog } from "@/components/leads/LeadFormDialog";
 import { DeleteLeadDialog } from "@/components/leads/DeleteLeadDialog";
+import { useQueues } from "@/hooks/useQueue";
+import { useAddToQueue } from "@/hooks/useAssignment";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import type { Lead, LeadStatus } from "@/types/lead.types";
 
 // Map backend status to display colors
@@ -58,6 +69,7 @@ const priorityColors: Record<string, string> = {
 };
 
 const Leads = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
@@ -67,6 +79,8 @@ const Leads = () => {
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [assignQueueDialogOpen, setAssignQueueDialogOpen] = useState(false);
+  const [selectedQueueId, setSelectedQueueId] = useState<string>("");
 
   const { data, isLoading, isError, error } = useLeads({
     page,
@@ -78,6 +92,8 @@ const Leads = () => {
   const convertToStudent = useConvertLeadToStudent();
   const updateLead = useUpdateLead();
   const { canCreate, canUpdate, canDelete, hasPermission } = usePermissions();
+  const { data: queuesData } = useQueues();
+  const assignToQueue = useAddToQueue();
 
   // Use data directly since filtering is now handled by the backend
   const filteredLeads = useMemo(() => {
@@ -116,6 +132,32 @@ const Leads = () => {
 
   const handleChangeStatus = (lead: Lead, newStatus: LeadStatus) => {
     updateLead.mutate({ id: lead.id, data: { status: newStatus } });
+  };
+
+  const handleAssignToQueue = (lead: Lead) => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedLead(lead);
+    setSelectedQueueId("");
+    setAssignQueueDialogOpen(true);
+  };
+
+  const handleConfirmAssignToQueue = () => {
+    if (!selectedLead || !selectedQueueId) return;
+
+    assignToQueue.mutate(
+      {
+        queueId: selectedQueueId,
+        leadId: selectedLead.id,
+        staffProfileId: "",
+      },
+      {
+        onSuccess: () => {
+          setAssignQueueDialogOpen(false);
+          setSelectedLead(null);
+          setSelectedQueueId("");
+        },
+      }
+    );
   };
 
   // Get available status transitions for a lead
@@ -240,6 +282,7 @@ const Leads = () => {
                     <TableHead>Phone</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Priority</TableHead>
+                    <TableHead>Assigned To</TableHead>
                     <TableHead>Source</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
@@ -250,7 +293,7 @@ const Leads = () => {
                     <LoadingSkeleton />
                   ) : filteredLeads.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
+                      <TableCell colSpan={8} className="h-24 text-center">
                         <p className="text-muted-foreground">
                           {searchQuery || statusFilter !== 'all'
                             ? 'No leads found matching your criteria.'
@@ -260,7 +303,11 @@ const Leads = () => {
                     </TableRow>
                   ) : (
                     filteredLeads.map((lead) => (
-                      <TableRow key={lead.id} className="cursor-pointer">
+                      <TableRow
+                        key={lead.id}
+                        className="cursor-pointer"
+                        onClick={() => navigate(`/leads/${lead.id}`)}
+                      >
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9">
@@ -301,6 +348,14 @@ const Leads = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <User className="h-3.5 w-3.5" />
+                            {lead.assignedUser?.name || (
+                              <span className="text-xs italic">Unassigned</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
                           {lead.source || '-'}
                         </TableCell>
                         <TableCell className="text-muted-foreground whitespace-nowrap">
@@ -319,6 +374,9 @@ const Leads = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-56">
+                                <DropdownMenuItem onClick={() => navigate(`/leads/${lead.id}`)}>
+                                  View Details
+                                </DropdownMenuItem>
                                 {canUpdate('leads') && (
                                   <DropdownMenuItem onClick={() => handleEditLead(lead)}>
                                     Edit Lead
@@ -350,6 +408,14 @@ const Leads = () => {
                                         ))}
                                       </DropdownMenuSubContent>
                                     </DropdownMenuSub>
+                                  </>
+                                )}
+                                {canUpdate('leads') && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={handleAssignToQueue(lead)}>
+                                      Assign to Queue
+                                    </DropdownMenuItem>
                                   </>
                                 )}
                                 {hasPermission('leads', 'convert') && lead.status !== 'Converted' && (
@@ -411,6 +477,55 @@ const Leads = () => {
       </Card>
 
       {/* Dialogs */}
+      <Dialog open={assignQueueDialogOpen} onOpenChange={setAssignQueueDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign to Queue</DialogTitle>
+            <DialogDescription>
+              Select a queue to assign {selectedLead?.firstName} {selectedLead?.lastName} to.
+            </DialogDescription>
+          </DialogHeader>
+          {queuesData?.data && queuesData.data.length > 0 ? (
+            <div className="py-4">
+              <Select value={selectedQueueId} onValueChange={setSelectedQueueId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a queue..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {queuesData.data.map((queue) => (
+                    <SelectItem key={queue.id} value={queue.id}>
+                      {queue.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <p className="py-4 text-sm text-muted-foreground text-center">
+              No queues available. Please create a queue first.
+            </p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAssignQueueDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmAssignToQueue}
+              disabled={!selectedQueueId || assignToQueue.isPending}
+            >
+              {assignToQueue.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Assigning...
+                </>
+              ) : (
+                'Assign to Queue'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <LeadFormDialog
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}

@@ -38,7 +38,11 @@ export type PermissionModule =
     | 'universities'
     | 'users'
     | 'visa-types'
-    | 'workflows';
+    | 'workflows'
+    | 'staff'
+    | 'queue'
+    | 'counselors'
+    | 'monitoring';
 
 // Current user response from /auth/me
 export interface CurrentUser {

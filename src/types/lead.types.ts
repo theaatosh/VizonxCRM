@@ -38,6 +38,17 @@ export interface CreateLeadDto {
     assignedUserId?: string;
 }
 
+// Lead with assignment info
+export interface LeadWithAssignment extends Lead {
+    assignmentType?: string;
+    queueSource?: string;
+    assignedDate?: string;
+    isRevisit?: boolean;
+    previousCounselorId?: string;
+    previousCounselorName?: string;
+    previousInteractionDate?: string;
+}
+
 // DTO for updating a lead
 export interface UpdateLeadDto {
     firstName?: string;

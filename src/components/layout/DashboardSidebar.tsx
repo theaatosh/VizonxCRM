@@ -19,6 +19,10 @@ import {
   History,
   GraduationCap as Logo,
   DollarSign,
+  UserCog,
+  ListOrdered,
+  Monitor,
+  UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -32,11 +36,17 @@ interface MenuItem {
   icon: React.ComponentType<{ className?: string }>;
   path: string;
   module?: PermissionModule; // If undefined, always show (e.g., Overview, Settings)
+  role?: string; // If set, only show if user's role matches (case-insensitive)
 }
 
 const menuItems: MenuItem[] = [
   { title: "Overview", icon: LayoutDashboard, path: "/" },
   { title: "Leads", icon: Users, path: "/leads", module: "leads" },
+  { title: "Queue", icon: ListOrdered, path: "/queue", module: "queues" },
+  { title: "Staff", icon: UserCog, path: "/staff", module: "staff" },
+  { title: "Counselor", icon: UserCheck, path: "/counselor-dashboard", module: "staff", role: "counselor" },
+  { title: "My Queue", icon: ListOrdered, path: "/my-queue", module: "staff", role: "counselor" },
+  { title: "Monitoring", icon: Monitor, path: "/monitoring", module: "staff" },
   { title: "Visas", icon: Plane, path: "/visas", module: "visa-types" },
   { title: "Applicants", icon: GraduationCap, path: "/applicants", module: "students" },
   { title: "Countries", icon: Globe, path: "/countries", module: "countries" },
@@ -60,12 +70,14 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ collapsed, onToggle }: DashboardSidebarProps) {
   const location = useLocation();
-  const { canRead, isLoading } = usePermissions();
+  const { canRead, isLoading, user } = usePermissions();
 
-  // Filter menu items based on permissions
+  // Filter menu items based on permissions and role
   const visibleMenuItems = menuItems.filter((item) => {
     // Always show items without a module requirement (Overview, Settings)
     if (!item.module) return true;
+    // Check role requirement if set (case-insensitive)
+    if (item.role && user?.role.toLowerCase() !== item.role.toLowerCase()) return false;
     // Show item if user has read permission for the module
     return canRead(item.module);
   });
