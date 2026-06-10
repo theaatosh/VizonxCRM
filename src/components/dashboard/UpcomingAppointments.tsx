@@ -74,39 +74,41 @@ export function UpcomingAppointments({ appointments, isLoading = false }: Upcomi
                         return (
                             <div
                                 key={appointment.id}
-                                className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
+                                className="flex items-start gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
                             >
-                                <Avatar className="h-10 w-10">
+                                <Avatar className="h-10 w-10 flex-shrink-0">
                                     <AvatarFallback className="bg-primary/10 text-primary text-sm">
                                         {appointment.student.firstName[0]}{appointment.student.lastName[0]}
                                     </AvatarFallback>
                                 </Avatar>
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-foreground truncate">
-                                        {appointment.student.firstName} {appointment.student.lastName}
-                                    </p>
-                                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                                        <span className="flex items-center gap-1">
-                                            <Calendar className="h-3 w-3" />
-                                            {date}
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            <Clock className="h-3 w-3" />
-                                            {time}
+                                <div className="flex-1 min-w-0 space-y-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <p className="font-medium text-foreground truncate">
+                                            {appointment.student.firstName} {appointment.student.lastName}
+                                        </p>
+                                        <Badge
+                                            variant="outline"
+                                            className="bg-primary/10 text-primary border-primary/20 text-xs flex-shrink-0"
+                                        >
+                                            {appointment.status}
+                                        </Badge>
+                                    </div>
+                                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                            <span className="flex items-center gap-1">
+                                                <Calendar className="h-3 w-3" />
+                                                {date}
+                                            </span>
+                                            <span className="flex items-center gap-1">
+                                                <Clock className="h-3 w-3" />
+                                                {time}
+                                            </span>
+                                        </div>
+                                        <span className="flex items-center gap-1 text-muted-foreground flex-shrink-0">
+                                            <User className="h-3 w-3" />
+                                            {appointment.staff.name.split(' ')[0]}
                                         </span>
                                     </div>
-                                </div>
-                                <div className="flex flex-col items-end gap-1">
-                                    <Badge
-                                        variant="outline"
-                                        className="bg-primary/10 text-primary border-primary/20 text-xs"
-                                    >
-                                        {appointment.status}
-                                    </Badge>
-                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                        <User className="h-3 w-3" />
-                                        {appointment.staff.name.split(' ')[0]}
-                                    </span>
                                 </div>
                             </div>
                         );

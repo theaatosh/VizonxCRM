@@ -108,7 +108,7 @@ export function UpcomingTasks({ tasks, isLoading = false }: UpcomingTasksProps) 
                   }`}
               >
                 <Checkbox checked={isCompleted} className="mt-1" />
-                <div className="flex-1 space-y-1">
+                <div className="flex-1 space-y-1 min-w-0">
                   <p className={`font-medium ${isCompleted ? "line-through text-muted-foreground" : "text-foreground"}`}>
                     {task.title}
                   </p>

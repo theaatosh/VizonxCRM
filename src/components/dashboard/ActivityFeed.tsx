@@ -39,7 +39,7 @@ const actionIcons: Record<string, React.ReactNode> = {
 export function ActivityFeed({ activities, isLoading = false }: ActivityFeedProps) {
   if (isLoading) {
     return (
-      <Card className="shadow-card h-full">
+      <Card className="shadow-card">
         <CardHeader className="pb-4">
           <Skeleton className="h-6 w-32" />
         </CardHeader>
@@ -63,7 +63,7 @@ export function ActivityFeed({ activities, isLoading = false }: ActivityFeedProp
   const hasActivities = activities && activities.length > 0;
 
   return (
-    <Card className="shadow-card hover:shadow-card-hover transition-shadow duration-300 h-full">
+    <Card className="shadow-card hover:shadow-card-hover transition-shadow duration-300">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Activity className="h-5 w-5 text-primary" />

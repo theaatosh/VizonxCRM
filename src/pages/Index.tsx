@@ -206,7 +206,7 @@ const Index = () => {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6 mb-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6 mb-6 items-start">
         <div className="xl:col-span-2 min-w-0">
           <StatusBreakdownChart
             title="Lead Status"
@@ -226,7 +226,7 @@ const Index = () => {
       </div>
 
       {/* Students and Appointments Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 mb-6 items-start">
         <div className="min-w-0">
           <StatusBreakdownChart
             title="Student Status"
@@ -257,7 +257,7 @@ const Index = () => {
 
 
       {/* Main Dashboard Content Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6 items-start">
         {/* Left Column - Large Tables & Feeds */}
         <div className="xl:col-span-2 flex flex-col gap-4 md:gap-6 min-w-0">
           <RecentLeadsTable
@@ -275,7 +275,7 @@ const Index = () => {
         </div>
 
         {/* Right Column - Side Widgets & Lists */}
-        <div className="xl:col-span-1 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4 md:gap-6 min-w-0 auto-rows-max">
+        <div className="xl:col-span-1 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4 md:gap-6 min-w-0 auto-rows-max items-start">
           <UpcomingAppointments
             appointments={dashboard?.appointments?.upcoming}
             isLoading={isLoading}
