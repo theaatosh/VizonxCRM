@@ -206,8 +206,8 @@ const Index = () => {
       </div>
 
       {/* Charts Row */}
-      <div className="grid gap-4 md:gap-6 lg:grid-cols-3 mb-6">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6 mb-6">
+        <div className="xl:col-span-2 min-w-0">
           <StatusBreakdownChart
             title="Lead Status"
             subtitle="Distribution by status"
@@ -215,86 +215,85 @@ const Index = () => {
             isLoading={isLoading}
           />
         </div>
-        <StatusBreakdownChart
-          title="Task Status"
-          subtitle="Current task breakdown"
-          data={dashboard?.tasks?.byStatus}
-          isLoading={isLoading}
-        />
+        <div className="min-w-0">
+          <StatusBreakdownChart
+            title="Task Status"
+            subtitle="Current task breakdown"
+            data={dashboard?.tasks?.byStatus}
+            isLoading={isLoading}
+          />
+        </div>
       </div>
 
       {/* Students and Appointments Charts */}
-      <div className="grid gap-4 md:gap-6 lg:grid-cols-3 mb-6">
-        <StatusBreakdownChart
-          title="Student Status"
-          subtitle="Student breakdown"
-          data={dashboard?.students?.byStatus}
-          isLoading={isLoading}
-        />
-        <StatusBreakdownChart
-          title="Appointments"
-          subtitle="By status"
-          data={dashboard?.appointments?.byStatus}
-          isLoading={isLoading}
-        />
-        <QuickStatsGrid
-          universities={dashboard?.universities}
-          courses={dashboard?.courses}
-          countries={dashboard?.countries}
-          visaTypes={dashboard?.visaTypes}
-          cms={dashboard?.cms}
-          isLoading={isLoading}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 mb-6">
+        <div className="min-w-0">
+          <StatusBreakdownChart
+            title="Student Status"
+            subtitle="Student breakdown"
+            data={dashboard?.students?.byStatus}
+            isLoading={isLoading}
+          />
+        </div>
+        <div className="min-w-0">
+          <StatusBreakdownChart
+            title="Appointments"
+            subtitle="By status"
+            data={dashboard?.appointments?.byStatus}
+            isLoading={isLoading}
+          />
+        </div>
+        <div className="min-w-0 md:col-span-2 xl:col-span-1">
+          <QuickStatsGrid
+            universities={dashboard?.universities}
+            courses={dashboard?.courses}
+            countries={dashboard?.countries}
+            visaTypes={dashboard?.visaTypes}
+            cms={dashboard?.cms}
+            isLoading={isLoading}
+          />
+        </div>
       </div>
 
 
-      {/* Tables and Lists Row */}
-      <div className="grid gap-4 md:gap-6 lg:grid-cols-3 mb-6">
-        <div className="lg:col-span-2">
+      {/* Main Dashboard Content Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
+        {/* Left Column - Large Tables & Feeds */}
+        <div className="xl:col-span-2 flex flex-col gap-4 md:gap-6 min-w-0">
           <RecentLeadsTable
             leads={dashboard?.leads?.recent}
             isLoading={isLoading}
           />
+          <RecentPayments 
+            payments={dashboard?.payments?.recent}
+            isLoading={isLoading}
+          />
+          <ActivityFeed 
+            activities={dashboard?.recentActivities}
+            isLoading={isLoading}
+          />
         </div>
-        <div className="grid gap-4 md:gap-6">
-            <UpcomingAppointments
-                appointments={dashboard?.appointments?.upcoming}
-                isLoading={isLoading}
-            />
-            <RecentVisaApplications 
-                applications={dashboard?.visaApplications?.recent}
-                isLoading={isLoading}
-            />
-        </div>
-      </div>
 
-      {/* Financial and Tasks Row */}
-      <div className="grid gap-4 md:gap-6 lg:grid-cols-3 mb-6">
-        <div className="lg:col-span-2">
-            <RecentPayments 
-                payments={dashboard?.payments?.recent}
-                isLoading={isLoading}
-            />
-        </div>
-        <UpcomingTasks
+        {/* Right Column - Side Widgets & Lists */}
+        <div className="xl:col-span-1 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 gap-4 md:gap-6 min-w-0 auto-rows-max">
+          <UpcomingAppointments
+            appointments={dashboard?.appointments?.upcoming}
+            isLoading={isLoading}
+          />
+          <RecentVisaApplications 
+            applications={dashboard?.visaApplications?.recent}
+            isLoading={isLoading}
+          />
+          <UpcomingTasks
             tasks={dashboard?.tasks?.upcoming}
             isLoading={isLoading}
-        />
-      </div>
-
-      {/* Activity and Messaging Row */}
-      <div className="grid gap-4 md:gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-            <ActivityFeed 
-                activities={dashboard?.recentActivities}
-                isLoading={isLoading}
-            />
+          />
+          <MessagingStats
+            messaging={dashboard?.messaging}
+            templates={dashboard?.templates}
+            isLoading={isLoading}
+          />
         </div>
-        <MessagingStats
-          messaging={dashboard?.messaging}
-          templates={dashboard?.templates}
-          isLoading={isLoading}
-        />
       </div>
 
       {/* Floating Chat Widget */}

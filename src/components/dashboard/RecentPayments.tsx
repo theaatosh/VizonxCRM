@@ -47,40 +47,44 @@ export function RecentPayments({ payments, isLoading = false }: RecentPaymentsPr
       </CardHeader>
       <CardContent>
         {hasPayments ? (
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Inverse</TableHead>
-                <TableHead>Student</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead className="text-right">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.slice(0, 5).map((payment) => (
-                <TableRow key={payment.id} className="hover:bg-muted/50">
-                  <TableCell className="text-xs font-mono">{payment.invoiceNumber}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">{payment.student.firstName} {payment.student.lastName}</span>
-                      <span className="text-[10px] text-muted-foreground">{format(new Date(payment.paymentDate), 'MMM d, yyyy')}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-foreground">${Number(payment.paidAmount).toLocaleString()}</span>
-                      <span className="text-[10px] text-muted-foreground">Total: ${Number(payment.totalAmount).toLocaleString()}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant="outline" className={`text-[10px] uppercase ${statusColors[payment.status] || "bg-muted text-muted-foreground"}`}>
-                      {payment.status}
-                    </Badge>
-                  </TableCell>
+          <div className="overflow-x-auto -mx-6 px-6">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-[25%]">Invoice</TableHead>
+                  <TableHead className="w-[35%]">Student</TableHead>
+                  <TableHead className="w-[25%]">Amount</TableHead>
+                  <TableHead className="w-[15%] text-right">Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {payments.slice(0, 5).map((payment) => (
+                  <TableRow key={payment.id} className="hover:bg-muted/50">
+                    <TableCell className="text-xs font-mono py-3">{payment.invoiceNumber}</TableCell>
+                    <TableCell className="min-w-0 py-3">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-medium truncate max-w-[140px]" title={`${payment.student.firstName} ${payment.student.lastName}`}>
+                          {payment.student.firstName} {payment.student.lastName}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">{format(new Date(payment.paymentDate), 'MMM d, yyyy')}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-foreground">${Number(payment.paidAmount).toLocaleString()}</span>
+                        <span className="text-[10px] text-muted-foreground">Total: ${Number(payment.totalAmount).toLocaleString()}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right py-3">
+                      <Badge variant="outline" className={`text-[10px] uppercase ${statusColors[payment.status] || "bg-muted text-muted-foreground"}`}>
+                        {payment.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         ) : (
           <div className="py-10 text-center text-muted-foreground">
             <p className="text-sm">No recent payments found</p>

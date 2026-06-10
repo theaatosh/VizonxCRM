@@ -105,6 +105,7 @@ export function AppointmentFormDialog({
     const isEditing = !!appointment;
     const [staffPopoverOpen, setStaffPopoverOpen] = useState(false);
     const [studentPopoverOpen, setStudentPopoverOpen] = useState(false);
+    const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
     // Hooks
     const createAppointment = useCreateAppointment();
@@ -419,7 +420,7 @@ export function AppointmentFormDialog({
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col flex-1 w-full sm:w-1/2">
                                         <FormLabel>Date</FormLabel>
-                                        <Popover open={staffPopoverOpen} onOpenChange={setStaffPopoverOpen}>
+                                        <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
                                                         <Button
@@ -445,7 +446,10 @@ export function AppointmentFormDialog({
                                                 <Calendar
                                                     mode="single"
                                                     selected={field.value}
-                                                    onSelect={field.onChange}
+                                                    onSelect={(date) => {
+                                                        field.onChange(date);
+                                                        setDatePopoverOpen(false);
+                                                    }}
                                                     disabled={(date) => {
                                                         // 1. Disable past dates
                                                         if (date < new Date(new Date().setHours(0, 0, 0, 0))) return true;

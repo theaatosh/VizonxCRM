@@ -60,43 +60,57 @@ export function RecentVisaApplications({ applications, isLoading = false }: Rece
       </CardHeader>
       <CardContent>
         {hasApps ? (
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Student</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Destination</TableHead>
-                <TableHead className="text-right">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {applications.slice(0, 5).map((app) => (
-                <TableRow key={app.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/applicants/${app.studentId}`)}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${app.student.firstName}`} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                          {app.student.firstName[0]}{app.student.lastName[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-foreground text-sm">{app.student.firstName} {app.student.lastName}</p>
-                        <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(app.createdAt), { addSuffix: true })}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs">{app.visaType.name}</TableCell>
-                  <TableCell className="text-xs">{app.destinationCountry}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant="outline" className={`text-xs ${statusColors[app.status] || "bg-muted text-muted-foreground"}`}>
-                      {app.status}
-                    </Badge>
-                  </TableCell>
+          <div className="overflow-x-auto -mx-6 px-6">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-[40%]">Student</TableHead>
+                  <TableHead className="w-[30%]">Type</TableHead>
+                  <TableHead className="w-[15%]">Destination</TableHead>
+                  <TableHead className="w-[15%] text-right">Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {applications.slice(0, 5).map((app) => (
+                  <TableRow key={app.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/applicants/${app.studentId}`)}>
+                    <TableCell className="min-w-0 py-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar className="h-8 w-8 flex-shrink-0">
+                          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${app.student.firstName}`} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                            {app.student.firstName[0]}{app.student.lastName[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground text-sm truncate max-w-[120px]" title={`${app.student.firstName} ${app.student.lastName}`}>
+                            {app.student.firstName} {app.student.lastName}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate">
+                            {formatDistanceToNow(new Date(app.createdAt), { addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs min-w-0 py-3">
+                      <div className="truncate max-w-[120px]" title={app.visaType.name}>
+                        {app.visaType.name}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs min-w-0 py-3">
+                      <div className="truncate max-w-[80px]" title={app.destinationCountry}>
+                        {app.destinationCountry}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right py-3">
+                      <Badge variant="outline" className={`text-[10px] ${statusColors[app.status] || "bg-muted text-muted-foreground"}`}>
+                        {app.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         ) : (
           <div className="py-10 text-center text-muted-foreground">
             <p className="text-sm">No recent applications found</p>

@@ -124,49 +124,51 @@ export function RecentLeadsTable({ leads, isLoading = false }: RecentLeadsTableP
       </CardHeader>
       <CardContent>
         {hasLeads ? (
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead>Lead</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead className="text-right">Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {leads.slice(0, 5).map((lead) => (
-                <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/50">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${lead.firstName}${lead.lastName}`} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                          {lead.firstName[0]}{lead.lastName[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-foreground text-sm">{lead.firstName} {lead.lastName}</p>
-                        <p className="text-xs text-muted-foreground truncate max-w-[150px]">{lead.email}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={`text-xs ${statusColors[lead.status] || statusColors.New}`}>
-                      {lead.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={`text-xs ${priorityColors[lead.priority] || priorityColors.Medium}`}>
-                      {lead.priority}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right text-xs text-muted-foreground">
-                    {formatDate(lead.createdAt)}
-                  </TableCell>
+          <div className="overflow-x-auto -mx-6 px-6">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-[45%]">Lead</TableHead>
+                  <TableHead className="w-[20%]">Status</TableHead>
+                  <TableHead className="w-[20%]">Priority</TableHead>
+                  <TableHead className="w-[15%] text-right">Date</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {leads.slice(0, 5).map((lead) => (
+                  <TableRow key={lead.id} className="cursor-pointer hover:bg-muted/50">
+                    <TableCell className="min-w-0 py-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar className="h-8 w-8 flex-shrink-0">
+                          <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${lead.firstName}${lead.lastName}`} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                            {lead.firstName[0]}{lead.lastName[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <p className="font-medium text-foreground text-sm truncate max-w-[140px]" title={`${lead.firstName} ${lead.lastName}`}>{lead.firstName} {lead.lastName}</p>
+                          <p className="text-xs text-muted-foreground truncate max-w-[140px]" title={lead.email}>{lead.email}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Badge variant="outline" className={`text-xs ${statusColors[lead.status] || statusColors.New}`}>
+                        {lead.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <Badge variant="outline" className={`text-xs ${priorityColors[lead.priority] || priorityColors.Medium}`}>
+                        {lead.priority}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right text-xs text-muted-foreground py-3">
+                      {formatDate(lead.createdAt)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         ) : (
           <div className="py-10 text-center text-muted-foreground">
             <p className="text-sm">No recent leads found</p>
