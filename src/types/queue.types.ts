@@ -11,6 +11,7 @@ export interface Queue {
     name: string;
     description: string | null;
     isActive: boolean;
+    autoAssign: boolean;
     createdAt: string;
     updatedAt: string;
     counts?: {

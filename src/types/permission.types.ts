@@ -40,7 +40,7 @@ export type PermissionModule =
     | 'visa-types'
     | 'workflows'
     | 'staff'
-    | 'queue'
+    | 'queues'
     | 'counselors'
     | 'monitoring';
 
@@ -55,6 +55,8 @@ export const SCOPE_SUPPORTED_MODULES: readonly string[] = [
   'course-applications',
   'activity-logs',
   'notifications',
+  'staff',
+  'queues',
 ];
 
 // Current user response from /auth/me

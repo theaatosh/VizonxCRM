@@ -24,12 +24,12 @@ export const queueService = {
         return response.data;
     },
 
-    async createQueue(data: { type: string; name: string; description?: string }): Promise<Queue> {
+    async createQueue(data: { type: string; name: string; description?: string; autoAssign?: boolean }): Promise<Queue> {
         const response = await api.post<Queue>(QUEUE_ENDPOINT, data);
         return response.data;
     },
 
-    async updateQueue(id: string, data: { name?: string; description?: string; isActive?: boolean }): Promise<Queue> {
+    async updateQueue(id: string, data: { name?: string; description?: string; isActive?: boolean; autoAssign?: boolean }): Promise<Queue> {
         const response = await api.put<Queue>(`${QUEUE_ENDPOINT}/${id}`, data);
         return response.data;
     },

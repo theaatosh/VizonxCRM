@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePermissions } from "@/contexts/PermissionContext";
+import { getRoleDashboard } from "@/utils/role-utils";
 import type { PermissionModule } from "@/types/permission.types";
 
 interface MenuItem {
@@ -70,17 +71,35 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ collapsed, onToggle }: DashboardSidebarProps) {
   const location = useLocation();
-  const { canRead, isLoading, user } = usePermissions();
+  const { canRead, isLoading, user, getScope } = usePermissions();
 
-  // Filter menu items based on permissions and role
-  const visibleMenuItems = menuItems.filter((item) => {
-    // Always show items without a module requirement (Overview, Settings)
-    if (!item.module) return true;
-    // Check role requirement if set (case-insensitive)
-    if (item.role && user?.role.toLowerCase() !== item.role.toLowerCase()) return false;
-    // Show item if user has read permission for the module
-    return canRead(item.module);
-  });
+  // Filter menu items based on permissions, role, and scope
+  const visibleMenuItems = menuItems
+    .filter((item) => {
+      // Always show items without a module requirement (Overview, Settings)
+      if (!item.module) return true;
+      // Check role requirement if set (case-insensitive)
+      if (item.role && user?.role.toLowerCase() !== item.role.toLowerCase()) return false;
+      // If queues scope is 'own', hide the admin Queue page (use My Queue instead)
+      if (item.path === '/queue' && getScope('queues') === 'own') return false;
+      // Show item if user has read permission for the module
+      return canRead(item.module);
+    })
+    .filter((item) => {
+      // If user lacks overview permission, hide role-dashboard sidebar item
+      // since Overview already points to it, avoiding duplicates
+      if (!canRead('dashboard') && getRoleDashboard(user?.role) === item.path) {
+        return false;
+      }
+      return true;
+    })
+    .map((item) => {
+      // If user lacks dashboard permission, Overview link goes to their role-dashboard
+      if (item.path === '/' && !canRead('dashboard')) {
+        return { ...item, path: getRoleDashboard(user?.role) || '/' };
+      }
+      return item;
+    });
 
   return (
     <aside

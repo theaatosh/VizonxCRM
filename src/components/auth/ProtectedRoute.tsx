@@ -7,6 +7,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FullPageLoader } from "@/components/shared/FullPageLoader";
+import { getRoleDashboard } from "@/utils/role-utils";
 
 interface ProtectedRouteProps {
     children: ReactNode;
@@ -51,6 +52,10 @@ export function ProtectedRoute({ children, module, role }: ProtectedRouteProps) 
 
     // If module is specified, check for read permission
     if (module && !canRead(module)) {
+        const roleDashboard = getRoleDashboard(user?.role);
+        if (roleDashboard) {
+            return <Navigate to={roleDashboard} replace />;
+        }
         return (
             <DashboardLayout title="Access Denied" subtitle="You don't have permission to view this page">
                 <div className="flex flex-col items-center justify-center py-24 text-center">

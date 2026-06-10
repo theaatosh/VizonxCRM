@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -47,6 +48,8 @@ import {
     Plus,
     BarChart3,
     ArrowRightLeft,
+    ToggleLeft,
+    ToggleRight,
 } from "lucide-react";
 import {
     useQueues,
@@ -127,6 +130,7 @@ const QueueManagement = () => {
     const [newQueueType, setNewQueueType] = useState<string>("");
     const [newQueueName, setNewQueueName] = useState<string>("");
     const [newQueueDesc, setNewQueueDesc] = useState<string>("");
+    const [newQueueAutoAssign, setNewQueueAutoAssign] = useState(false);
 
     const queryClient = useQueryClient();
 
@@ -148,7 +152,7 @@ const QueueManagement = () => {
     const reassign = useReassignQueueItem();
 
     const createQueue = useMutation({
-        mutationFn: (data: { type: string; name: string; description?: string }) =>
+        mutationFn: (data: { type: string; name: string; description?: string; autoAssign?: boolean }) =>
             queueService.createQueue(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["queue"] });
@@ -160,6 +164,25 @@ const QueueManagement = () => {
         },
         onError: (err: Error) => toast.error(`Failed to create queue: ${err.message}`),
     });
+
+    const updateQueueMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string; data: { autoAssign?: boolean } }) =>
+            queueService.updateQueue(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["queue"] });
+            toast.success("Queue updated");
+        },
+        onError: (err: Error) => toast.error(`Failed to update queue: ${err.message}`),
+    });
+
+    const handleToggleAutoAssign = () => {
+        if (selectedQueue) {
+            updateQueueMutation.mutate({
+                id: selectedQueue.id,
+                data: { autoAssign: !selectedQueue.autoAssign },
+            });
+        }
+    };
 
     const queues = useMemo(() => queuesData?.data || [], [queuesData?.data]);
     const queueItems = useMemo(() => itemsData?.data || [], [itemsData?.data]);
@@ -241,6 +264,7 @@ const QueueManagement = () => {
                 type: newQueueType,
                 name: newQueueName,
                 description: newQueueDesc || undefined,
+                autoAssign: newQueueAutoAssign,
             });
         }
     };
@@ -548,7 +572,7 @@ const QueueManagement = () => {
                         </Button>
                     </div>
                 ) : (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         {queues.map((q) => (
                             <button
                                 key={q.id}
@@ -573,6 +597,22 @@ const QueueManagement = () => {
                                 )}
                             </button>
                         ))}
+                        {selectedQueue && (
+                            <div className="flex items-center gap-2 ml-3 pl-3 border-l">
+                                <Switch
+                                    checked={selectedQueue.autoAssign}
+                                    onCheckedChange={handleToggleAutoAssign}
+                                    disabled={updateQueueMutation.isPending}
+                                    id="auto-assign-toggle"
+                                />
+                                <label
+                                    htmlFor="auto-assign-toggle"
+                                    className="text-xs text-muted-foreground cursor-pointer select-none"
+                                >
+                                    Auto Assign
+                                </label>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -920,6 +960,16 @@ const QueueManagement = () => {
                                 rows={2}
                                 className="resize-none"
                             />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Switch
+                                id="create-auto-assign"
+                                checked={newQueueAutoAssign}
+                                onCheckedChange={setNewQueueAutoAssign}
+                            />
+                            <Label htmlFor="create-auto-assign" className="text-sm cursor-pointer">
+                                Auto Assign
+                            </Label>
                         </div>
                     </div>
                     <DialogFooter>

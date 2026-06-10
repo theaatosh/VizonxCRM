@@ -68,6 +68,7 @@ const Settings = () => {
   const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [initialModuleScopes, setInitialModuleScopes] = useState<Record<string, 'own' | 'full'>>({});
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
 
   // Form state for adding a new user
@@ -235,12 +236,13 @@ const Settings = () => {
     }
   };
 
-  const handleAssignPermissions = async (roleId: string, payload: { permissionIds: string[]; moduleScopes: Record<string, 'own' | 'full'> }) => {
+  const handleAssignPermissions = async (roleId: string, payload: { permissionIds: string[]; defaultScope: 'own' | 'full'; permissions: { permissionId: string; scope: 'own' | 'full' }[] }) => {
     setIsSubmitting(true);
     try {
       await userService.updateRolePermissions(roleId, {
         permissionIds: payload.permissionIds,
-        moduleScopes: payload.moduleScopes,
+        defaultScope: payload.defaultScope,
+        permissions: payload.permissions,
       });
       toast({
         title: "Success",
@@ -281,6 +283,7 @@ const Settings = () => {
   const openPermissionsDialog = async (role: Role) => {
     setSelectedRole(role);
     setSelectedPermissions([]);
+    setInitialModuleScopes({});
     setIsPermissionsDialogOpen(true);
 
     // Fetch existing permissions for this role
@@ -289,6 +292,18 @@ const Settings = () => {
       const rolePerms = await userService.getRolePermissions(role.id);
       if (rolePerms.permissions && rolePerms.permissions.length > 0) {
         setSelectedPermissions(rolePerms.permissions.map(p => p.id));
+
+        // Extract per-module scope from role permissions
+        const scopes: Record<string, 'own' | 'full'> = {};
+        for (const perm of rolePerms.permissions) {
+          const module = perm.module || 'Other';
+          const permScope = (perm.scope === 'own' ? 'own' : 'full') as 'own' | 'full';
+          // Highest scope wins (full > own)
+          if (!scopes[module] || (scopes[module] === 'own' && permScope === 'full')) {
+            scopes[module] = permScope;
+          }
+        }
+        setInitialModuleScopes(scopes);
       }
     } catch (error) {
       console.error("Error fetching role permissions:", error);
@@ -804,6 +819,7 @@ const Settings = () => {
             role={selectedRole}
             permissions={permissions}
             initialSelectedPermissions={selectedPermissions}
+            initialModuleScopes={initialModuleScopes}
             isLoading={isLoadingPermissions}
             isSubmitting={isSubmitting}
             onSave={handleAssignPermissions}

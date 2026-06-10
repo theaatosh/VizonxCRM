@@ -62,6 +62,7 @@ export interface Permission {
     description?: string;
     module?: string;
     action?: string;
+    scope?: string;
     assignedAt?: string;
 }
 
@@ -101,7 +102,8 @@ export interface AssignPermissionsDto {
 
 export interface UpdateRolePermissionsWithScopeDto {
     permissionIds: string[];
-    moduleScopes?: Record<string, 'own' | 'full'>;
+    defaultScope?: 'own' | 'full';
+    permissions?: { permissionId: string; scope: 'own' | 'full' }[];
 }
 
 const userService = {

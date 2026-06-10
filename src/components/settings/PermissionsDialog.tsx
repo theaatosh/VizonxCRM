@@ -13,7 +13,8 @@ import { cn } from "@/lib/utils";
 
 interface SavePermissionsPayload {
     permissionIds: string[];
-    moduleScopes: Record<string, 'own' | 'full'>;
+    defaultScope: 'own' | 'full';
+    permissions: { permissionId: string; scope: 'own' | 'full' }[];
 }
 
 interface PermissionsDialogProps {
@@ -22,6 +23,7 @@ interface PermissionsDialogProps {
     role: Role | null;
     permissions: Permission[];
     initialSelectedPermissions: string[];
+    initialModuleScopes?: Record<string, 'own' | 'full'>;
     isLoading: boolean;
     isSubmitting: boolean;
     onSave: (roleId: string, payload: SavePermissionsPayload) => Promise<void>;
@@ -33,6 +35,7 @@ export function PermissionsDialog({
     role,
     permissions,
     initialSelectedPermissions,
+    initialModuleScopes,
     isLoading,
     isSubmitting,
     onSave,
@@ -59,14 +62,14 @@ export function PermissionsDialog({
             setSelectedPermissions(initialSelectedPermissions);
             setSearchQuery("");
             setActiveModule("all");
-            // Default all modules to 'full' scope
+            // Use initialModuleScopes where available, default to 'full' for the rest
             const initialScopes: Record<string, 'own' | 'full'> = {};
             Object.keys(groupedPermissions).forEach(mod => {
-                initialScopes[mod] = 'full';
+                initialScopes[mod] = initialModuleScopes?.[mod] || 'full';
             });
             setModuleScopes(initialScopes);
         }
-    }, [open, initialSelectedPermissions, groupedPermissions]);
+    }, [open, initialSelectedPermissions, initialModuleScopes, groupedPermissions]);
 
     // Filter permissions based on search query and active module
     const filteredGroups = useMemo(() => {
@@ -224,9 +227,17 @@ export function PermissionsDialog({
 
     const handleSave = async () => {
         if (role) {
+            const overrides = Object.entries(moduleScopes)
+                .flatMap(([module, scope]) =>
+                    (groupedPermissions[module] || [])
+                        .filter(p => selectedPermissions.includes(p.id))
+                        .map(p => ({ permissionId: p.id, scope }))
+                );
+
             await onSave(role.id, {
                 permissionIds: selectedPermissions,
-                moduleScopes,
+                defaultScope: 'full',
+                permissions: overrides,
             });
         }
     };
