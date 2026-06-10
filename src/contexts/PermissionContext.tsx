@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import authService from '@/services/auth.service';
-import type { CurrentUser, PermissionModule, PermissionAction } from '@/types/permission.types';
+import type { CurrentUser, PermissionModule, PermissionAction, ScopeLevel } from '@/types/permission.types';
 
 interface PermissionContextValue {
     user: CurrentUser | null;
     permissions: string[];
+    scopes: Record<string, ScopeLevel>;
     isLoading: boolean;
     error: Error | null;
     hasPermission: (module: PermissionModule, action: PermissionAction) => boolean;
@@ -12,6 +13,8 @@ interface PermissionContextValue {
     canCreate: (module: PermissionModule) => boolean;
     canUpdate: (module: PermissionModule) => boolean;
     canDelete: (module: PermissionModule) => boolean;
+    getScope: (module: PermissionModule) => ScopeLevel;
+    hasScope: (module: PermissionModule, required: ScopeLevel) => boolean;
     refetch: () => Promise<void>;
 }
 
@@ -24,8 +27,14 @@ interface PermissionProviderProps {
 export function PermissionProvider({ children }: PermissionProviderProps) {
     const [user, setUser] = useState<CurrentUser | null>(null);
     const [permissions, setPermissions] = useState<string[]>([]);
+    const [scopes, setScopes] = useState<Record<string, ScopeLevel>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+
+    const SCOPE_RANK: Record<ScopeLevel, number> = {
+        own: 1,
+        full: 2,
+    };
 
     const fetchPermissions = useCallback(async () => {
         // Only fetch if user is authenticated
@@ -40,11 +49,13 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
             const currentUser = await authService.getCurrentUser();
             setUser(currentUser);
             setPermissions(currentUser.permissions || []);
+            setScopes(currentUser.scopes || {});
         } catch (err) {
             console.error('Failed to fetch user permissions:', err);
             setError(err instanceof Error ? err : new Error('Failed to fetch permissions'));
             // Set empty permissions on error
             setPermissions([]);
+            setScopes({});
         } finally {
             setIsLoading(false);
         }
@@ -84,10 +95,30 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
         [hasPermission]
     );
 
+    // Get the highest scope for a given module
+    const getScope = useCallback(
+        (module: PermissionModule): ScopeLevel => {
+            return scopes[module] || scopes['__all__'] || 'own';
+        },
+        [scopes]
+    );
+
+    // Check if user's scope meets the required scope level
+    const hasScope = useCallback(
+        (module: PermissionModule, required: ScopeLevel): boolean => {
+            const userScope = scopes[module] || scopes['__all__'] || 'own';
+            const userRank = SCOPE_RANK[userScope] ?? 0;
+            const requiredRank = SCOPE_RANK[required] ?? 0;
+            return userRank >= requiredRank;
+        },
+        [scopes]
+    );
+
     const value = useMemo(
         () => ({
             user,
             permissions,
+            scopes,
             isLoading,
             error,
             hasPermission,
@@ -95,9 +126,11 @@ export function PermissionProvider({ children }: PermissionProviderProps) {
             canCreate,
             canUpdate,
             canDelete,
+            getScope,
+            hasScope,
             refetch: fetchPermissions,
         }),
-        [user, permissions, isLoading, error, hasPermission, canRead, canCreate, canUpdate, canDelete, fetchPermissions]
+        [user, permissions, scopes, isLoading, error, hasPermission, canRead, canCreate, canUpdate, canDelete, getScope, hasScope, fetchPermissions]
     );
 
     return (

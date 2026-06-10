@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -31,10 +31,12 @@ import { Loader2, Globe } from 'lucide-react';
 import { useVisaTypes } from '@/hooks/useVisaTypes';
 import { useCountries } from '@/hooks/useCountries';
 import { useCreateVisaApplication } from '@/hooks/useVisaApplications';
+import { useWorkflowsByVisaType, useWorkflowVersions } from '@/hooks/useWorkflows';
 import type { CourseApplication } from '@/types/course-application.types';
 
 const formSchema = z.object({
     visaTypeId: z.string().min(1, 'Please select a visa type'),
+    workflowVersionId: z.string().optional(),
     courseApplicationId: z.string().min(1, 'Please enter a course application ID'),
     destinationCountry: z.string().min(1, 'Please enter a destination country'),
 });
@@ -60,13 +62,32 @@ export const VisaApplicationDialog = ({
         resolver: zodResolver(formSchema),
         defaultValues: {
             visaTypeId: '',
+            workflowVersionId: '',
             courseApplicationId: '',
             destinationCountry: '',
         },
     });
 
     const selectedCountry = form.watch('destinationCountry');
+    const selectedVisaTypeId = form.watch('visaTypeId');
     const isCountrySelected = !!selectedCountry;
+
+    const { data: workflowsData, isLoading: isLoadingWorkflows } = useWorkflowsByVisaType(selectedVisaTypeId);
+    const workflowForVisaType = workflowsData?.[0];
+
+    const { data: versionsData, isLoading: isLoadingVersions } = useWorkflowVersions(workflowForVisaType?.id || '');
+    const versions = versionsData?.data || [];
+
+    useEffect(() => {
+        if (versions.length > 0) {
+            const activeVersion = versions.find(v => v.status === 'Active') || versions[0];
+            if (activeVersion) {
+                form.setValue('workflowVersionId', activeVersion.id);
+            }
+        } else {
+            form.setValue('workflowVersionId', '');
+        }
+    }, [versions, form]);
 
     const countries = countriesData?.data || [];
 
@@ -76,6 +97,8 @@ export const VisaApplicationDialog = ({
             visaTypeId: values.visaTypeId,
             courseApplicationId: values.courseApplicationId,
             destinationCountry: values.destinationCountry,
+            workflowId: workflowForVisaType?.id,
+            workflowVersionId: values.workflowVersionId || undefined,
         }, {
             onSuccess: () => {
                 form.reset();
@@ -168,6 +191,47 @@ export const VisaApplicationDialog = ({
                                 </FormItem>
                             )}
                         />
+
+                        {selectedVisaTypeId && workflowForVisaType && (
+                            <FormField
+                                control={form.control}
+                                name="workflowVersionId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Workflow Version</FormLabel>
+                                        <Select 
+                                            onValueChange={field.onChange} 
+                                            defaultValue={field.value}
+                                            value={field.value}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select workflow version" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {isLoadingVersions || isLoadingWorkflows ? (
+                                                    <div className="p-2 text-center">
+                                                        <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                                                    </div>
+                                                ) : versions.length === 0 ? (
+                                                    <div className="p-2 text-sm text-muted-foreground text-center">
+                                                        No versions available
+                                                    </div>
+                                                ) : (
+                                                    versions.map((version) => (
+                                                        <SelectItem key={version.id} value={version.id}>
+                                                            Version {version.versionNumber} ({version.status}) {version.description ? `- ${version.description}` : ''}
+                                                        </SelectItem>
+                                                    ))
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        )}
 
                         <FormField
                             control={form.control}

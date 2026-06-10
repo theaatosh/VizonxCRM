@@ -8,7 +8,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Search, Shield, Check, X, Filter, ChevronDown, ChevronUp } from "lucide-react";
 import { Role, Permission } from "@/services/user.service";
+import { SCOPE_SUPPORTED_MODULES } from "@/types/permission.types";
 import { cn } from "@/lib/utils";
+
+interface SavePermissionsPayload {
+    permissionIds: string[];
+    defaultScope: 'own' | 'full';
+    permissions: { permissionId: string; scope: 'own' | 'full' }[];
+}
 
 interface PermissionsDialogProps {
     open: boolean;
@@ -16,9 +23,10 @@ interface PermissionsDialogProps {
     role: Role | null;
     permissions: Permission[];
     initialSelectedPermissions: string[];
+    initialModuleScopes?: Record<string, 'own' | 'full'>;
     isLoading: boolean;
     isSubmitting: boolean;
-    onSave: (roleId: string, permissionIds: string[]) => Promise<void>;
+    onSave: (roleId: string, payload: SavePermissionsPayload) => Promise<void>;
 }
 
 export function PermissionsDialog({
@@ -27,23 +35,16 @@ export function PermissionsDialog({
     role,
     permissions,
     initialSelectedPermissions,
+    initialModuleScopes,
     isLoading,
     isSubmitting,
     onSave,
 }: PermissionsDialogProps) {
     const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+    const [moduleScopes, setModuleScopes] = useState<Record<string, 'own' | 'full'>>({});
     const [searchQuery, setSearchQuery] = useState("");
     const [activeModule, setActiveModule] = useState<string | "all">("all");
     const [collapsedModules, setCollapsedModules] = useState<Set<string>>(new Set());
-
-    // Reset state when dialog opens or role changes
-    useEffect(() => {
-        if (open) {
-            setSelectedPermissions(initialSelectedPermissions);
-            setSearchQuery("");
-            setActiveModule("all");
-        }
-    }, [open, initialSelectedPermissions]);
 
     // Group permissions by module
     const groupedPermissions = useMemo(() => {
@@ -55,13 +56,27 @@ export function PermissionsDialog({
         }, {} as Record<string, Permission[]>);
     }, [permissions]);
 
+    // Reset state when dialog opens or role changes
+    useEffect(() => {
+        if (open) {
+            setSelectedPermissions(initialSelectedPermissions);
+            setSearchQuery("");
+            setActiveModule("all");
+            // Use initialModuleScopes where available, default to 'full' for the rest
+            const initialScopes: Record<string, 'own' | 'full'> = {};
+            Object.keys(groupedPermissions).forEach(mod => {
+                initialScopes[mod] = initialModuleScopes?.[mod] || 'full';
+            });
+            setModuleScopes(initialScopes);
+        }
+    }, [open, initialSelectedPermissions, initialModuleScopes, groupedPermissions]);
+
     // Filter permissions based on search query and active module
     const filteredGroups = useMemo(() => {
         const query = searchQuery.toLowerCase();
         const result: Record<string, Permission[]> = {};
 
         Object.entries(groupedPermissions).forEach(([module, perms]) => {
-            // Skip if module filter is active but doesn't match
             if (activeModule !== "all" && module !== activeModule) return;
 
             const filteredPerms = perms.filter(
@@ -82,7 +97,6 @@ export function PermissionsDialog({
     // Calculate stats
     const totalPermissions = permissions.length;
     const selectedCount = selectedPermissions.length;
-    const modules = Object.keys(groupedPermissions).sort();
 
     // Helper to find dependent permissions
     const getDependentPermissions = (permissionId: string, allPermissions: Permission[]): string[] => {
@@ -91,15 +105,10 @@ export function PermissionsDialog({
 
         const dependencies: string[] = [];
         const parts = targetPerm.name.split('.');
-        // Assuming format is "module.action" or similar. 
-        // We look for the action part.
-
-        // 1. Standard CRUD Dependency: Create/Update/Delete requires Read
         const action = parts[parts.length - 1].toLowerCase();
-        const moduleName = targetPerm.module; // We should trust the module property we enriched
+        const moduleName = targetPerm.module;
 
         if (['create', 'update', 'delete', 'convert', 'assign', 'publish', 'send', 'execute'].some(a => action.includes(a))) {
-            // Find the read permission for this module
             const readPerm = allPermissions.find(p =>
                 p.module === moduleName &&
                 (p.name.includes('read') || p.name.includes('view') || p.name.includes('get'))
@@ -109,16 +118,12 @@ export function PermissionsDialog({
             }
         }
 
-        // 2. Specific Business Logic Dependency: Lead to Student Conversion
-        // Case: leads.convert (or similar) -> students.create, applicants.create
         if (moduleName === 'leads' && (action.includes('convert') || action.includes('update'))) {
-            // Find students.create
             const studentCreate = allPermissions.find(p =>
                 p.module === 'students' && p.name.includes('create')
             );
             if (studentCreate) dependencies.push(studentCreate.id);
 
-            // Find applicants.create
             const applicantCreate = allPermissions.find(p =>
                 (p.module === 'applicants' || p.module === 'applications') && p.name.includes('create')
             );
@@ -132,13 +137,11 @@ export function PermissionsDialog({
     const isPermissionRequiredByOthers = (permissionId: string, currentSelectedIds: string[]): { required: boolean, protectedBy: string[] } => {
         const protectingPermissions: string[] = [];
 
-        // Check every other selected permission to see if it requires the target permission
         for (const selectedId of currentSelectedIds) {
             if (selectedId === permissionId) continue;
 
             const deps = getDependentPermissions(selectedId, permissions);
             if (deps.includes(permissionId)) {
-                // Find the name of the permission shielding this one
                 const protector = permissions.find(p => p.id === selectedId);
                 if (protector) {
                     protectingPermissions.push(protector.description || protector.name);
@@ -157,23 +160,17 @@ export function PermissionsDialog({
             const isSelected = prev.includes(permissionId);
 
             if (isSelected) {
-                // Deselecting: Check if this permission is required by others
                 const { required, protectedBy } = isPermissionRequiredByOthers(permissionId, prev);
 
                 if (required) {
-                    // Start: Show a toast or alert - for now using standard alert to ensure visibility
-                    // In a refined UI, use the toast hook
                     alert(`Cannot remove this permission because it is required by:\n- ${protectedBy.slice(0, 3).join('\n- ')}${protectedBy.length > 3 ? '\n...and others' : ''}`);
-                    // End: Alert logic
                     return prev;
                 }
 
                 return prev.filter((id) => id !== permissionId);
             } else {
-                // Selecting: Add this one AND all recursive dependencies
                 const toAdd = new Set<string>([permissionId]);
 
-                // Breadth-first search for dependencies
                 const queue = [permissionId];
                 while (queue.length > 0) {
                     const currentId = queue.shift()!;
@@ -192,8 +189,7 @@ export function PermissionsDialog({
         });
     };
 
-    const toggleModule = (module: string, e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent collapsing when clicking select all
+    const toggleModule = (module: string) => {
         const modulePermissions = groupedPermissions[module] || [];
         const modulePermissionIds = modulePermissions.map((p) => p.id);
 
@@ -202,12 +198,10 @@ export function PermissionsDialog({
         );
 
         if (allSelected) {
-            // Deselect all for this module
             setSelectedPermissions((prev) =>
                 prev.filter((id) => !modulePermissionIds.includes(id))
             );
         } else {
-            // Select all for this module
             setSelectedPermissions((prev) => {
                 const unique = new Set([...prev, ...modulePermissionIds]);
                 return Array.from(unique);
@@ -227,9 +221,24 @@ export function PermissionsDialog({
         });
     };
 
+    const setModuleScope = (module: string, scope: 'own' | 'full') => {
+        setModuleScopes(prev => ({ ...prev, [module]: scope }));
+    };
+
     const handleSave = async () => {
         if (role) {
-            await onSave(role.id, selectedPermissions);
+            const overrides = Object.entries(moduleScopes)
+                .flatMap(([module, scope]) =>
+                    (groupedPermissions[module] || [])
+                        .filter(p => selectedPermissions.includes(p.id))
+                        .map(p => ({ permissionId: p.id, scope }))
+                );
+
+            await onSave(role.id, {
+                permissionIds: selectedPermissions,
+                defaultScope: 'full',
+                permissions: overrides,
+            });
         }
     };
 
@@ -258,7 +267,7 @@ export function PermissionsDialog({
                         </div>
                     </DialogHeader>
 
-                    {/* Search and Filters */}
+                    {/* Search */}
                     <div className="flex flex-col sm:flex-row gap-4">
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -269,7 +278,6 @@ export function PermissionsDialog({
                                 className="pl-9 bg-background focus-visible:ring-primary/20"
                             />
                         </div>
-                        {/* Simple Module Filter using Select could go here if needed, or horizontal scroll list */}
                     </div>
                 </div>
 
@@ -321,17 +329,50 @@ export function PermissionsDialog({
                                                     {perms.length} permissions
                                                 </span>
                                             </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className={cn(
-                                                    "h-8 text-xs font-medium",
-                                                    isAllSelected ? "text-primary hover:text-primary/80" : "text-muted-foreground"
+
+                                            <div className="flex items-center gap-2">
+                                                {/* Scope selector — only for modules that support 'own' scope */}
+                                                {SCOPE_SUPPORTED_MODULES.includes(module) && (
+                                                    <div className="flex items-center gap-1 mr-2 border rounded-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                                                        <button
+                                                            type="button"
+                                                            className={cn(
+                                                                "px-2.5 py-1 text-xs font-medium transition-colors",
+                                                                moduleScopes[module] === 'own'
+                                                                    ? "bg-primary text-primary-foreground"
+                                                                    : "bg-muted text-muted-foreground hover:text-foreground"
+                                                            )}
+                                                            onClick={() => setModuleScope(module, 'own')}
+                                                        >
+                                                            Own
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={cn(
+                                                                "px-2.5 py-1 text-xs font-medium transition-colors",
+                                                                moduleScopes[module] === 'full'
+                                                                    ? "bg-primary text-primary-foreground"
+                                                                    : "bg-muted text-muted-foreground hover:text-foreground"
+                                                            )}
+                                                            onClick={() => setModuleScope(module, 'full')}
+                                                        >
+                                                            Full
+                                                        </button>
+                                                    </div>
                                                 )}
-                                                onClick={(e) => toggleModule(module, e)}
-                                            >
-                                                {isAllSelected ? "Deselect All" : "Select All"}
-                                            </Button>
+
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className={cn(
+                                                        "h-8 text-xs font-medium",
+                                                        isAllSelected ? "text-primary hover:text-primary/80" : "text-muted-foreground"
+                                                    )}
+                                                    onClick={(e) => { e.stopPropagation(); toggleModule(module); }}
+                                                >
+                                                    {isAllSelected ? "Deselect All" : "Select All"}
+                                                </Button>
+                                            </div>
                                         </div>
 
                                         {!collapsedModules.has(module) && (
@@ -355,6 +396,9 @@ export function PermissionsDialog({
                                                                     isSelected ? "text-primary" : "text-foreground"
                                                                 )}>
                                                                     {permission.description || permission.name}
+                                                                </p>
+                                                                <p className="text-[10px] text-muted-foreground font-mono">
+                                                                    {permission.name}
                                                                 </p>
                                                             </div>
                                                             <Switch

@@ -38,7 +38,26 @@ export type PermissionModule =
     | 'universities'
     | 'users'
     | 'visa-types'
-    | 'workflows';
+    | 'workflows'
+    | 'staff'
+    | 'queues'
+    | 'counselors'
+    | 'monitoring';
+
+export type ScopeLevel = 'own' | 'full';
+
+// Modules that support 'own' scope (have ownership field in backend)
+export const SCOPE_SUPPORTED_MODULES: readonly string[] = [
+  'leads',
+  'students',
+  'tasks',
+  'appointments',
+  'course-applications',
+  'activity-logs',
+  'notifications',
+  'staff',
+  'queues',
+];
 
 // Current user response from /auth/me
 export interface CurrentUser {
@@ -49,8 +68,12 @@ export interface CurrentUser {
     roleId: string;
     role: string;
     permissions: string[];
+    scopes?: Record<string, ScopeLevel>;
 }
 
 // Permission check function type
 export type HasPermissionFn = (module: PermissionModule, action: PermissionAction) => boolean;
+
+// Get the highest scope for a given module
+export type GetScopeFn = (module: PermissionModule) => ScopeLevel;
 

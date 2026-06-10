@@ -64,6 +64,16 @@ export const leadService = {
     },
 
     /**
+     * Get leads assigned to a specific user
+     */
+    async getAssignedLeads(userId: string, limit = 20): Promise<PaginatedResponse<Lead>> {
+        const response = await api.get<PaginatedResponse<Lead>>(LEADS_ENDPOINT, {
+            params: { assignedUserId: userId, limit, sortOrder: 'desc', page: 1 },
+        });
+        return response.data;
+    },
+
+    /**
      * Convert a lead to a student
      */
     async convertLeadToStudent(id: string, data?: ConvertLeadDto): Promise<void> {

@@ -79,6 +79,8 @@ export interface CreateVisaApplicationDto {
     visaTypeId: string;
     courseApplicationId: string;
     destinationCountry: string;
+    workflowId?: string;
+    workflowVersionId?: string;
 }
 
 export interface UpdateVisaApplicationDto {
@@ -86,6 +88,9 @@ export interface UpdateVisaApplicationDto {
     courseApplicationId?: string;
     destinationCountry?: string;
     status?: string;
+    currentStepId?: string;
+    submissionDate?: string | null;
+    decisionDate?: string | null;
 }
 
 export interface VisaApplicationQueryParams extends PaginationParams {

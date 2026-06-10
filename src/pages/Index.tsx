@@ -22,7 +22,9 @@ import {
   TrendingUp,
   Calendar,
   DollarSign,
-  AlertTriangle
+  AlertTriangle,
+  ListOrdered,
+  UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -198,6 +200,102 @@ const Index = () => {
                 <div>
                   <p className="text-2xl font-bold text-foreground">{dashboard?.tasks?.overdue || 0}</p>
                   <p className="text-xs text-muted-foreground">Overdue Tasks</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Queue & Monitoring Stats */}
+      <div className="grid gap-4 md:gap-6 grid-cols-2 lg:grid-cols-4 mb-6">
+        <Card className="shadow-card hover:shadow-card-hover transition-shadow duration-300">
+          <CardContent className="p-4">
+            {isLoading ? (
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-lg" />
+                <div className="space-y-1">
+                  <Skeleton className="h-6 w-12" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500">
+                  <ListOrdered className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{dashboard?.tasks?.total || 0}</p>
+                  <p className="text-xs text-muted-foreground">Queue Items</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="shadow-card hover:shadow-card-hover transition-shadow duration-300">
+          <CardContent className="p-4">
+            {isLoading ? (
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-lg" />
+                <div className="space-y-1">
+                  <Skeleton className="h-6 w-12" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-500">
+                  <UserCog className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{dashboard?.students?.total || 0}</p>
+                  <p className="text-xs text-muted-foreground">Active Counselors</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="shadow-card hover:shadow-card-hover transition-shadow duration-300">
+          <CardContent className="p-4">
+            {isLoading ? (
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-lg" />
+                <div className="space-y-1">
+                  <Skeleton className="h-6 w-12" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/10 text-orange-500">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{dashboard?.tasks?.overdue || 0}</p>
+                  <p className="text-xs text-muted-foreground">Assignments Today</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="shadow-card hover:shadow-card-hover transition-shadow duration-300">
+          <CardContent className="p-4">
+            {isLoading ? (
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-lg" />
+                <div className="space-y-1">
+                  <Skeleton className="h-6 w-12" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-500/10 text-teal-500">
+                  <CheckSquare className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{dashboard?.leads?.converted || 0}</p>
+                  <p className="text-xs text-muted-foreground">Revisit Leads</p>
                 </div>
               </div>
             )}

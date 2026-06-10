@@ -64,18 +64,18 @@ const statusIcons: Record<string, React.ReactNode> = {
 
 interface AdvanceStepDialogProps {
   visaId: string;
-  nextStepId: string;
   nextStepName: string;
+  isLastStep?: boolean;
 }
 
-const AdvanceStepDialog = ({ visaId, nextStepId, nextStepName }: AdvanceStepDialogProps) => {
+const AdvanceStepDialog = ({ visaId, nextStepName, isLastStep }: AdvanceStepDialogProps) => {
   const [open, setOpen] = useState(false);
   const [notes, setNotes] = useState("");
   const advanceStepMutation = useAdvanceVisaStep();
 
   const handleAdvance = () => {
     advanceStepMutation.mutate(
-      { id: visaId, data: { expectedStepId: nextStepId, notes } },
+      { id: visaId, data: { notes } },
       {
         onSuccess: () => {
           setOpen(false);
@@ -89,8 +89,8 @@ const AdvanceStepDialog = ({ visaId, nextStepId, nextStepName }: AdvanceStepDial
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" className="h-9 gap-1.5 rounded-xl font-bold px-4 active:scale-95 transition-all shadow-sm">
-          <ChevronRight className="h-4 w-4" />
-          Advance to {nextStepName}
+          {isLastStep ? <CheckCircle className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          {isLastStep ? "Mark as Completed" : `Advance to ${nextStepName}`}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] rounded-3xl border-none shadow-2xl backdrop-blur-sm bg-background/95">
@@ -102,7 +102,11 @@ const AdvanceStepDialog = ({ visaId, nextStepId, nextStepName }: AdvanceStepDial
             Update Status
           </DialogTitle>
           <DialogDescription className="text-base pt-2">
-            Confirm advancement to <span className="font-bold text-foreground underline decoration-primary/30 underline-offset-4">{nextStepName}</span>.
+            {isLastStep ? (
+              "Confirm completion of the final step."
+            ) : (
+              <>Confirm advancement to <span className="font-bold text-foreground underline decoration-primary/30 underline-offset-4">{nextStepName}</span>.</>
+            )}
           </DialogDescription>
         </DialogHeader>
         <div className="py-6">
@@ -127,7 +131,7 @@ const AdvanceStepDialog = ({ visaId, nextStepId, nextStepName }: AdvanceStepDial
             className="rounded-xl px-6 font-bold shadow-md shadow-primary/10 gap-2"
           >
             {advanceStepMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-            Confirm Update
+            {isLastStep ? "Mark as Completed" : "Confirm Update"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -300,21 +304,21 @@ const VisaDetail = () => {
                   </div>
 
                   {/* Contextual Next Step Callout */}
-                  {visa.nextStep && (
+                  {visa.currentStep && visa.status !== 'Approved' && visa.status !== 'Rejected' && (
                     <div className="mt-4 p-5 rounded-2xl bg-primary/5 border border-primary/10 flex flex-col md:flex-row items-center justify-between gap-4 transition-all hover:bg-primary/[0.08]">
                        <div className="flex items-center gap-4 text-center md:text-left">
                           <div className="h-12 w-12 rounded-2xl bg-background shadow-sm flex items-center justify-center border border-primary/20 shrink-0">
                              <Milestone className="h-6 w-6 text-primary" />
                           </div>
                           <div>
-                             <p className="text-xs font-bold text-primary uppercase tracking-widest leading-none mb-1">Up Next</p>
-                             <h4 className="font-black text-lg leading-tight uppercase tracking-tight">{visa.nextStep.name}</h4>
+                             <p className="text-xs font-bold text-primary uppercase tracking-widest leading-none mb-1">{visa.nextStep ? "Up Next" : "Final Step"}</p>
+                             <h4 className="font-black text-lg leading-tight uppercase tracking-tight">{visa.nextStep?.name || visa.currentStep?.name}</h4>
                           </div>
                        </div>
                        <AdvanceStepDialog 
                           visaId={visa.id} 
-                          nextStepId={visa.nextStep.id} 
-                          nextStepName={visa.nextStep.name} 
+                          nextStepName={visa.nextStep?.name || visa.currentStep?.name || ''} 
+                          isLastStep={!visa.nextStep}
                        />
                     </div>
                   )}

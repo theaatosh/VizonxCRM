@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
     Select,
     SelectContent,
@@ -33,29 +32,17 @@ export const CreateWorkflowDialog = () => {
     });
 
     const createMutation = useCreateWorkflow();
-
-    // Fetch visa types for dropdown
-    const { data: visaTypesResponse, isLoading: loadingVisaTypes } = useVisaTypes({
-        limit: 100,
-    });
-
+    const { data: visaTypesResponse, isLoading: loadingVisaTypes } = useVisaTypes({ limit: 100 });
     const visaTypes = visaTypesResponse?.data || [];
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
         try {
             await createMutation.mutateAsync(formData);
             setOpen(false);
-            // Reset form
-            setFormData({
-                name: "",
-                description: "",
-                visaTypeId: "",
-                isActive: true,
-            });
-        } catch (error) {
-            // Error is handled by the mutation hook
+            setFormData({ name: "", description: "", visaTypeId: "", isActive: true });
+        } catch {
+            // handled by mutation hook
         }
     };
 
@@ -67,13 +54,13 @@ export const CreateWorkflowDialog = () => {
                     Create Workflow
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
-                    <DialogTitle>Create New Workflow</DialogTitle>
+                    <DialogTitle>New Workflow</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                     <div className="space-y-2">
-                        <Label htmlFor="name">Workflow Name *</Label>
+                        <Label htmlFor="name">Name *</Label>
                         <Input
                             id="name"
                             placeholder="e.g., Student Visa Application Process"
@@ -89,7 +76,9 @@ export const CreateWorkflowDialog = () => {
                             id="description"
                             placeholder="Describe the purpose of this workflow..."
                             value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            onChange={(e) =>
+                                setFormData({ ...formData, description: e.target.value })
+                            }
                             rows={3}
                         />
                     </div>
@@ -97,48 +86,32 @@ export const CreateWorkflowDialog = () => {
                     <div className="space-y-2">
                         <Label htmlFor="visaTypeId">Visa Type *</Label>
                         {loadingVisaTypes ? (
-                            <div className="flex items-center justify-center p-4 border rounded-md">
-                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                <span className="text-sm text-muted-foreground">Loading visa types...</span>
+                            <div className="flex items-center gap-2 p-3 border rounded-md text-sm text-muted-foreground">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Loading visa types…
                             </div>
                         ) : (
                             <Select
                                 value={formData.visaTypeId}
-                                onValueChange={(value) => setFormData({ ...formData, visaTypeId: value })}
+                                onValueChange={(v) => setFormData({ ...formData, visaTypeId: v })}
                                 required
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select a visa type" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {visaTypes.map((visaType) => (
-                                        <SelectItem key={visaType.id} value={visaType.id}>
-                                            {visaType.name} {visaType.country ? `(${visaType.country.name})` : ""}
+                                    {visaTypes.map((vt) => (
+                                        <SelectItem key={vt.id} value={vt.id}>
+                                            {vt.name}
+                                            {vt.country ? ` (${vt.country.name})` : ""}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         )}
-                        <p className="text-xs text-muted-foreground">
-                            Select the visa type this workflow is for
-                        </p>
                     </div>
 
-                    <div className="flex items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                            <Label htmlFor="isActive">Active Status</Label>
-                            <p className="text-sm text-muted-foreground">
-                                Set whether this workflow is currently active
-                            </p>
-                        </div>
-                        <Switch
-                            id="isActive"
-                            checked={formData.isActive}
-                            onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                        />
-                    </div>
-
-                    <div className="flex gap-2 justify-end pt-4">
+                    <div className="flex gap-2 justify-end pt-2">
                         <Button
                             type="button"
                             variant="outline"
@@ -147,8 +120,16 @@ export const CreateWorkflowDialog = () => {
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={createMutation.isPending || loadingVisaTypes}>
-                            {createMutation.isPending ? "Creating..." : "Create Workflow"}
+                        <Button
+                            type="submit"
+                            disabled={
+                                createMutation.isPending ||
+                                loadingVisaTypes ||
+                                !formData.name ||
+                                !formData.visaTypeId
+                            }
+                        >
+                            {createMutation.isPending ? "Creating…" : "Create Workflow"}
                         </Button>
                     </div>
                 </form>
@@ -156,4 +137,3 @@ export const CreateWorkflowDialog = () => {
         </Dialog>
     );
 };
-

@@ -56,7 +56,8 @@ import { DocumentUploadDialog } from '@/components/applicants/DocumentUploadDial
 import { AssignClassDialog } from '@/components/applicants/AssignClassDialog';
 import { AssignTestDialog } from '@/components/applicants/AssignTestDialog';
 import { VisaApplicationDialog } from '@/components/applicants/VisaApplicationDialog';
-import { useStudentVisaApplications, useDeleteVisaApplication, useAdvanceVisaStep } from '@/hooks/useVisaApplications';
+import { EditVisaApplicationDialog } from '@/components/applicants/EditVisaApplicationDialog';
+import { useStudentVisaApplications, useDeleteVisaApplication } from '@/hooks/useVisaApplications';
 import { StudentApplicationsTab } from '@/components/students/StudentApplicationsTab';
 import { StudentPaymentsTab } from '@/components/students/StudentPaymentsTab';
 import { WorkflowDetailModal } from '@/components/workflow/WorkflowDetailModal';
@@ -97,9 +98,11 @@ const ApplicantDetail = () => {
     const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
     const [advanceStepDialogOpen, setAdvanceStepDialogOpen] = useState(false);
     const [selectedVisaId, setSelectedVisaId] = useState<string>('');
+    const [selectedVisaIsLastStep, setSelectedVisaIsLastStep] = useState(false);
     const [currentStepId, setCurrentStepId] = useState<string>('');
     const [selectedWorkflowId, setSelectedWorkflowId] = useState<string>('');
-    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editVisaDialogOpen, setEditVisaDialogOpen] = useState(false);
+    const [selectedEditVisa, setSelectedEditVisa] = useState<any>(null);
 
     const { data: applicant, isLoading, isError, error } = useStudent(id || '');
     const { mutate: unenroll, isPending: isUnenrolling } = useUnenrollStudent();
@@ -720,6 +723,7 @@ const ApplicantDetail = () => {
                                                 <TableHead className="font-semibold">Visa Type & Workflow</TableHead>
                                                 <TableHead className="font-semibold">Destination</TableHead>
                                                 <TableHead className="font-semibold">Date</TableHead>
+                                                <TableHead className="font-semibold">Current Step</TableHead>
                                                 <TableHead className="font-semibold">Latest Remark</TableHead>
                                                 <TableHead className="font-semibold">Status</TableHead>
                                                 <TableHead className="font-semibold text-right">Action</TableHead>
@@ -751,6 +755,23 @@ const ApplicantDetail = () => {
                                                             {visa.submissionDate ? 'Submitted' : 'Created'}
                                                         </div>
                                                     </TableCell>
+                                                    <TableCell>
+                                                        {(() => {
+                                                            if (!visa.currentStepId) return <span className="text-xs font-medium text-emerald-600">All Steps Completed</span>;
+                                                            const steps = (visa as any).workflowVersion?.steps || [];
+                                                            const step = steps.find((s: any) => s.id === visa.currentStepId);
+                                                            const stepIndex = steps.findIndex((s: any) => s.id === visa.currentStepId);
+                                                            if (!step) return <span className="text-xs text-muted-foreground">N/A</span>;
+                                                            return (
+                                                                <div>
+                                                                    <span className="text-xs font-medium text-foreground">{step.name}</span>
+                                                                    <div className="text-[10px] text-muted-foreground">
+                                                                        Step {stepIndex + 1} of {steps.length}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
+                                                    </TableCell>
                                                     <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
                                                         {visa.notes && visa.notes.length > 0 
                                                             ? visa.notes[visa.notes.length - 1].remarks 
@@ -778,6 +799,17 @@ const ApplicantDetail = () => {
                                                                     className="gap-2 cursor-pointer"
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
+                                                                        setSelectedEditVisa(visa);
+                                                                        setEditVisaDialogOpen(true);
+                                                                    }}
+                                                                >
+                                                                    <Edit className="h-4 w-4" />
+                                                                    Edit
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem 
+                                                                    className="gap-2 cursor-pointer"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
                                                                         setSelectedVisaId(visa.id);
                                                                         setCurrentStepId(visa.currentStepId || '');
                                                                         setSelectedWorkflow(visa.workflow as any);
@@ -789,16 +821,23 @@ const ApplicantDetail = () => {
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem 
                                                                     className="gap-2 cursor-pointer text-primary"
-                                                                    disabled={visa.status === 'Approved' || visa.status === 'Rejected'}
+                                                                    disabled={visa.status === 'Approved' || visa.status === 'Rejected' || !visa.currentStepId}
                                                                     onClick={() => {
+                                                                        const steps = (visa as any).workflowVersion?.steps || [];
+                                                                        const isLast = steps.length > 0 && steps[steps.length - 1].id === visa.currentStepId;
                                                                         setSelectedVisaId(visa.id);
+                                                                        setSelectedVisaIsLastStep(isLast);
                                                                         setCurrentStepId(visa.currentStepId || '');
                                                                         setSelectedWorkflowId(visa.workflowId || visa.workflow?.id || '');
                                                                         setAdvanceStepDialogOpen(true);
                                                                     }}
                                                                 >
                                                                     <CheckCircle2 className="h-4 w-4" />
-                                                                    Advance step
+                                                                    {(() => {
+                                                                        const steps = (visa as any).workflowVersion?.steps || [];
+                                                                        const isLast = steps.length > 0 && steps[steps.length - 1].id === visa.currentStepId;
+                                                                        return isLast ? 'Mark as Completed' : 'Advance step';
+                                                                    })()}
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem 
                                                                     className="gap-2 cursor-pointer text-destructive focus:text-destructive"
@@ -876,16 +915,19 @@ const ApplicantDetail = () => {
                 workflow={selectedWorkflow}
                 open={workflowModalOpen}
                 onOpenChange={setWorkflowModalOpen}
-                visaId={selectedVisaId}
-                currentStepId={currentStepId}
             />
 
             <AdvanceStepDialog
                 open={advanceStepDialogOpen}
                 onOpenChange={setAdvanceStepDialogOpen}
                 visaId={selectedVisaId}
-                currentStepId={currentStepId}
-                workflowId={selectedWorkflowId}
+                isLastStep={selectedVisaIsLastStep}
+            />
+
+            <EditVisaApplicationDialog
+                open={editVisaDialogOpen}
+                onOpenChange={setEditVisaDialogOpen}
+                visa={selectedEditVisa}
             />
         </DashboardLayout>
     );

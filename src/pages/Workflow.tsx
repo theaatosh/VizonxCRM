@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Loader2, Workflow as WorkflowIcon, FileX } from "lucide-react";
-import { useWorkflows, useDeleteWorkflow } from "@/hooks/useWorkflows";
+import { useWorkflows, useDeleteWorkflow, useActivateWorkflow, useDeactivateWorkflow } from "@/hooks/useWorkflows";
 import { WorkflowCard } from "@/components/workflow/WorkflowCard";
 import { CreateWorkflowDialog } from "@/components/workflow/CreateWorkflowDialog";
 import { EditWorkflowDialog } from "@/components/workflow/EditWorkflowDialog";
@@ -29,24 +29,28 @@ const Workflow = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
+  const isActiveParam =
+    statusFilter === "active" ? true :
+    statusFilter === "inactive" ? false :
+    undefined;
 
   const { data, isLoading, isError, error } = useWorkflows({
     page,
     limit,
     search: search || undefined,
+    isActive: isActiveParam,
     sortBy: "createdAt",
     sortOrder: "desc",
   });
 
   const deleteWorkflowMutation = useDeleteWorkflow();
+  const activateWorkflowMutation = useActivateWorkflow();
+  const deactivateWorkflowMutation = useDeactivateWorkflow();
 
-  // Filter by status on client side for now
-  const workflows = data?.data || [];
-  const filteredWorkflows = statusFilter === "all"
-    ? workflows
-    : workflows.filter(w => statusFilter === "active" ? w.isActive : !w.isActive);
-
-  const totalPages = Math.ceil((data?.totalPages || 0));
+  // data is WorkflowsResponse: { data: Workflow[], total, page, limit, totalPages, hasMore }
+  const filteredWorkflows = data?.data ?? [];
+  const totalItems = data?.total ?? 0;
+  const totalPages = data?.totalPages ?? 0;
 
   const handleViewWorkflow = (workflow: WorkflowType) => {
     setSelectedWorkflow(workflow);
@@ -60,6 +64,14 @@ const Workflow = () => {
 
   const handleDeleteWorkflow = (id: string) => {
     deleteWorkflowMutation.mutate(id);
+  };
+
+  const handleActivateWorkflow = (id: string) => {
+    activateWorkflowMutation.mutate(id);
+  };
+
+  const handleDeactivateWorkflow = (id: string) => {
+    deactivateWorkflowMutation.mutate(id);
   };
 
   return (
@@ -89,7 +101,7 @@ const Workflow = () => {
 
         {/* Filters */}
         <div className="flex gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
@@ -150,6 +162,8 @@ const Workflow = () => {
                 onView={handleViewWorkflow}
                 onEdit={handleEditWorkflow}
                 onDelete={handleDeleteWorkflow}
+                onActivate={handleActivateWorkflow}
+                onDeactivate={handleDeactivateWorkflow}
               />
             ))}
           </div>
@@ -159,8 +173,8 @@ const Workflow = () => {
             <DataTablePagination
               pageIndex={page}
               pageSize={limit}
-              totalItems={data.total}
-              totalPages={data.totalPages}
+              totalItems={totalItems}
+              totalPages={totalPages}
               onPageChange={setPage}
               onPageSizeChange={(newLimit) => {
                 setLimit(newLimit);

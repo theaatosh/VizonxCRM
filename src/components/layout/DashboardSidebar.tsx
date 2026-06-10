@@ -19,12 +19,17 @@ import {
   History,
   GraduationCap as Logo,
   DollarSign,
+  UserCog,
+  ListOrdered,
+  Monitor,
+  UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { usePermissions } from "@/contexts/PermissionContext";
+import { getRoleDashboard } from "@/utils/role-utils";
 import type { PermissionModule } from "@/types/permission.types";
 
 interface MenuItem {
@@ -32,11 +37,17 @@ interface MenuItem {
   icon: React.ComponentType<{ className?: string }>;
   path: string;
   module?: PermissionModule; // If undefined, always show (e.g., Overview, Settings)
+  role?: string; // If set, only show if user's role matches (case-insensitive)
 }
 
 const menuItems: MenuItem[] = [
   { title: "Overview", icon: LayoutDashboard, path: "/" },
   { title: "Leads", icon: Users, path: "/leads", module: "leads" },
+  { title: "Queue", icon: ListOrdered, path: "/queue", module: "queues" },
+  { title: "Staff", icon: UserCog, path: "/staff", module: "staff" },
+  { title: "Counselor", icon: UserCheck, path: "/counselor-dashboard", module: "staff", role: "counselor" },
+  { title: "My Queue", icon: ListOrdered, path: "/my-queue", module: "staff", role: "counselor" },
+  { title: "Monitoring", icon: Monitor, path: "/monitoring", module: "staff" },
   { title: "Visas", icon: Plane, path: "/visas", module: "visa-types" },
   { title: "Applicants", icon: GraduationCap, path: "/applicants", module: "students" },
   { title: "Countries", icon: Globe, path: "/countries", module: "countries" },
@@ -60,15 +71,35 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ collapsed, onToggle }: DashboardSidebarProps) {
   const location = useLocation();
-  const { canRead, isLoading } = usePermissions();
+  const { canRead, isLoading, user, getScope } = usePermissions();
 
-  // Filter menu items based on permissions
-  const visibleMenuItems = menuItems.filter((item) => {
-    // Always show items without a module requirement (Overview, Settings)
-    if (!item.module) return true;
-    // Show item if user has read permission for the module
-    return canRead(item.module);
-  });
+  // Filter menu items based on permissions, role, and scope
+  const visibleMenuItems = menuItems
+    .filter((item) => {
+      // Always show items without a module requirement (Overview, Settings)
+      if (!item.module) return true;
+      // Check role requirement if set (case-insensitive)
+      if (item.role && user?.role.toLowerCase() !== item.role.toLowerCase()) return false;
+      // If queues scope is 'own', hide the admin Queue page (use My Queue instead)
+      if (item.path === '/queue' && getScope('queues') === 'own') return false;
+      // Show item if user has read permission for the module
+      return canRead(item.module);
+    })
+    .filter((item) => {
+      // If user lacks overview permission, hide role-dashboard sidebar item
+      // since Overview already points to it, avoiding duplicates
+      if (!canRead('dashboard') && getRoleDashboard(user?.role) === item.path) {
+        return false;
+      }
+      return true;
+    })
+    .map((item) => {
+      // If user lacks dashboard permission, Overview link goes to their role-dashboard
+      if (item.path === '/' && !canRead('dashboard')) {
+        return { ...item, path: getRoleDashboard(user?.role) || '/' };
+      }
+      return item;
+    });
 
   return (
     <aside

@@ -18,6 +18,9 @@ export const workflowKeys = {
     detail: (id: string) => [...workflowKeys.details(), id] as const,
     steps: (workflowId: string) => [...workflowKeys.detail(workflowId), 'steps'] as const,
     byVisaType: (visaTypeId: string) => [...workflowKeys.all, 'visa-type', visaTypeId] as const,
+    versions: () => [...workflowKeys.all, 'versions'] as const,
+    version: (id: string) => [...workflowKeys.versions(), id] as const,
+    byWorkflow: (workflowId: string) => [...workflowKeys.versions(), 'workflow', workflowId] as const,
 };
 
 // ==================== Query Hooks ====================
@@ -198,6 +201,121 @@ export const useReorderSteps = () => {
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.message || 'Failed to reorder steps');
+        },
+    });
+};
+
+/**
+ * Create a new workflow version
+ */
+export const useCreateVersion = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: workflowService.createVersion.bind(workflowService),
+        onSuccess: (_, variables) => {
+            // Invalidate both the version list and the workflow detail so the step
+            // editor picks up the newly published version immediately.
+            queryClient.invalidateQueries({ queryKey: workflowKeys.byWorkflow(variables.workflowId) });
+            queryClient.invalidateQueries({ queryKey: workflowKeys.detail(variables.workflowId) });
+            toast.success('New workflow version created successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to create new version');
+        },
+    });
+};
+
+/**
+ * Fetch a single workflow version by ID
+ */
+export const useWorkflowVersion = (versionId: string) => {
+    return useQuery({
+        queryKey: workflowKeys.version(versionId),
+        queryFn: () => workflowService.getVersionById(versionId),
+        enabled: !!versionId,
+    });
+};
+
+/**
+ * Fetch all versions for a workflow
+ */
+export const useWorkflowVersions = (workflowId: string, params?: WorkflowQueryParams) => {
+    return useQuery({
+        queryKey: [...workflowKeys.byWorkflow(workflowId), params],
+        queryFn: () => workflowService.getWorkflowVersions(workflowId, params),
+        enabled: !!workflowId,
+    });
+};
+
+/**
+ * Activate a workflow version
+ */
+export const useActivateVersion = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (versionId: string) => workflowService.activateVersion(versionId),
+        onSuccess: () => {
+            // Invalidate both version caches AND the workflow list so cards reflect the new currentVersionId
+            queryClient.invalidateQueries({ queryKey: workflowKeys.versions() });
+            queryClient.invalidateQueries({ queryKey: workflowKeys.all });
+            toast.success("Version activated successfully");
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || "Failed to activate version");
+        },
+    });
+};
+
+/**
+ * Activate a workflow (set isActive = true)
+ */
+export const useActivateWorkflow = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => workflowService.activateWorkflow(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: workflowKeys.all });
+            toast.success('Workflow activated successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to activate workflow');
+        },
+    });
+};
+
+/**
+ * Deactivate a workflow (set isActive = false)
+ */
+export const useDeactivateWorkflow = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => workflowService.deactivateWorkflow(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: workflowKeys.all });
+            toast.success('Workflow deactivated successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to deactivate workflow');
+        },
+    });
+};
+
+/**
+ * Deprecate a workflow version
+ */
+export const useDeprecateVersion = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: { versionId: string; deprecatedReason: string; allowMigration: boolean }) =>
+            workflowService.deprecateVersion(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: workflowKeys.versions() });
+            queryClient.invalidateQueries({ queryKey: workflowKeys.all });
+            toast.success("Version deprecated successfully");
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || "Failed to deprecate version");
         },
     });
 };

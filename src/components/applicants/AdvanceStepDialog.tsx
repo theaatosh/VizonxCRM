@@ -11,42 +11,25 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useAdvanceVisaStep } from '@/hooks/useVisaApplications';
-import { useWorkflowSteps } from '@/hooks/useWorkflows';
 import { Loader2 } from 'lucide-react';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 
 interface AdvanceStepDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     visaId: string;
-    currentStepId: string;
-    workflowId: string;
+    isLastStep?: boolean;
 }
 
-export function AdvanceStepDialog({ open, onOpenChange, visaId, currentStepId, workflowId }: AdvanceStepDialogProps) {
+export function AdvanceStepDialog({ open, onOpenChange, visaId, isLastStep }: AdvanceStepDialogProps) {
     const [notes, setNotes] = useState('');
-    const [selectedStepId, setSelectedStepId] = useState<string>(currentStepId);
     const { mutate: advanceStep, isPending } = useAdvanceVisaStep();
-    const { data: steps = [], isLoading: isLoadingSteps } = useWorkflowSteps(workflowId);
-
-    // Update selectedStepId when currentStepId changes (to sync with modal opening)
-    useState(() => {
-        if (currentStepId) setSelectedStepId(currentStepId);
-    });
 
     const handleSubmit = () => {
-        if (!notes.trim() || !selectedStepId) return;
+        if (!notes.trim()) return;
         
         advanceStep({
             id: visaId,
             data: {
-                expectedStepId: selectedStepId,
                 notes: notes.trim()
             }
         }, {
@@ -61,35 +44,15 @@ export function AdvanceStepDialog({ open, onOpenChange, visaId, currentStepId, w
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Advance Visa Step</DialogTitle>
+                    <DialogTitle>{isLastStep ? 'Complete Final Step' : 'Advance Visa Step'}</DialogTitle>
                     <DialogDescription>
-                        Provide a brief note about the progress to advance the application to the next step safely.
+                        {isLastStep
+                            ? 'Provide a brief note to mark the final step as completed.'
+                            : 'Provide a brief note about the progress to advance the application to the next step.'
+                        }
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="step">Select Step to Advance From</Label>
-                        <Select 
-                            value={selectedStepId} 
-                            onValueChange={setSelectedStepId}
-                            disabled={isLoadingSteps}
-                        >
-                            <SelectTrigger id="step" className="w-full">
-                                <SelectValue placeholder={isLoadingSteps ? "Loading steps..." : "Select a step"} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {steps.sort((a, b) => a.stepOrder - b.stepOrder).map((step) => (
-                                    <SelectItem key={step.id} value={step.id}>
-                                        Step {step.stepOrder}: {step.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <p className="text-[11px] text-muted-foreground italic">
-                            The API uses this to ensure you are advancing from the correct state.
-                        </p>
-                    </div>
-
                     <div className="grid gap-2">
                         <Label htmlFor="notes">Progress Note</Label>
                         <Textarea
@@ -113,10 +76,10 @@ export function AdvanceStepDialog({ open, onOpenChange, visaId, currentStepId, w
                         {isPending ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Advancing...
+                                {isLastStep ? 'Completing...' : 'Advancing...'}
                             </>
                         ) : (
-                            'Confirm Advancement'
+                            isLastStep ? 'Mark as Completed' : 'Confirm Advancement'
                         )}
                     </Button>
                 </DialogFooter>

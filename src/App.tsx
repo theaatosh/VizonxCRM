@@ -8,6 +8,7 @@ import { PermissionProvider } from "./contexts/PermissionContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import Index from "./pages/Index";
 import Leads from "./pages/Leads";
+import LeadDetail from "./pages/LeadDetail";
 import Visas from "./pages/Visas";
 import VisaDetail from "./pages/VisaDetail";
 import Vacancies from "./pages/Vacancies";
@@ -31,6 +32,12 @@ import CourseApplications from "./pages/CourseApplications";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import NotificationsPage from "./pages/notifications/NotificationsPage";
+import Staff from "./pages/Staff";
+import StaffDetail from "./pages/StaffDetail";
+import CounselorDashboard from "./pages/CounselorDashboard";
+import QueueManagement from "./pages/QueueManagement";
+import MyQueue from "./pages/MyQueue";
+import CounselorMonitoring from "./pages/CounselorMonitoring";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +56,13 @@ const App = () => (
               {/* Protected Routes with Module Permissions */}
               <Route path="/" element={<ProtectedRoute module="dashboard"><Index /></ProtectedRoute>} />
               <Route path="/leads" element={<ProtectedRoute module="leads"><Leads /></ProtectedRoute>} />
+              <Route path="/leads/:id" element={<ProtectedRoute module="leads"><LeadDetail /></ProtectedRoute>} />
+              <Route path="/staff" element={<ProtectedRoute module="staff"><Staff /></ProtectedRoute>} />
+              <Route path="/staff/:id" element={<ProtectedRoute module="staff"><StaffDetail /></ProtectedRoute>} />
+              <Route path="/counselor-dashboard" element={<ProtectedRoute module="staff" role="counselor"><CounselorDashboard /></ProtectedRoute>} />
+              <Route path="/queue" element={<ProtectedRoute module="queues"><QueueManagement /></ProtectedRoute>} />
+              <Route path="/my-queue" element={<ProtectedRoute module="staff" role="counselor"><MyQueue /></ProtectedRoute>} />
+              <Route path="/monitoring" element={<ProtectedRoute module="staff"><CounselorMonitoring /></ProtectedRoute>} />
               <Route path="/visas" element={<ProtectedRoute module="visa-types"><Visas /></ProtectedRoute>} />
               <Route path="/visas/:id" element={<ProtectedRoute module="visa-types"><VisaDetail /></ProtectedRoute>} />
               <Route path="/applicants" element={<ProtectedRoute module="students"><Applicants /></ProtectedRoute>} />
