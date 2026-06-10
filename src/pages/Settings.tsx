@@ -235,11 +235,13 @@ const Settings = () => {
     }
   };
 
-  const handleAssignPermissions = async (roleId: string, permissionIds: string[]) => {
+  const handleAssignPermissions = async (roleId: string, payload: { permissionIds: string[]; moduleScopes: Record<string, 'own' | 'full'> }) => {
     setIsSubmitting(true);
     try {
-      // Use updateRolePermissions to replace all permissions with the selected ones
-      await userService.updateRolePermissions(roleId, { permissionIds });
+      await userService.updateRolePermissions(roleId, {
+        permissionIds: payload.permissionIds,
+        moduleScopes: payload.moduleScopes,
+      });
       toast({
         title: "Success",
         description: "Permissions updated successfully.",

@@ -89,8 +89,19 @@ export interface RoleWithPermissions extends Role {
     permissions?: Permission[];
 }
 
+export interface PermissionWithScopeDto {
+    permissionId: string;
+    scope: 'own' | 'full';
+}
+
 export interface AssignPermissionsDto {
     permissionIds: string[];
+    defaultScope?: 'own' | 'full';
+}
+
+export interface UpdateRolePermissionsWithScopeDto {
+    permissionIds: string[];
+    moduleScopes?: Record<string, 'own' | 'full'>;
 }
 
 const userService = {
@@ -153,7 +164,7 @@ const userService = {
      * Update role permissions (replaces all existing permissions)
      * Uses PUT /users/roles/{roleId}/permissions
      */
-    async updateRolePermissions(roleId: string, data: AssignPermissionsDto): Promise<void> {
+    async updateRolePermissions(roleId: string, data: UpdateRolePermissionsWithScopeDto): Promise<void> {
         await api.put(`/users/roles/${roleId}/permissions`, data);
     },
 
@@ -161,7 +172,7 @@ const userService = {
      * Assign additional permissions to a role (keeps existing ones)
      * Uses POST /users/roles/{roleId}/permissions/assign
      */
-    async assignPermissions(roleId: string, data: AssignPermissionsDto): Promise<void> {
+    async assignPermissions(roleId: string, data: UpdateRolePermissionsWithScopeDto): Promise<void> {
         await api.post(`/users/roles/${roleId}/permissions/assign`, data);
     },
 
