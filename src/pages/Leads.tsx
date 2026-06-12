@@ -309,8 +309,6 @@ const Leads = () => {
                     filteredLeads.map((lead) => (
                       <TableRow
                         key={lead.id}
-                        className="cursor-pointer"
-                        onClick={() => navigate(`/leads/${lead.id}`)}
                       >
                         <TableCell>
                           <div className="flex items-center gap-3">

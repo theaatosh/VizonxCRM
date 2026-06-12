@@ -61,8 +61,10 @@ export function CoursesTable({ universityId, courses, isLoading }: CoursesTableP
     };
 
     // Format fees
-    const formatFees = (fees: number | string) => {
-        const numFees = typeof fees === 'string' ? parseFloat(fees) : fees;
+    const formatFees = (fees: number | string | null | undefined) => {
+        if (fees === null || fees === undefined) return '$0';
+        const numFees = typeof fees === 'string' ? parseFloat(fees) || 0 : fees;
+        if (isNaN(numFees)) return '$0';
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD',

@@ -13,8 +13,8 @@ export const visaApplicationService = {
     /**
      * Get all visa applications with pagination and filters
      */
-    async getVisaApplications(params?: VisaApplicationQueryParams): Promise<VisaApplication[]> {
-        const response = await api.get<VisaApplication[]>(VISA_APPLICATIONS_ENDPOINT, {
+    async getVisaApplications(params?: VisaApplicationQueryParams): Promise<VisaApplication[] | PaginatedResponse<VisaApplication>> {
+        const response = await api.get<VisaApplication[] | PaginatedResponse<VisaApplication>>(VISA_APPLICATIONS_ENDPOINT, {
             params: {
                 page: params?.page || 1,
                 limit: params?.limit || 10,
@@ -27,6 +27,14 @@ export const visaApplicationService = {
                 status: params?.status,
             },
         });
+        return response.data;
+    },
+
+    /**
+     * Get visa application statistics by status
+     */
+    async getVisaStats(): Promise<{ total: number; Approved: number; Pending: number; Submitted: number; UnderReview: number; Rejected: number }> {
+        const response = await api.get(`${VISA_APPLICATIONS_ENDPOINT}/stats`);
         return response.data;
     },
 

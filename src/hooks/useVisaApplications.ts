@@ -5,11 +5,13 @@ import { fileService } from '@/services/file.service';
 import type { 
     CreateVisaApplicationDto, 
     UpdateVisaApplicationDto,
+    VisaApplication,
     VisaApplicationQueryParams,
     VisaDocument,
     CreateVisaDocumentDto,
     UpdateVisaDocumentDto
 } from '@/types/visaApplication.types';
+import type { PaginatedResponse } from '@/types/student.types';
 import { toast } from 'sonner';
 
 export const visaApplicationKeys = {
@@ -25,9 +27,19 @@ export const visaApplicationKeys = {
  * Hook to fetch paginated visa applications
  */
 export function useVisaApplications(params?: VisaApplicationQueryParams) {
-    return useQuery({
+    return useQuery<PaginatedResponse<VisaApplication>>({
         queryKey: visaApplicationKeys.list(params),
-        queryFn: () => visaApplicationService.getVisaApplications(params),
+        queryFn: () => visaApplicationService.getVisaApplications(params) as Promise<PaginatedResponse<VisaApplication>>,
+    });
+}
+
+/**
+ * Hook to fetch visa application stats
+ */
+export function useVisaStats() {
+    return useQuery({
+        queryKey: ['visa-applications', 'stats'],
+        queryFn: () => visaApplicationService.getVisaStats(),
     });
 }
 

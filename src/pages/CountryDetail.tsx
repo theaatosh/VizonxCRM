@@ -337,10 +337,23 @@ const CountryDetail = () => {
                 <TabsContent value="visa-types">
                     <Card className="shadow-card">
                         <CardHeader>
-                            <CardTitle className="text-lg">Visa Types</CardTitle>
-                            <p className="text-sm text-muted-foreground">
-                                Available visa types for {country.name}
-                            </p>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg">Visa Types</CardTitle>
+                                    <p className="text-sm text-muted-foreground">
+                                        Available visa types for {country.name}
+                                    </p>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2"
+                                    onClick={() => navigate(`/visas?addVisaType=true&countryId=${country.id}`)}
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Add Visa Type
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             {Array.isArray(visaTypes) && visaTypes.length > 0 ? (

@@ -24,22 +24,48 @@ import { CreateVisaTypeDto } from "@/types/visaType.types";
 import { useQuery } from "@tanstack/react-query";
 import countryService from "@/services/country.service";
 
-export const CreateVisaTypeDialog = () => {
-    const [open, setOpen] = useState(false);
+interface CreateVisaTypeDialogProps {
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+    defaultCountryId?: string;
+}
+
+export const CreateVisaTypeDialog = ({ open: controlledOpen, onOpenChange: controlledOnOpenChange, defaultCountryId }: CreateVisaTypeDialogProps = {}) => {
+    const [internalOpen, setInternalOpen] = useState(false);
     const [formData, setFormData] = useState<CreateVisaTypeDto>({
         name: "",
         description: "",
-        countryId: "",
+        countryId: defaultCountryId || "",
         isActive: true,
     });
 
+    const isControlled = controlledOpen !== undefined;
+    const open = isControlled ? controlledOpen : internalOpen;
+    const setOpen = isControlled ? controlledOnOpenChange! : setInternalOpen;
+
     const createMutation = useCreateVisaType();
 
-    // Fetch active countries for dropdown
     const { data: countries = [], isLoading: loadingCountries } = useQuery({
         queryKey: ['countries', 'active'],
         queryFn: () => countryService.getActiveCountries(),
     });
+
+    useEffect(() => {
+        if (defaultCountryId) {
+            setFormData(prev => ({ ...prev, countryId: defaultCountryId }));
+        }
+    }, [defaultCountryId]);
+
+    useEffect(() => {
+        if (!open) {
+            setFormData({
+                name: "",
+                description: "",
+                countryId: defaultCountryId || "",
+                isActive: true,
+            });
+        }
+    }, [open, defaultCountryId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -47,13 +73,6 @@ export const CreateVisaTypeDialog = () => {
         try {
             await createMutation.mutateAsync(formData);
             setOpen(false);
-            // Reset form
-            setFormData({
-                name: "",
-                description: "",
-                countryId: "",
-                isActive: true,
-            });
         } catch (error) {
             // Error is handled by the mutation hook
         }
@@ -61,12 +80,14 @@ export const CreateVisaTypeDialog = () => {
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Visa Type
-                </Button>
-            </DialogTrigger>
+            {!isControlled && (
+                <DialogTrigger asChild>
+                    <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Visa Type
+                    </Button>
+                </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>Create New Visa Type</DialogTitle>

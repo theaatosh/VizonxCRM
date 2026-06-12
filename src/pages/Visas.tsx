@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,11 +15,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Search, Plus, Plane, Clock, CheckCircle, XCircle, Globe, FileX, Loader2, ExternalLink } from "lucide-react";
 import { WorkflowDetailModal } from "@/components/workflow/WorkflowDetailModal";
 import { Workflow } from "@/types/workflow.types";
 import { useVisaTypes, useDeleteVisaType } from "@/hooks/useVisaTypes";
-import { useVisaApplications } from "@/hooks/useVisaApplications";
+import { useVisaApplications, useVisaStats } from "@/hooks/useVisaApplications";
 import { useStudents } from "@/hooks/useStudents";
 import { VisaTypeCard } from "@/components/visaTypes/VisaTypeCard";
 import { CreateVisaTypeDialog } from "@/components/visaTypes/CreateVisaTypeDialog";
@@ -33,19 +41,10 @@ import { format } from "date-fns";
 
 
 
-const countryStats = [
-  { country: "United Kingdom", total: 45, approved: 32, pending: 10, rejected: 3, flag: "🇬🇧" },
-  { country: "Canada", total: 38, approved: 28, pending: 8, rejected: 2, flag: "🇨🇦" },
-  { country: "Australia", total: 29, approved: 20, pending: 7, rejected: 2, flag: "🇦🇺" },
-  { country: "USA", total: 35, approved: 22, pending: 9, rejected: 4, flag: "🇺🇸" },
-  { country: "Germany", total: 22, approved: 18, pending: 3, rejected: 1, flag: "🇩🇪" },
-  { country: "Ireland", total: 18, approved: 14, pending: 4, rejected: 0, flag: "🇮🇪" },
-];
-
 const statusColors: Record<string, string> = {
   Approved: "bg-success/10 text-success border-success/20",
   Pending: "bg-warning/10 text-warning border-warning/20",
-  "In Process": "bg-info/10 text-info border-info/20",
+  Submitted: "bg-info/10 text-info border-info/20",
   Rejected: "bg-destructive/10 text-destructive border-destructive/20",
   UnderReview: "bg-info/10 text-info border-info/20",
 };
@@ -53,13 +52,14 @@ const statusColors: Record<string, string> = {
 const statusIcons: Record<string, React.ReactNode> = {
   Approved: <CheckCircle className="h-4 w-4 text-success" />,
   Pending: <Clock className="h-4 w-4 text-warning" />,
-  "In Process": <Plane className="h-4 w-4 text-info" />,
-  "UnderReview": <Loader2 className="h-4 w-4 text-info animate-spin" />,
+  Submitted: <Plane className="h-4 w-4 text-info" />,
+  UnderReview: <Loader2 className="h-4 w-4 text-info animate-spin" />,
   Rejected: <XCircle className="h-4 w-4 text-destructive" />,
 };
 
 const Visas = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   // Visa Types state
   const [countryFilter, setCountryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -80,6 +80,16 @@ const Visas = () => {
   const [appStatus, setAppStatus] = useState<string>("all");
   const [appStudentId, setAppStudentId] = useState<string>("all");
 
+  // New Application dialog state
+  const [newAppDialogOpen, setNewAppDialogOpen] = useState(false);
+  const [studentSearch, setStudentSearch] = useState("");
+  const [selectedStudentId, setSelectedStudentId] = useState<string>("");
+
+  // Handle incoming redirect from Country Detail to create visa type
+  const addVisaTypeParam = searchParams.get('addVisaType');
+  const countryIdParam = searchParams.get('countryId');
+  const [showCreateVisaType, setShowCreateVisaType] = useState(addVisaTypeParam === 'true');
+  const [visaTypeDefaultCountryId, setVisaTypeDefaultCountryId] = useState(countryIdParam || undefined);
 
   const { data, isLoading, isError, error } = useVisaTypes({
     page,
@@ -90,6 +100,9 @@ const Visas = () => {
   });
 
   const deleteVisaTypeMutation = useDeleteVisaType();
+
+  // Fetch visa stats
+  const { data: visaStats, isLoading: statsLoading } = useVisaStats();
 
   // Fetch visa applications
   const { data: appData, isLoading: isLoadingApps } = useVisaApplications({
@@ -103,6 +116,13 @@ const Visas = () => {
   // Fetch students for filter
   const { data: studentsData } = useStudents({ limit: 100 });
   const students = studentsData?.data || [];
+
+  // Fetch students for new application dialog
+  const { data: newAppStudentsData, isLoading: studentsLoading } = useStudents({
+    limit: 50,
+    search: studentSearch || undefined,
+  });
+  const newAppStudents = newAppStudentsData?.data || [];
 
   // Fetch countries for filter
   const { data: countries = [] } = useQuery({
@@ -138,6 +158,22 @@ const Visas = () => {
     deleteVisaTypeMutation.mutate(id);
   };
 
+  const handleNewApplication = () => {
+    setSelectedStudentId("");
+    setStudentSearch("");
+    setNewAppDialogOpen(true);
+  };
+
+  const handleSelectStudent = () => {
+    if (!selectedStudentId) return;
+    setNewAppDialogOpen(false);
+    navigate(`/applicants/${selectedStudentId}?tab=visa`);
+  };
+
+  const appList = appData?.data || [];
+  const appTotal = appData?.total || 0;
+  const appTotalPages = appData?.totalPages || 1;
+
   return (
     <DashboardLayout title="Visas" subtitle="Manage visa types and track applications">
       {/* Stats Cards */}
@@ -149,7 +185,7 @@ const Visas = () => {
                 <CheckCircle className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold">156</p>
+                <p className="text-2xl font-bold">{statsLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (visaStats?.Approved ?? 0)}</p>
                 <p className="text-sm text-muted-foreground">Approved</p>
               </div>
             </div>
@@ -162,7 +198,7 @@ const Visas = () => {
                 <Clock className="h-5 w-5 text-warning" />
               </div>
               <div>
-                <p className="text-2xl font-bold">89</p>
+                <p className="text-2xl font-bold">{statsLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : ((visaStats?.Pending ?? 0) + (visaStats?.Submitted ?? 0))}</p>
                 <p className="text-sm text-muted-foreground">Pending</p>
               </div>
             </div>
@@ -175,7 +211,7 @@ const Visas = () => {
                 <Plane className="h-5 w-5 text-info" />
               </div>
               <div>
-                <p className="text-2xl font-bold">67</p>
+                <p className="text-2xl font-bold">{statsLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (visaStats?.UnderReview ?? 0)}</p>
                 <p className="text-sm text-muted-foreground">In Process</p>
               </div>
             </div>
@@ -188,7 +224,7 @@ const Visas = () => {
                 <XCircle className="h-5 w-5 text-destructive" />
               </div>
               <div>
-                <p className="text-2xl font-bold">23</p>
+                <p className="text-2xl font-bold">{statsLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (visaStats?.Rejected ?? 0)}</p>
                 <p className="text-sm text-muted-foreground">Rejected</p>
               </div>
             </div>
@@ -200,7 +236,6 @@ const Visas = () => {
         <TabsList>
           <TabsTrigger value="visaTypes">Visa Types</TabsTrigger>
           <TabsTrigger value="applications">Applications</TabsTrigger>
-          <TabsTrigger value="countries">By Country</TabsTrigger>
         </TabsList>
 
         {/* Visa Types Tab */}
@@ -221,7 +256,11 @@ const Visas = () => {
                   />
                 </div>
               </div>
-              <CreateVisaTypeDialog />
+              <CreateVisaTypeDialog
+                open={showCreateVisaType}
+                onOpenChange={setShowCreateVisaType}
+                defaultCountryId={visaTypeDefaultCountryId}
+              />
             </div>
 
             {/* Filters */}
@@ -287,7 +326,10 @@ const Visas = () => {
                   : "No visa types created yet"}
               </p>
               {!search && countryFilter === "all" && statusFilter === "all" && (
-                <CreateVisaTypeDialog />
+                <Button onClick={() => setShowCreateVisaType(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Visa Type
+                </Button>
               )}
             </div>
           )}
@@ -376,7 +418,7 @@ const Visas = () => {
                     </SelectContent>
                   </Select>
 
-                  <Button className="gap-2">
+                  <Button className="gap-2" onClick={handleNewApplication}>
                     <Plus className="h-4 w-4" />
                     New Application
                   </Button>
@@ -388,7 +430,7 @@ const Visas = () => {
                 <div className="flex items-center justify-center py-20">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : !appData || appData.length === 0 ? (
+              ) : !appList.length ? (
                 <div className="text-center py-20 border-2 border-dashed rounded-xl bg-muted/20">
                     <Globe className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold">No Applications Found</h3>
@@ -396,7 +438,7 @@ const Visas = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {appData.map((visa) => (
+                  {appList.map((visa) => (
                     <div
                       key={visa.id}
                       className="flex items-center justify-between rounded-xl border border-border p-4 transition-all hover:shadow-md hover:border-primary/30 cursor-pointer group"
@@ -481,8 +523,8 @@ const Visas = () => {
                       <DataTablePagination
                           pageIndex={appPage}
                           pageSize={appLimit}
-                          totalItems={appData.length}
-                          totalPages={1}
+                          totalItems={appTotal}
+                          totalPages={appTotalPages}
                           onPageChange={setAppPage}
                           onPageSizeChange={(newLimit) => {
                               setAppLimit(newLimit);
@@ -497,46 +539,72 @@ const Visas = () => {
           </Card>
         </TabsContent>
 
-        {/* By Country Tab */}
-        <TabsContent value="countries">
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold">Visa Applications by Country</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {countryStats.map((country) => (
-                  <Card key={country.country} className="border border-border">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3 mb-4">
-                        <span className="text-2xl">{country.flag}</span>
-                        <div>
-                          <p className="font-semibold">{country.country}</p>
-                          <p className="text-sm text-muted-foreground">{country.total} total applications</p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 text-center">
-                        <div className="rounded-lg bg-success/10 p-2">
-                          <p className="text-lg font-bold text-success">{country.approved}</p>
-                          <p className="text-xs text-muted-foreground">Approved</p>
-                        </div>
-                        <div className="rounded-lg bg-warning/10 p-2">
-                          <p className="text-lg font-bold text-warning">{country.pending}</p>
-                          <p className="text-xs text-muted-foreground">Pending</p>
-                        </div>
-                        <div className="rounded-lg bg-destructive/10 p-2">
-                          <p className="text-lg font-bold text-destructive">{country.rejected}</p>
-                          <p className="text-xs text-muted-foreground">Rejected</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
+
+      {/* New Application Dialog */}
+      <Dialog open={newAppDialogOpen} onOpenChange={setNewAppDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>New Visa Application</DialogTitle>
+            <DialogDescription>
+              Search and select a student to create a new visa application.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search students by name or email..."
+                className="pl-9"
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
+              />
+            </div>
+            <div className="max-h-[300px] overflow-y-auto space-y-1">
+              {studentsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : newAppStudents.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground py-8">
+                  {studentSearch ? "No students found." : "Type to search for students."}
+                </p>
+              ) : (
+                newAppStudents.map((student) => (
+                  <button
+                    key={student.id}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center gap-3 hover:bg-accent ${
+                      selectedStudentId === student.id ? "bg-primary/10 border border-primary/30" : ""
+                    }`}
+                    onClick={() => setSelectedStudentId(student.id)}
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                        {student.firstName[0]}{student.lastName[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{student.firstName} {student.lastName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                    </div>
+                    {selectedStudentId === student.id && (
+                      <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewAppDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSelectStudent} disabled={!selectedStudentId}>
+              Continue to Application
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modals */}
       <VisaTypeDetailModal
