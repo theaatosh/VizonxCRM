@@ -135,23 +135,21 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
                         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Leads</span>
                       </div>
                       {searchResults.leads.map((lead: SearchLeadResult) => (
-                        <DropdownMenuItem
+                        <button
                           key={`lead-${lead.id}`}
-                          className="cursor-pointer"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent cursor-pointer"
                           onClick={() => { navigate(`/leads/${lead.id}`); setShowSearchResults(false); setSearchQuery(""); }}
                         >
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
-                                {lead.firstName[0]}{lead.lastName[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm font-medium">{lead.firstName} {lead.lastName}</p>
-                              <p className="text-xs text-muted-foreground">{lead.email}</p>
-                            </div>
+                          <Avatar className="h-6 w-6 shrink-0">
+                            <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                              {lead.firstName[0]}{lead.lastName[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{lead.firstName} {lead.lastName}</p>
+                            <p className="text-xs text-muted-foreground truncate">{lead.email}</p>
                           </div>
-                        </DropdownMenuItem>
+                        </button>
                       ))}
                     </>
                   )}
@@ -162,23 +160,21 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
                         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Applicants</span>
                       </div>
                       {searchResults.applications.map((app: SearchApplicationResult) => (
-                        <DropdownMenuItem
+                        <button
                           key={`app-${app.id}`}
-                          className="cursor-pointer"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent cursor-pointer"
                           onClick={() => { navigate(`/applicants`); setShowSearchResults(false); setSearchQuery(""); }}
                         >
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
-                                {app.student.firstName[0]}{app.student.lastName[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm font-medium">{app.student.firstName} {app.student.lastName}</p>
-                              <p className="text-xs text-muted-foreground">{app.course.name} - {app.university.name}</p>
-                            </div>
+                          <Avatar className="h-6 w-6 shrink-0">
+                            <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                              {app.student.firstName[0]}{app.student.lastName[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{app.student.firstName} {app.student.lastName}</p>
+                            <p className="text-xs text-muted-foreground truncate">{app.course.name} - {app.university.name}</p>
                           </div>
-                        </DropdownMenuItem>
+                        </button>
                       ))}
                     </>
                   )}
@@ -189,23 +185,21 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
                         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Staff</span>
                       </div>
                       {searchResults.staff.map((s: SearchStaffResult) => (
-                        <DropdownMenuItem
+                        <button
                           key={`staff-${s.id}`}
-                          className="cursor-pointer"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent cursor-pointer"
                           onClick={() => { navigate(`/staff`); setShowSearchResults(false); setSearchQuery(""); }}
                         >
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
-                                {s.user.name?.charAt(0) || 'S'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm font-medium">{s.user.name}</p>
-                              <p className="text-xs text-muted-foreground">{s.staffType} - {s.user.email}</p>
-                            </div>
+                          <Avatar className="h-6 w-6 shrink-0">
+                            <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                              {s.user.name?.charAt(0) || 'S'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{s.user.name}</p>
+                            <p className="text-xs text-muted-foreground truncate">{s.staffType} - {s.user.email}</p>
                           </div>
-                        </DropdownMenuItem>
+                        </button>
                       ))}
                     </>
                   )}

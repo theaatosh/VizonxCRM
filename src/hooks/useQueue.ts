@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queueService } from '@/services/queue.service';
 import type { QueueQueryParams, QueueItemStatus } from '@/types/queue.types';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/utils/error.utils';
 
 export const queueKeys = {
     all: ['queue'] as const,
@@ -54,8 +55,8 @@ export function useUpdateQueueItemStatus() {
             queryClient.invalidateQueries({ queryKey: queueKeys.all });
             toast.success('Queue item status updated');
         },
-        onError: (error: Error) => {
-            toast.error(`Failed to update queue item: ${error.message}`);
+        onError: (error) => {
+            toast.error(`Failed to update queue item: ${getApiErrorMessage(error)}`);
         },
     });
 }
@@ -70,8 +71,8 @@ export function useAssignQueueItem() {
             queryClient.invalidateQueries({ queryKey: queueKeys.all });
             toast.success('Queue item assigned');
         },
-        onError: (error: Error) => {
-            toast.error(`Failed to assign queue item: ${error.message}`);
+        onError: (error) => {
+            toast.error(`Failed to assign queue item: ${getApiErrorMessage(error)}`);
         },
     });
 }
@@ -86,8 +87,8 @@ export function useAutoAssignQueueItem() {
             queryClient.invalidateQueries({ queryKey: queueKeys.all });
             toast.success('Queue item auto-assigned');
         },
-        onError: (error: Error) => {
-            toast.error(`Failed to auto-assign: ${error.message}`);
+        onError: (error) => {
+            toast.error(`Failed to auto-assign: ${getApiErrorMessage(error)}`);
         },
     });
 }
@@ -102,8 +103,8 @@ export function useReassignQueueItem() {
             queryClient.invalidateQueries({ queryKey: queueKeys.all });
             toast.success('Queue item reassigned');
         },
-        onError: (error: Error) => {
-            toast.error(`Failed to reassign: ${error.message}`);
+        onError: (error) => {
+            toast.error(`Failed to reassign: ${getApiErrorMessage(error)}`);
         },
     });
 }

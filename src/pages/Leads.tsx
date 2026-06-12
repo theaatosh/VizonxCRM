@@ -236,7 +236,10 @@ const Leads = () => {
             <div className="flex gap-2">
               <Select
                 value={statusFilter}
-                onValueChange={(value) => setStatusFilter(value)}
+                onValueChange={(value) => {
+                  setStatusFilter(value);
+                  setPage(1);
+                }}
               >
                 <SelectTrigger className="w-[150px]">
                   <SelectValue placeholder="Status" />

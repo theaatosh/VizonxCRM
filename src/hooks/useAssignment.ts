@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignmentService } from '@/services/assignment.service';
 import type { CreateAssignmentDto, ReassignDto } from '@/types/assignment.types';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/utils/error.utils';
 
 export const assignmentKeys = {
     all: ['assignments'] as const,
@@ -25,8 +26,8 @@ export function useAddToQueue() {
             queryClient.invalidateQueries({ queryKey: ['queue'] });
             toast.success('Lead added to queue');
         },
-        onError: (error: Error) => {
-            toast.error(`Failed to add to queue: ${error.message}`);
+        onError: (error) => {
+            toast.error(`Failed to add to queue: ${getApiErrorMessage(error)}`);
         },
     });
 }
@@ -42,8 +43,8 @@ export function useAssignToStaff() {
             queryClient.invalidateQueries({ queryKey: ['assignments'] });
             toast.success('Lead assigned successfully');
         },
-        onError: (error: Error) => {
-            toast.error(`Failed to assign lead: ${error.message}`);
+        onError: (error) => {
+            toast.error(`Failed to assign lead: ${getApiErrorMessage(error)}`);
         },
     });
 }
@@ -59,8 +60,8 @@ export function useReassignStaff() {
             queryClient.invalidateQueries({ queryKey: ['assignments'] });
             toast.success('Lead reassigned successfully');
         },
-        onError: (error: Error) => {
-            toast.error(`Failed to reassign lead: ${error.message}`);
+        onError: (error) => {
+            toast.error(`Failed to reassign lead: ${getApiErrorMessage(error)}`);
         },
     });
 }

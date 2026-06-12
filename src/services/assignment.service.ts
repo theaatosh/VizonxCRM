@@ -4,11 +4,12 @@ import type {
     CreateAssignmentDto,
     ReassignDto,
 } from '@/types/assignment.types';
+import type { PaginatedResponse } from '@/types/queue.types';
 
 export const assignmentService = {
     async getLeadHistory(leadId: string): Promise<AssignmentHistoryItem[]> {
-        const response = await api.get<AssignmentHistoryItem[]>(`/queues/leads/${leadId}/assignment-history`);
-        return response.data;
+        const response = await api.get<PaginatedResponse<AssignmentHistoryItem>>(`/queues/leads/${leadId}/assignment-history`);
+        return response.data.data;
     },
 
     async addToQueue(data: CreateAssignmentDto): Promise<void> {

@@ -116,8 +116,8 @@ export const queueService = {
     },
 
     async getLeadAssignmentHistory(leadId: string): Promise<AssignmentHistoryItem[]> {
-        const response = await api.get<AssignmentHistoryItem[]>(`${QUEUE_ENDPOINT}/leads/${leadId}/assignment-history`);
-        return response.data;
+        const response = await api.get<PaginatedResponse<AssignmentHistoryItem>>(`${QUEUE_ENDPOINT}/leads/${leadId}/assignment-history`);
+        return response.data.data;
     },
 };
 

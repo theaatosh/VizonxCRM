@@ -78,13 +78,16 @@ const LeadDetail = () => {
         <DashboardLayout
             title={getFullName()}
             subtitle="Lead Details"
-            action={
-                <Button variant="outline" size="sm" onClick={() => navigate('/leads')}>
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Leads
-                </Button>
-            }
         >
+            <Button
+                variant="ghost"
+                className="mb-6 gap-2"
+                onClick={() => navigate('/leads')}
+            >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Leads
+            </Button>
+
             {/* Profile Section */}
             <div className="grid gap-6 md:grid-cols-3 mb-6">
                 <Card className="shadow-card md:col-span-1">

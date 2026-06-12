@@ -125,6 +125,7 @@ export function LeadFormDialog({ open, onOpenChange, lead }: LeadFormDialogProps
                     studyInterests: values.studyInterests || undefined,
                     status: values.status,
                     priority: values.priority,
+                    source: values.source || undefined,
                 };
                 await updateLead.mutateAsync({ id: lead.id, data: updateData });
             } else {

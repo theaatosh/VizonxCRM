@@ -1,6 +1,5 @@
 import {
     AlertDialog,
-    AlertDialogAction,
     AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
@@ -8,6 +7,8 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import { useDeleteLead } from '@/hooks/useLeads';
 import type { Lead } from '@/types/lead.types';
 
@@ -48,13 +49,20 @@ export function DeleteLeadDialog({ open, onOpenChange, lead }: DeleteLeadDialogP
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel disabled={deleteLead.isPending}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
+                    <Button
+                        variant="destructive"
                         onClick={handleDelete}
                         disabled={deleteLead.isPending}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
-                        {deleteLead.isPending ? 'Deleting...' : 'Delete'}
-                    </AlertDialogAction>
+                        {deleteLead.isPending ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Deleting...
+                            </>
+                        ) : (
+                            'Delete'
+                        )}
+                    </Button>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

@@ -641,11 +641,11 @@ const QueueManagement = () => {
                 ) : (
                     <div className="flex flex-wrap items-center gap-2">
                         {queues.map((q) => (
-                            <div key={q.id} className="flex items-center">
+                            <div key={q.id} className="flex items-center gap-1">
                                 <button
                                     onClick={() => handleQueueChange(q.id)}
                                     className={cn(
-                                        "flex items-center gap-2 rounded-l-lg border border-r-0 px-3 py-2 text-sm font-medium transition-all",
+                                        "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all",
                                         selectedQueueId === q.id
                                             ? "border-primary bg-primary/10 text-primary"
                                             : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground"
@@ -665,17 +665,14 @@ const QueueManagement = () => {
                                 </button>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <button
-                                            className={cn(
-                                                "flex items-center rounded-r-lg border px-1 py-2 text-sm font-medium transition-all",
-                                                selectedQueueId === q.id
-                                                    ? "border-primary bg-primary/10 text-primary"
-                                                    : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground"
-                                            )}
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8"
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             <MoreHorizontal className="h-4 w-4" />
-                                        </button>
+                                        </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                         <DropdownMenuItem onClick={() => handleOpenEditQueue(q)}>

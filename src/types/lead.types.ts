@@ -59,6 +59,7 @@ export interface UpdateLeadDto {
     studyInterests?: string;
     status?: LeadStatus;
     priority?: LeadPriority;
+    source?: string;
     assignedUserId?: string;
 }
 
