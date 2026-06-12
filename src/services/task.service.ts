@@ -21,32 +21,40 @@ export const taskService = {
 
     create: async (data: CreateTaskDto) => {
         // Prepare payload with relations
-        const payload = {
+        const payload: Record<string, any> = {
             title: data.title,
             description: data.description,
             status: data.status,
             priority: data.priority,
             dueDate: data.dueDate,
-            relatedEntityType: data.relatedEntityType,
-            relatedEntityId: data.relatedEntityId,
             assignedUser: {
                 connect: { id: data.assignedTo }
             }
         };
+        if (data.relatedEntityType && data.relatedEntityId) {
+            payload.relatedEntityType = data.relatedEntityType;
+            payload.relatedEntityId = data.relatedEntityId;
+        }
         const response = await api.post<Task>('/tasks', payload);
         return response.data;
     },
 
     update: async (id: string, data: UpdateTaskDto) => {
-        const payload: any = {
+        const payload: Record<string, any> = {
             title: data.title,
             description: data.description,
             status: data.status,
             priority: data.priority,
             dueDate: data.dueDate,
-            relatedEntityType: data.relatedEntityType,
-            relatedEntityId: data.relatedEntityId,
         };
+
+        if (data.relatedEntityType && data.relatedEntityId) {
+            payload.relatedEntityType = data.relatedEntityType;
+            payload.relatedEntityId = data.relatedEntityId;
+        } else if (data.relatedEntityType === undefined && data.relatedEntityId === undefined) {
+            payload.relatedEntityType = null;
+            payload.relatedEntityId = null;
+        }
 
         if (data.assignedTo) {
             payload.assignedUser = { connect: { id: data.assignedTo } };

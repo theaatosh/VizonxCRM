@@ -15,11 +15,47 @@ import { Loader2, Plus } from "lucide-react";
 import { useCreateStep } from "@/hooks/useWorkflows";
 import { CreateStepDto, WorkflowStep } from "@/types/workflow.types";
 
+const STORAGE_KEY_PREFIX = "workflow_step_draft_";
+
 interface CreateStepDialogProps {
     workflowId: string;
     onAddLocal?: (step: WorkflowStep) => void;
     nextOrder?: number;
 }
+
+const getDefaultFormData = (order: number): CreateStepDto => ({
+    name: "",
+    description: "",
+    stepOrder: order,
+    requiresDocument: false,
+    isActive: true,
+    expectedDurationDays: 7,
+});
+
+const loadDraft = (workflowId: string): CreateStepDto | null => {
+    try {
+        const stored = sessionStorage.getItem(STORAGE_KEY_PREFIX + workflowId);
+        return stored ? JSON.parse(stored) : null;
+    } catch {
+        return null;
+    }
+};
+
+const saveDraft = (workflowId: string, data: CreateStepDto) => {
+    try {
+        sessionStorage.setItem(STORAGE_KEY_PREFIX + workflowId, JSON.stringify(data));
+    } catch {
+        // storage full or unavailable
+    }
+};
+
+const clearDraft = (workflowId: string) => {
+    try {
+        sessionStorage.removeItem(STORAGE_KEY_PREFIX + workflowId);
+    } catch {
+        // ignore
+    }
+};
 
 export const CreateStepDialog = ({
     workflowId,
@@ -27,20 +63,26 @@ export const CreateStepDialog = ({
     nextOrder = 1,
 }: CreateStepDialogProps) => {
     const [open, setOpen] = useState(false);
-    const [formData, setFormData] = useState<CreateStepDto>({
-        name: "",
-        description: "",
-        stepOrder: nextOrder,
-        requiresDocument: false,
-        isActive: true,
-        expectedDurationDays: 7,
-    });
+    const [formData, setFormData] = useState<CreateStepDto>(() =>
+        loadDraft(workflowId) ?? getDefaultFormData(nextOrder)
+    );
 
     useEffect(() => {
         if (open) {
-            setFormData((prev) => ({ ...prev, stepOrder: nextOrder }));
+            const draft = loadDraft(workflowId);
+            if (draft) {
+                setFormData({ ...draft, stepOrder: nextOrder });
+            } else {
+                setFormData((prev) => ({ ...prev, stepOrder: nextOrder }));
+            }
         }
-    }, [open, nextOrder]);
+    }, [open, nextOrder, workflowId]);
+
+    useEffect(() => {
+        if (open) {
+            saveDraft(workflowId, formData);
+        }
+    }, [open, formData, workflowId]);
 
     const createStepMutation = useCreateStep();
 
@@ -50,28 +92,16 @@ export const CreateStepDialog = ({
         if (onAddLocal) {
             onAddLocal({ id: `temp-${Date.now()}`, workflowId, ...formData } as WorkflowStep);
             setOpen(false);
-            setFormData({
-                name: "",
-                description: "",
-                stepOrder: nextOrder + 1,
-                requiresDocument: false,
-                isActive: true,
-                expectedDurationDays: 7,
-            });
+            clearDraft(workflowId);
+            setFormData(getDefaultFormData(nextOrder + 1));
             return;
         }
 
         try {
             await createStepMutation.mutateAsync({ workflowId, data: formData });
             setOpen(false);
-            setFormData({
-                name: "",
-                description: "",
-                stepOrder: nextOrder + 1,
-                requiresDocument: false,
-                isActive: true,
-                expectedDurationDays: 7,
-            });
+            clearDraft(workflowId);
+            setFormData(getDefaultFormData(nextOrder + 1));
         } catch {
             // handled by hook
         }

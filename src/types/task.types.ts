@@ -28,8 +28,8 @@ export interface Task {
     priority: TaskPriority;
     dueDate?: string;
     assignedTo: string; // User ID
-    relatedEntityType: RelatedEntityType;
-    relatedEntityId: string;
+    relatedEntityType?: RelatedEntityType;
+    relatedEntityId?: string;
     createdAt: string;
     updatedAt: string;
 
@@ -50,8 +50,8 @@ export interface CreateTaskDto {
     priority?: TaskPriority;
     dueDate?: string;
     assignedTo: string;
-    relatedEntityType: RelatedEntityType;
-    relatedEntityId: string;
+    relatedEntityType?: RelatedEntityType;
+    relatedEntityId?: string;
 }
 
 export interface UpdateTaskDto {

@@ -64,8 +64,8 @@ const taskFormSchema = z.object({
     status: z.nativeEnum(TaskStatus),
     dueDate: z.date({ required_error: "Due date is required" }),
     assignedTo: z.string().min(1, "Assignee is required"),
-    relatedEntityType: z.nativeEnum(RelatedEntityType),
-    relatedEntityId: z.string().min(1, "Related entity is required"),
+    relatedEntityType: z.nativeEnum(RelatedEntityType).optional(),
+    relatedEntityId: z.string().optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskFormSchema>;
@@ -76,6 +76,12 @@ interface TaskFormDialogProps {
     task?: Task | null;
 }
 
+const getEndOfDay = (date: Date): Date => {
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+    return end;
+};
+
 export function TaskFormDialog({
     open,
     onOpenChange,
@@ -83,15 +89,12 @@ export function TaskFormDialog({
 }: TaskFormDialogProps) {
     const isEditing = !!task;
 
-    // Hooks
     const createTask = useCreateTask();
     const updateTask = useUpdateTask();
 
-    // State to debounce search if needed, but for now we'll fetch list
     const [searchStudent, setSearchStudent] = useState("");
     const [searchLead, setSearchLead] = useState("");
 
-    // Queries
     const { data: usersData } = useUsers({ limit: 100 });
     const { data: studentsData } = useStudents({ limit: 50, search: searchStudent });
     const { data: leadsData } = useLeads({ limit: 50, search: searchLead });
@@ -106,17 +109,16 @@ export function TaskFormDialog({
             title: '',
             description: '',
             priority: TaskPriority.MEDIUM,
-            status: TaskStatus.PENDING,
+            status: TaskStatus.IN_PROGRESS,
             dueDate: new Date(),
             assignedTo: '',
-            relatedEntityType: RelatedEntityType.LEAD, // Default to Lead
+            relatedEntityType: undefined,
             relatedEntityId: '',
         },
     });
 
     const watchedEntityType = form.watch('relatedEntityType');
 
-    // Reset when opening/closing or changing task
     useEffect(() => {
         if (open) {
             if (task) {
@@ -128,17 +130,17 @@ export function TaskFormDialog({
                     dueDate: isValidDate(task.dueDate) ? new Date(task.dueDate!) : new Date(),
                     assignedTo: task.assignedTo,
                     relatedEntityType: task.relatedEntityType as RelatedEntityType,
-                    relatedEntityId: task.relatedEntityId,
+                    relatedEntityId: task.relatedEntityId || '',
                 });
             } else {
                 form.reset({
                     title: '',
                     description: '',
                     priority: TaskPriority.MEDIUM,
-                    status: TaskStatus.PENDING,
+                    status: TaskStatus.IN_PROGRESS,
                     dueDate: new Date(),
                     assignedTo: '',
-                    relatedEntityType: RelatedEntityType.LEAD,
+                    relatedEntityType: undefined,
                     relatedEntityId: '',
                 });
             }
@@ -147,16 +149,20 @@ export function TaskFormDialog({
 
     const onSubmit = async (values: TaskFormValues) => {
         try {
-            const payload = {
+            const endOfDay = getEndOfDay(values.dueDate);
+            const payload: Record<string, any> = {
                 title: values.title,
                 description: values.description,
                 priority: values.priority,
                 status: values.status,
-                dueDate: values.dueDate.toISOString(),
+                dueDate: endOfDay.toISOString(),
                 assignedTo: values.assignedTo,
-                relatedEntityType: values.relatedEntityType,
-                relatedEntityId: values.relatedEntityId,
             };
+
+            if (values.relatedEntityType && values.relatedEntityId) {
+                payload.relatedEntityType = values.relatedEntityType;
+                payload.relatedEntityId = values.relatedEntityId;
+            }
 
             if (isEditing && task) {
                 await updateTask.mutateAsync({
@@ -174,7 +180,6 @@ export function TaskFormDialog({
 
     const isLoading = createTask.isPending || updateTask.isPending;
 
-    // Helper to get selected entity name for display
     const getSelectedEntityName = () => {
         const id = form.getValues('relatedEntityId');
         if (!id) return null;
@@ -182,10 +187,11 @@ export function TaskFormDialog({
         if (watchedEntityType === RelatedEntityType.STUDENT) {
             const s = students.find(x => x.id === id);
             return s ? `${s.firstName} ${s.lastName}` : 'Unknown Student';
-        } else {
+        } else if (watchedEntityType === RelatedEntityType.LEAD) {
             const l = leads.find(x => x.id === id);
             return l ? `${l.firstName} ${l.lastName}` : 'Unknown Lead';
         }
+        return null;
     };
 
     return (
@@ -257,6 +263,7 @@ export function TaskFormDialog({
                                             </FormControl>
                                             <SelectContent>
                                                 <SelectItem value={TaskStatus.PENDING}>Pending</SelectItem>
+                                                <SelectItem value={TaskStatus.IN_PROGRESS}>In Progress</SelectItem>
                                                 <SelectItem value={TaskStatus.COMPLETED}>Completed</SelectItem>
                                             </SelectContent>
                                         </Select>
@@ -296,6 +303,7 @@ export function TaskFormDialog({
                                                     mode="single"
                                                     selected={field.value}
                                                     onSelect={field.onChange}
+                                                    disabled={(date) => date < new Date(new Date().toDateString())}
                                                     initialFocus
                                                 />
                                             </PopoverContent>
@@ -380,20 +388,20 @@ export function TaskFormDialog({
                             )}
                         />
 
-                        {/* Linked Entity */}
+                        {/* Linked Entity (optional) */}
                         <div className="grid grid-cols-3 gap-4 border-t pt-4">
                             <FormField
                                 control={form.control}
                                 name="relatedEntityType"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Type</FormLabel>
+                                        <FormLabel>Link to</FormLabel>
                                         <Select
                                             onValueChange={(val) => {
-                                                field.onChange(val);
-                                                form.setValue('relatedEntityId', ''); // Reset ID when type changes
+                                                field.onChange(val === 'none' ? undefined : val);
+                                                form.setValue('relatedEntityId', '');
                                             }}
-                                            defaultValue={field.value}
+                                            defaultValue={field.value || 'none'}
                                         >
                                             <FormControl>
                                                 <SelectTrigger>
@@ -401,6 +409,7 @@ export function TaskFormDialog({
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
+                                                <SelectItem value="none">None (Staff only)</SelectItem>
                                                 <SelectItem value={RelatedEntityType.LEAD}>Lead</SelectItem>
                                                 <SelectItem value={RelatedEntityType.STUDENT}>Student</SelectItem>
                                             </SelectContent>
@@ -410,74 +419,76 @@ export function TaskFormDialog({
                                 )}
                             />
 
-                            <FormField
-                                control={form.control}
-                                name="relatedEntityId"
-                                render={({ field }) => (
-                                    <FormItem className="col-span-2 flex flex-col">
-                                        <FormLabel>
-                                            {watchedEntityType === RelatedEntityType.LEAD ? 'Select Lead' : 'Select Student'}
-                                        </FormLabel>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <FormControl>
-                                                    <Button
-                                                        variant="outline"
-                                                        role="combobox"
-                                                        className={cn(
-                                                            "justify-between",
-                                                            !field.value && "text-muted-foreground"
-                                                        )}
-                                                    >
-                                                        {field.value
-                                                            ? getSelectedEntityName() || "Select Entity"
-                                                            : "Select " + (watchedEntityType === RelatedEntityType.LEAD ? 'Lead' : 'Student')}
-                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                    </Button>
-                                                </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-[300px] p-0">
-                                                <Command>
-                                                    <CommandInput
-                                                        placeholder="Search..."
-                                                        onValueChange={(val) => {
-                                                            if (watchedEntityType === RelatedEntityType.LEAD) setSearchLead(val);
-                                                            else setSearchStudent(val);
-                                                        }}
-                                                    />
-                                                    <CommandEmpty>No results found.</CommandEmpty>
-                                                    <CommandGroup className="max-h-[300px] overflow-auto">
-                                                        {watchedEntityType === RelatedEntityType.LEAD ? (
-                                                            leads.map((lead) => (
-                                                                <CommandItem
-                                                                    value={`${lead.firstName} ${lead.lastName}`}
-                                                                    key={lead.id}
-                                                                    onSelect={() => form.setValue("relatedEntityId", lead.id)}
-                                                                >
-                                                                    <Check className={cn("mr-2 h-4 w-4", lead.id === field.value ? "opacity-100" : "opacity-0")} />
-                                                                    {lead.firstName} {lead.lastName}
-                                                                </CommandItem>
-                                                            ))
-                                                        ) : (
-                                                            students.map((student) => (
-                                                                <CommandItem
-                                                                    value={`${student.firstName} ${student.lastName}`}
-                                                                    key={student.id}
-                                                                    onSelect={() => form.setValue("relatedEntityId", student.id)}
-                                                                >
-                                                                    <Check className={cn("mr-2 h-4 w-4", student.id === field.value ? "opacity-100" : "opacity-0")} />
-                                                                    {student.firstName} {student.lastName}
-                                                                </CommandItem>
-                                                            ))
-                                                        )}
-                                                    </CommandGroup>
-                                                </Command>
-                                            </PopoverContent>
-                                        </Popover>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            {watchedEntityType && (
+                                <FormField
+                                    control={form.control}
+                                    name="relatedEntityId"
+                                    render={({ field }) => (
+                                        <FormItem className="col-span-2 flex flex-col">
+                                            <FormLabel>
+                                                {watchedEntityType === RelatedEntityType.LEAD ? 'Select Lead' : 'Select Student'}
+                                            </FormLabel>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <FormControl>
+                                                        <Button
+                                                            variant="outline"
+                                                            role="combobox"
+                                                            className={cn(
+                                                                "justify-between",
+                                                                !field.value && "text-muted-foreground"
+                                                            )}
+                                                        >
+                                                            {field.value
+                                                                ? getSelectedEntityName() || "Select Entity"
+                                                                : "Select " + (watchedEntityType === RelatedEntityType.LEAD ? 'Lead' : 'Student')}
+                                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                        </Button>
+                                                    </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[300px] p-0">
+                                                    <Command>
+                                                        <CommandInput
+                                                            placeholder="Search..."
+                                                            onValueChange={(val) => {
+                                                                if (watchedEntityType === RelatedEntityType.LEAD) setSearchLead(val);
+                                                                else setSearchStudent(val);
+                                                            }}
+                                                        />
+                                                        <CommandEmpty>No results found.</CommandEmpty>
+                                                        <CommandGroup className="max-h-[300px] overflow-auto">
+                                                            {watchedEntityType === RelatedEntityType.LEAD ? (
+                                                                leads.map((lead) => (
+                                                                    <CommandItem
+                                                                        value={`${lead.firstName} ${lead.lastName}`}
+                                                                        key={lead.id}
+                                                                        onSelect={() => form.setValue("relatedEntityId", lead.id)}
+                                                                    >
+                                                                        <Check className={cn("mr-2 h-4 w-4", lead.id === field.value ? "opacity-100" : "opacity-0")} />
+                                                                        {lead.firstName} {lead.lastName}
+                                                                    </CommandItem>
+                                                                ))
+                                                            ) : (
+                                                                students.map((student) => (
+                                                                    <CommandItem
+                                                                        value={`${student.firstName} ${student.lastName}`}
+                                                                        key={student.id}
+                                                                        onSelect={() => form.setValue("relatedEntityId", student.id)}
+                                                                    >
+                                                                        <Check className={cn("mr-2 h-4 w-4", student.id === field.value ? "opacity-100" : "opacity-0")} />
+                                                                        {student.firstName} {student.lastName}
+                                                                    </CommandItem>
+                                                                ))
+                                                            )}
+                                                        </CommandGroup>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
                         </div>
 
                         <DialogFooter>

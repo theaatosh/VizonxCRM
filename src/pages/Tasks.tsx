@@ -44,7 +44,7 @@ const Tasks = () => {
 
   const getStatusFromTab = (tab: string) => {
     switch (tab) {
-      case 'pending': return TaskStatus.PENDING;
+      case 'pending': return TaskStatus.IN_PROGRESS;
       case 'completed': return TaskStatus.COMPLETED;
       case 'all': return undefined;
       default: return undefined;
@@ -193,14 +193,16 @@ const Tasks = () => {
               <User className="h-4 w-4" />
               {task.assignedUser?.name || "Unassigned"}
             </div>
-            <Badge variant="secondary" className="bg-primary/5 text-primary">
-              {task.relatedEntityType === RelatedEntityType.LEAD ? (
-                <Briefcase className="mr-1 h-3 w-3" />
-              ) : (
-                <GraduationCap className="mr-1 h-3 w-3" />
-              )}
-              {task.relatedEntityType}
-            </Badge>
+            {task.relatedEntityType && (
+              <Badge variant="secondary" className="bg-primary/5 text-primary">
+                {task.relatedEntityType === RelatedEntityType.LEAD ? (
+                  <Briefcase className="mr-1 h-3 w-3" />
+                ) : (
+                  <GraduationCap className="mr-1 h-3 w-3" />
+                )}
+                {task.relatedEntityType}
+              </Badge>
+            )}
           </div>
         </div>
       </div>
