@@ -253,6 +253,59 @@ export interface DashboardOverview {
 }
 
 /**
+ * Search result item for leads
+ */
+export interface SearchLeadResult {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    status: string;
+    priority: string;
+    createdAt: string;
+}
+
+/**
+ * Search result item for course applications (applicants)
+ */
+export interface SearchApplicationResult {
+    id: string;
+    status: string;
+    createdAt: string;
+    student: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+    };
+    course: { name: string };
+    university: { name: string };
+}
+
+/**
+ * Search result item for staff
+ */
+export interface SearchStaffResult {
+    id: string;
+    staffType: string;
+    status: string;
+    user: {
+        id: string;
+        name: string;
+        email: string;
+    };
+}
+
+/**
+ * Global search results
+ */
+export interface GlobalSearchResults {
+    leads: SearchLeadResult[];
+    applications: SearchApplicationResult[];
+    staff: SearchStaffResult[];
+}
+
+/**
  * Date range parameters for statistics query
  */
 export interface DateRangeParams {

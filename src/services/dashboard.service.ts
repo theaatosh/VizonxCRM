@@ -3,6 +3,7 @@ import type {
     DashboardOverview,
     DateRangeParams,
     DateRangeStats,
+    GlobalSearchResults,
 } from '@/types/dashboard.types';
 
 const DASHBOARD_ENDPOINT = '/dashboard';
@@ -17,6 +18,16 @@ export const dashboardService = {
      */
     async getDashboardOverview(): Promise<DashboardOverview> {
         const response = await api.get<DashboardOverview>(`${DASHBOARD_ENDPOINT}/overview`);
+        return response.data;
+    },
+
+    /**
+     * Global search across leads, applicants, and staff
+     */
+    async search(query: string): Promise<GlobalSearchResults> {
+        const response = await api.get<GlobalSearchResults>(`${DASHBOARD_ENDPOINT}/search`, {
+            params: { q: query },
+        });
         return response.data;
     },
 

@@ -1,7 +1,6 @@
-
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Search, ChevronDown, LogOut } from "lucide-react";
+import { Bell, Search, ChevronDown, LogOut, Loader2, Users, FileText, UserCog } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,6 +17,8 @@ import authService from "@/services/auth.service";
 import notificationService, { Notification } from "@/services/notification.service";
 import { useNotificationContext } from "@/contexts/NotificationContext";
 import { usePermissions } from "@/contexts/PermissionContext";
+import { useGlobalSearch } from "@/hooks/useDashboard";
+import type { SearchLeadResult, SearchApplicationResult, SearchStaffResult } from "@/types/dashboard.types";
 
 interface DashboardHeaderProps {
   title: string;
@@ -29,12 +30,14 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
   const navigate = useNavigate();
   const [localNotifications, setLocalNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
-  // Use Global Contexts
   const { unreadCount, notifications: liveNotifications, refreshUnreadCount } = useNotificationContext();
   const { user } = usePermissions();
+  const { data: searchResults, isLoading: isSearching } = useGlobalSearch(searchQuery);
 
-  // Handle local state for the dropdown (merging historical and live)
   useEffect(() => {
     if (liveNotifications.length > 0) {
       setLocalNotifications(prev => {
@@ -45,10 +48,19 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
     }
   }, [liveNotifications]);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSearchResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleMarkRead = async (id: string) => {
     try {
       await notificationService.markAsRead(id);
-      // Update local dropdown state
       setLocalNotifications(prev => prev.map(n =>
         n.id === id ? { ...n, readAt: new Date().toISOString() } : n
       ));
@@ -62,7 +74,6 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
     try {
       await notificationService.markAllAsRead();
       setLocalNotifications(prev => prev.map(n => ({ ...n, readAt: new Date().toISOString() })));
-      // refreshUnreadCount handled by setting zero manually or re-fetching
       refreshUnreadCount();
     } catch (error) {
       console.error("Failed to mark all as read:", error);
@@ -73,6 +84,10 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
     authService.logout();
     navigate("/login", { replace: true });
   };
+
+  const totalResults = searchResults
+    ? searchResults.leads.length + searchResults.applications.length + searchResults.staff.length
+    : 0;
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 px-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -88,13 +103,116 @@ export function DashboardHeader({ title, subtitle, action }: DashboardHeaderProp
       {/* Right - Search, Notifications, Profile */}
       <div className="flex items-center gap-4">
         {/* Search */}
-        <div className="relative hidden md:block">
+        <div className="relative hidden md:block" ref={searchRef}>
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Search leads, applicants..."
             className="w-[280px] pl-9 bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowSearchResults(true);
+            }}
+            onFocus={() => setShowSearchResults(true)}
           />
+          {showSearchResults && searchQuery.length >= 2 && (
+            <div className="absolute top-full mt-1 w-full rounded-lg border bg-popover shadow-lg z-50">
+              {isSearching ? (
+                <div className="flex items-center justify-center p-4">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : totalResults === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  No results found
+                </div>
+              ) : (
+                <div className="max-h-[400px] overflow-y-auto">
+                  {searchResults.leads.length > 0 && (
+                    <>
+                      <div className="flex items-center gap-2 px-3 pt-3 pb-1.5">
+                        <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Leads</span>
+                      </div>
+                      {searchResults.leads.map((lead: SearchLeadResult) => (
+                        <DropdownMenuItem
+                          key={`lead-${lead.id}`}
+                          className="cursor-pointer"
+                          onClick={() => { navigate(`/leads/${lead.id}`); setShowSearchResults(false); setSearchQuery(""); }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                                {lead.firstName[0]}{lead.lastName[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-medium">{lead.firstName} {lead.lastName}</p>
+                              <p className="text-xs text-muted-foreground">{lead.email}</p>
+                            </div>
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                  )}
+                  {searchResults.applications.length > 0 && (
+                    <>
+                      <div className="flex items-center gap-2 px-3 pt-3 pb-1.5">
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Applicants</span>
+                      </div>
+                      {searchResults.applications.map((app: SearchApplicationResult) => (
+                        <DropdownMenuItem
+                          key={`app-${app.id}`}
+                          className="cursor-pointer"
+                          onClick={() => { navigate(`/applicants`); setShowSearchResults(false); setSearchQuery(""); }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                                {app.student.firstName[0]}{app.student.lastName[0]}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-medium">{app.student.firstName} {app.student.lastName}</p>
+                              <p className="text-xs text-muted-foreground">{app.course.name} - {app.university.name}</p>
+                            </div>
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                  )}
+                  {searchResults.staff.length > 0 && (
+                    <>
+                      <div className="flex items-center gap-2 px-3 pt-3 pb-1.5">
+                        <UserCog className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Staff</span>
+                      </div>
+                      {searchResults.staff.map((s: SearchStaffResult) => (
+                        <DropdownMenuItem
+                          key={`staff-${s.id}`}
+                          className="cursor-pointer"
+                          onClick={() => { navigate(`/staff`); setShowSearchResults(false); setSearchQuery(""); }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
+                                {s.user.name?.charAt(0) || 'S'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-medium">{s.user.name}</p>
+                              <p className="text-xs text-muted-foreground">{s.staffType} - {s.user.email}</p>
+                            </div>
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Notifications */}

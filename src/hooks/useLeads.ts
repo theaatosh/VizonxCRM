@@ -7,6 +7,7 @@ import type {
     PaginationParams,
 } from '@/types/lead.types';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/utils/error.utils';
 
 // Query keys
 export const leadKeys = {
@@ -50,8 +51,8 @@ export function useCreateLead() {
             queryClient.invalidateQueries({ queryKey: leadKeys.lists() });
             toast.success('Lead created successfully');
         },
-        onError: (error: Error) => {
-            toast.error(`Failed to create lead: ${error.message}`);
+        onError: (error) => {
+            toast.error(`Failed to create lead: ${getApiErrorMessage(error)}`);
         },
     });
 }
@@ -70,8 +71,8 @@ export function useUpdateLead() {
             queryClient.invalidateQueries({ queryKey: leadKeys.detail(variables.id) });
             toast.success('Lead updated successfully');
         },
-        onError: (error: Error) => {
-            toast.error(`Failed to update lead: ${error.message}`);
+        onError: (error) => {
+            toast.error(`Failed to update lead: ${getApiErrorMessage(error)}`);
         },
     });
 }
@@ -88,8 +89,8 @@ export function useDeleteLead() {
             queryClient.invalidateQueries({ queryKey: leadKeys.lists() });
             toast.success('Lead deleted successfully');
         },
-        onError: (error: Error) => {
-            toast.error(`Failed to delete lead: ${error.message}`);
+        onError: (error) => {
+            toast.error(`Failed to delete lead: ${getApiErrorMessage(error)}`);
         },
     });
 }
@@ -106,8 +107,8 @@ export function useConvertLeadToStudent() {
             queryClient.invalidateQueries({ queryKey: leadKeys.lists() });
             toast.success('Lead converted to student successfully');
         },
-        onError: (error: Error) => {
-            toast.error(`Failed to convert lead: ${error.message}`);
+        onError: (error) => {
+            toast.error(getApiErrorMessage(error));
         },
     });
 }

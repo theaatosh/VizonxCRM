@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { dashboardService } from '@/services/dashboard.service';
 import type { DateRangeParams } from '@/types/dashboard.types';
+import { useState, useEffect } from 'react';
 
 // Query keys for caching and invalidation
 export const dashboardKeys = {
@@ -38,5 +39,24 @@ export function useDashboardStatsByDateRange(
         queryFn: () => dashboardService.getStatsByDateRange({ startDate, endDate }),
         enabled: enabled && !!startDate && !!endDate,
         staleTime: 1000 * 60 * 10, // 10 minutes for historical data
+    });
+}
+
+/**
+ * Hook for global search with debounce
+ */
+export function useGlobalSearch(query: string) {
+    const [debouncedQuery, setDebouncedQuery] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedQuery(query), 300);
+        return () => clearTimeout(timer);
+    }, [query]);
+
+    return useQuery({
+        queryKey: [...dashboardKeys.all, 'search', debouncedQuery],
+        queryFn: () => dashboardService.search(debouncedQuery),
+        enabled: debouncedQuery.length >= 2,
+        staleTime: 1000 * 30,
     });
 }

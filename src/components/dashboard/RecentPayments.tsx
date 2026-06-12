@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNavigate } from "react-router-dom";
 import type { RecentPayment } from "@/types/dashboard.types";
 import { format } from "date-fns";
 
@@ -18,6 +19,8 @@ const statusColors: Record<string, string> = {
 };
 
 export function RecentPayments({ payments, isLoading = false }: RecentPaymentsProps) {
+  const navigate = useNavigate();
+
   if (isLoading) {
     return (
       <Card className="shadow-card">
@@ -40,9 +43,14 @@ export function RecentPayments({ payments, isLoading = false }: RecentPaymentsPr
   return (
     <Card className="shadow-card hover:shadow-card-hover transition-shadow duration-300">
       <CardHeader className="pb-4">
-        <div>
-          <CardTitle className="text-lg font-semibold">Recent Payments</CardTitle>
-          <p className="text-sm text-muted-foreground">Latest financial transactions</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg font-semibold">Recent Payments</CardTitle>
+            <p className="text-sm text-muted-foreground">Latest financial transactions</p>
+          </div>
+          <Badge variant="outline" className="font-normal cursor-pointer hover:bg-muted" onClick={() => navigate('/payments')}>
+            View All
+          </Badge>
         </div>
       </CardHeader>
       <CardContent>

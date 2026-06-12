@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Clock, User, Video } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { UpcomingAppointment } from "@/types/dashboard.types";
 
 interface UpcomingAppointmentsProps {
@@ -36,6 +37,8 @@ function AppointmentSkeleton() {
 }
 
 export function UpcomingAppointments({ appointments, isLoading = false }: UpcomingAppointmentsProps) {
+    const navigate = useNavigate();
+
     if (isLoading) {
         return (
             <Card className="shadow-card">
@@ -62,7 +65,7 @@ export function UpcomingAppointments({ appointments, isLoading = false }: Upcomi
                         <CardTitle className="text-lg font-semibold">Upcoming Appointments</CardTitle>
                         <p className="text-sm text-muted-foreground">Scheduled meetings</p>
                     </div>
-                    <Badge variant="outline" className="font-normal cursor-pointer hover:bg-muted">
+                    <Badge variant="outline" className="font-normal cursor-pointer hover:bg-muted" onClick={() => navigate('/appointments')}>
                         View All
                     </Badge>
                 </div>

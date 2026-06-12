@@ -35,6 +35,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLeads, useConvertLeadToStudent, useUpdateLead } from "@/hooks/useLeads";
 import { DataTablePagination } from "@/components/shared/DataTablePagination";
+import { getApiErrorMessage } from "@/utils/error.utils";
 
 import { usePermissions } from "@/contexts/PermissionContext";
 import { LeadFormDialog } from "@/components/leads/LeadFormDialog";
@@ -242,12 +243,12 @@ const Leads = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="contacted">Contacted</SelectItem>
-                  <SelectItem value="qualified">Qualified</SelectItem>
-                  <SelectItem value="converted">Converted</SelectItem>
-                  <SelectItem value="notinterested">Not Interested</SelectItem>
-                  <SelectItem value="notreachable">Not Reachable</SelectItem>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="Contacted">Contacted</SelectItem>
+                  <SelectItem value="Qualified">Qualified</SelectItem>
+                  <SelectItem value="Converted">Converted</SelectItem>
+                  <SelectItem value="NotInterested">Not Interested</SelectItem>
+                  <SelectItem value="NotReachable">Not Reachable</SelectItem>
                 </SelectContent>
               </Select>
               <Button variant="outline" size="icon">
@@ -260,7 +261,7 @@ const Leads = () => {
           {isError && (
             <div className="py-8 text-center">
               <p className="text-destructive">
-                Failed to load leads: {error?.message || 'Unknown error'}
+                Failed to load leads: {getApiErrorMessage(error)}
               </p>
               <Button
                 variant="outline"

@@ -26,6 +26,13 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -50,6 +57,10 @@ import {
     ArrowRightLeft,
     ToggleLeft,
     ToggleRight,
+    MoreHorizontal,
+    Pencil,
+    Trash2,
+    AlertTriangle,
 } from "lucide-react";
 import {
     useQueues,
@@ -67,6 +78,7 @@ import type { QueueItem, QueueItemStatus, Queue } from "@/types/queue.types";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { queueService } from "@/services/queue.service";
 import { toast } from "sonner";
+import { getApiErrorMessage } from "@/utils/error.utils";
 
 const statusColors: Record<QueueItemStatus, string> = {
     Waiting: "bg-muted text-muted-foreground border-muted",
@@ -132,6 +144,17 @@ const QueueManagement = () => {
     const [newQueueDesc, setNewQueueDesc] = useState<string>("");
     const [newQueueAutoAssign, setNewQueueAutoAssign] = useState(false);
 
+    // Edit queue dialog
+    const [editQueueOpen, setEditQueueOpen] = useState(false);
+    const [editingQueue, setEditingQueue] = useState<Queue | null>(null);
+    const [editQueueName, setEditQueueName] = useState("");
+    const [editQueueDesc, setEditQueueDesc] = useState("");
+    const [editQueueAutoAssign, setEditQueueAutoAssign] = useState(false);
+
+    // Delete queue dialog
+    const [deleteQueueOpen, setDeleteQueueOpen] = useState(false);
+    const [deletingQueue, setDeletingQueue] = useState<Queue | null>(null);
+
     const queryClient = useQueryClient();
 
     const statusFilter = TAB_STATUS_MAP[activeTab];
@@ -162,17 +185,29 @@ const QueueManagement = () => {
             setNewQueueName("");
             setNewQueueDesc("");
         },
-        onError: (err: Error) => toast.error(`Failed to create queue: ${err.message}`),
+        onError: (err) => toast.error(`Failed to create queue: ${getApiErrorMessage(err)}`),
     });
 
     const updateQueueMutation = useMutation({
-        mutationFn: ({ id, data }: { id: string; data: { autoAssign?: boolean } }) =>
+        mutationFn: ({ id, data }: { id: string; data: { name?: string; description?: string; autoAssign?: boolean } }) =>
             queueService.updateQueue(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["queue"] });
             toast.success("Queue updated");
         },
-        onError: (err: Error) => toast.error(`Failed to update queue: ${err.message}`),
+        onError: (err) => toast.error(`Failed to update queue: ${getApiErrorMessage(err)}`),
+    });
+
+    const deleteQueueMutation = useMutation({
+        mutationFn: (id: string) => queueService.deleteQueue(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["queue"] });
+            toast.success("Queue deleted");
+            if (selectedQueueId === deletingQueue?.id) {
+                setSelectedQueueId("");
+            }
+        },
+        onError: (err) => toast.error(`Failed to delete queue: ${getApiErrorMessage(err)}`),
     });
 
     const handleToggleAutoAssign = () => {
@@ -181,6 +216,14 @@ const QueueManagement = () => {
                 id: selectedQueue.id,
                 data: { autoAssign: !selectedQueue.autoAssign },
             });
+        }
+    };
+
+    const handleDeleteQueue = () => {
+        if (deletingQueue) {
+            deleteQueueMutation.mutate(deletingQueue.id);
+            setDeleteQueueOpen(false);
+            setDeletingQueue(null);
         }
     };
 
@@ -267,6 +310,30 @@ const QueueManagement = () => {
                 autoAssign: newQueueAutoAssign,
             });
         }
+    };
+
+    const handleOpenEditQueue = (queue: Queue) => {
+        setEditingQueue(queue);
+        setEditQueueName(queue.name);
+        setEditQueueDesc(queue.description || "");
+        setEditQueueAutoAssign(queue.autoAssign);
+        setEditQueueOpen(true);
+    };
+
+    const handleEditQueue = () => {
+        if (editingQueue && editQueueName) {
+            updateQueueMutation.mutate({
+                id: editingQueue.id,
+                data: { name: editQueueName, description: editQueueDesc || undefined, autoAssign: editQueueAutoAssign },
+            });
+            setEditQueueOpen(false);
+            setEditingQueue(null);
+        }
+    };
+
+    const handleOpenDeleteQueue = (queue: Queue) => {
+        setDeletingQueue(queue);
+        setDeleteQueueOpen(true);
     };
 
     const formatWaitTime = (enteredAt?: string, assignedAt?: string) => {
@@ -574,28 +641,58 @@ const QueueManagement = () => {
                 ) : (
                     <div className="flex flex-wrap items-center gap-2">
                         {queues.map((q) => (
-                            <button
-                                key={q.id}
-                                onClick={() => handleQueueChange(q.id)}
-                                className={cn(
-                                    "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all",
-                                    selectedQueueId === q.id
-                                        ? "border-primary bg-primary/10 text-primary"
-                                        : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground"
-                                )}
-                            >
-                                <span>{q.name}</span>
-                                {q.counts && (
-                                    <span className={cn(
-                                        "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                            <div key={q.id} className="flex items-center">
+                                <button
+                                    onClick={() => handleQueueChange(q.id)}
+                                    className={cn(
+                                        "flex items-center gap-2 rounded-l-lg border border-r-0 px-3 py-2 text-sm font-medium transition-all",
                                         selectedQueueId === q.id
-                                            ? "bg-primary/20 text-primary"
-                                            : "bg-muted text-muted-foreground"
-                                    )}>
-                                        {q.counts.waiting + q.counts.assigned + q.counts.inProgress}
-                                    </span>
-                                )}
-                            </button>
+                                            ? "border-primary bg-primary/10 text-primary"
+                                            : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                                    )}
+                                >
+                                    <span>{q.name}</span>
+                                    {q.counts && (
+                                        <span className={cn(
+                                            "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                                            selectedQueueId === q.id
+                                                ? "bg-primary/20 text-primary"
+                                                : "bg-muted text-muted-foreground"
+                                        )}>
+                                            {q.counts.waiting + q.counts.assigned + q.counts.inProgress}
+                                        </span>
+                                    )}
+                                </button>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button
+                                            className={cn(
+                                                "flex items-center rounded-r-lg border px-1 py-2 text-sm font-medium transition-all",
+                                                selectedQueueId === q.id
+                                                    ? "border-primary bg-primary/10 text-primary"
+                                                    : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                                            )}
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleOpenEditQueue(q)}>
+                                            <Pencil className="mr-2 h-4 w-4" />
+                                            Edit Queue
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            className="text-destructive"
+                                            onClick={() => handleOpenDeleteQueue(q)}
+                                        >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Delete Queue
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         ))}
                         {selectedQueue && (
                             <div className="flex items-center gap-2 ml-3 pl-3 border-l">
@@ -983,6 +1080,79 @@ const QueueManagement = () => {
                             {createQueue.isPending ? (
                                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</>
                             ) : "Create Queue"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Queue Dialog */}
+            <Dialog open={editQueueOpen} onOpenChange={setEditQueueOpen}>
+                <DialogContent className="sm:max-w-[400px]">
+                    <DialogHeader>
+                        <DialogTitle>Edit Queue</DialogTitle>
+                        <DialogDescription>Update the queue name, description, or auto-assign setting.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label>Queue Name</Label>
+                            <Input
+                                placeholder="e.g. New Leads Queue"
+                                value={editQueueName}
+                                onChange={(e) => setEditQueueName(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Description <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                            <Textarea
+                                placeholder="Describe the purpose of this queue..."
+                                value={editQueueDesc}
+                                onChange={(e) => setEditQueueDesc(e.target.value)}
+                                rows={2}
+                                className="resize-none"
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Switch
+                                id="edit-auto-assign"
+                                checked={editQueueAutoAssign}
+                                onCheckedChange={setEditQueueAutoAssign}
+                            />
+                            <Label htmlFor="edit-auto-assign" className="text-sm cursor-pointer">Auto Assign</Label>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditQueueOpen(false)}>Cancel</Button>
+                        <Button onClick={handleEditQueue} disabled={!editQueueName || updateQueueMutation.isPending}>
+                            {updateQueueMutation.isPending ? (
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                            ) : "Save Changes"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Queue Confirmation Dialog */}
+            <Dialog open={deleteQueueOpen} onOpenChange={setDeleteQueueOpen}>
+                <DialogContent className="sm:max-w-[400px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-destructive">
+                            <AlertTriangle className="h-5 w-5" />
+                            Delete Queue
+                        </DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete <strong>{deletingQueue?.name}</strong>? This action cannot be undone. All items in this queue will also be removed.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDeleteQueueOpen(false)}>Cancel</Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleDeleteQueue}
+                            disabled={deleteQueueMutation.isPending}
+                        >
+                            {deleteQueueMutation.isPending ? (
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                            ) : "Delete"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

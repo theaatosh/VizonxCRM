@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Clock, User, CalendarClock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type { UpcomingTask } from "@/types/dashboard.types";
 
 interface UpcomingTasksProps {
@@ -60,6 +61,8 @@ function TaskSkeleton() {
 }
 
 export function UpcomingTasks({ tasks, isLoading = false }: UpcomingTasksProps) {
+  const navigate = useNavigate();
+
   if (isLoading) {
     return (
       <Card className="shadow-card">
@@ -89,7 +92,7 @@ export function UpcomingTasks({ tasks, isLoading = false }: UpcomingTasksProps) 
             <CardTitle className="text-lg font-semibold">Upcoming Tasks</CardTitle>
             <p className="text-sm text-muted-foreground">Tasks that need attention</p>
           </div>
-          <Badge variant="outline" className="font-normal cursor-pointer hover:bg-muted">
+          <Badge variant="outline" className="font-normal cursor-pointer hover:bg-muted" onClick={() => navigate('/tasks')}>
             View All
           </Badge>
         </div>
