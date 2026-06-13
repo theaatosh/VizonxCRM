@@ -146,7 +146,7 @@ export function CoursesTable({ universityId, courses, isLoading }: CoursesTableP
                                             <p className="font-medium text-sm">{course.name}</p>
                                             {course.requirements && (
                                                 <p className="text-xs text-muted-foreground line-clamp-1">
-                                                    {course.requirements}
+                                                    {typeof course.requirements === 'string' ? course.requirements : JSON.stringify(course.requirements)}
                                                 </p>
                                             )}
                                         </div>
@@ -161,7 +161,7 @@ export function CoursesTable({ universityId, courses, isLoading }: CoursesTableP
                                         {course.duration ? (
                                             <div className="flex items-center gap-1 text-sm">
                                                 <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                                {course.duration}
+                                                {typeof course.duration === 'string' ? course.duration : JSON.stringify(course.duration)}
                                             </div>
                                         ) : (
                                             <span className="text-muted-foreground text-sm">-</span>
@@ -170,7 +170,7 @@ export function CoursesTable({ universityId, courses, isLoading }: CoursesTableP
                                     <TableCell>
                                         {course.intakePeriods ? (
                                             <Badge variant="outline" className="text-xs font-normal">
-                                                {course.intakePeriods}
+                                                {typeof course.intakePeriods === 'string' ? course.intakePeriods : JSON.stringify(course.intakePeriods)}
                                             </Badge>
                                         ) : (
                                             <span className="text-muted-foreground text-sm">-</span>

@@ -23,7 +23,15 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Search, Plus, Plane, Clock, CheckCircle, XCircle, Globe, FileX, Loader2, ExternalLink } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Search, Plus, Plane, Clock, CheckCircle, XCircle, Globe, FileX, Loader2, ExternalLink, User } from "lucide-react";
 import { WorkflowDetailModal } from "@/components/workflow/WorkflowDetailModal";
 import { Workflow } from "@/types/workflow.types";
 import { useVisaTypes, useDeleteVisaType } from "@/hooks/useVisaTypes";
@@ -84,6 +92,8 @@ const Visas = () => {
   const [newAppDialogOpen, setNewAppDialogOpen] = useState(false);
   const [studentSearch, setStudentSearch] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState<string>("");
+  const [studentPage, setStudentPage] = useState(1);
+  const [studentLimit, setStudentLimit] = useState(10);
 
   // Handle incoming redirect from Country Detail to create visa type
   const addVisaTypeParam = searchParams.get('addVisaType');
@@ -117,12 +127,15 @@ const Visas = () => {
   const { data: studentsData } = useStudents({ limit: 100 });
   const students = studentsData?.data || [];
 
-  // Fetch students for new application dialog
+  // Fetch students for new application dialog (paginated)
   const { data: newAppStudentsData, isLoading: studentsLoading } = useStudents({
-    limit: 50,
+    page: studentPage,
+    limit: studentLimit,
     search: studentSearch || undefined,
   });
   const newAppStudents = newAppStudentsData?.data || [];
+  const newAppTotal = newAppStudentsData?.total || 0;
+  const newAppTotalPages = newAppStudentsData?.totalPages || 1;
 
   // Fetch countries for filter
   const { data: countries = [] } = useQuery({
@@ -161,13 +174,21 @@ const Visas = () => {
   const handleNewApplication = () => {
     setSelectedStudentId("");
     setStudentSearch("");
+    setStudentPage(1);
     setNewAppDialogOpen(true);
   };
 
   const handleSelectStudent = () => {
     if (!selectedStudentId) return;
     setNewAppDialogOpen(false);
-    navigate(`/applicants/${selectedStudentId}?tab=visa`);
+    const selectedCountry = countryFilter !== "all" 
+      ? countries.find((c: any) => c.id === countryFilter)?.name 
+      : "";
+    const params = new URLSearchParams({ tab: 'visa', openNewApp: 'true' });
+    if (selectedCountry) {
+      params.set('country', selectedCountry);
+    }
+    navigate(`/applicants/${selectedStudentId}?${params.toString()}`);
   };
 
   const appList = appData?.data || [];
@@ -543,63 +564,112 @@ const Visas = () => {
 
       {/* New Application Dialog */}
       <Dialog open={newAppDialogOpen} onOpenChange={setNewAppDialogOpen}>
-        <DialogContent className="sm:max-w-[450px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>New Visa Application</DialogTitle>
             <DialogDescription>
               Search and select a student to create a new visa application.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search students by name or email..."
                 className="pl-9"
                 value={studentSearch}
-                onChange={(e) => setStudentSearch(e.target.value)}
+                onChange={(e) => {
+                  setStudentSearch(e.target.value);
+                  setStudentPage(1);
+                  setSelectedStudentId("");
+                }}
               />
             </div>
-            <div className="max-h-[300px] overflow-y-auto space-y-1">
-              {studentsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                </div>
-              ) : newAppStudents.length === 0 ? (
-                <p className="text-center text-sm text-muted-foreground py-8">
-                  {studentSearch ? "No students found." : "Type to search for students."}
+
+            {studentsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : newAppStudents.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 border rounded-lg bg-muted/20">
+                <User className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  {studentSearch ? "No students found matching your search." : "No students available."}
                 </p>
-              ) : (
-                newAppStudents.map((student) => (
-                  <button
-                    key={student.id}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex items-center gap-3 hover:bg-accent ${
-                      selectedStudentId === student.id ? "bg-primary/10 border border-primary/30" : ""
-                    }`}
-                    onClick={() => setSelectedStudentId(student.id)}
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                        {student.firstName[0]}{student.lastName[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{student.firstName} {student.lastName}</p>
-                      <p className="text-xs text-muted-foreground truncate">{student.email}</p>
-                    </div>
-                    {selectedStudentId === student.id && (
-                      <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                    )}
-                  </button>
-                ))
-              )}
-            </div>
+              </div>
+            ) : (
+              <>
+                <div className="rounded-lg border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[40px]"></TableHead>
+                        <TableHead>Student</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {newAppStudents.map((student) => (
+                        <TableRow
+                          key={student.id}
+                          className={`cursor-pointer transition-colors ${
+                            selectedStudentId === student.id ? "bg-primary/5 hover:bg-primary/10" : ""
+                          }`}
+                          onClick={() => setSelectedStudentId(student.id)}
+                        >
+                          <TableCell>
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                              selectedStudentId === student.id ? "border-primary bg-primary" : "border-muted-foreground/30"
+                            }`}>
+                              {selectedStudentId === student.id && (
+                                <div className="w-2 h-2 rounded-full bg-white" />
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                                  {student.firstName?.[0]}{student.lastName?.[0]}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{student.firstName} {student.lastName}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {student.email}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {student.status || 'N/A'}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <DataTablePagination
+                  pageIndex={studentPage}
+                  pageSize={studentLimit}
+                  totalItems={newAppTotal}
+                  totalPages={newAppTotalPages}
+                  onPageChange={setStudentPage}
+                  onPageSizeChange={(newLimit) => {
+                    setStudentLimit(newLimit);
+                    setStudentPage(1);
+                  }}
+                  pageSizeOptions={[5, 10, 20, 50]}
+                />
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setNewAppDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSelectStudent} disabled={!selectedStudentId}>
+            <Button onClick={handleSelectStudent} disabled={!selectedStudentId || studentsLoading}>
               Continue to Application
             </Button>
           </DialogFooter>

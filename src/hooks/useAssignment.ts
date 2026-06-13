@@ -7,6 +7,7 @@ import { getApiErrorMessage } from '@/utils/error.utils';
 export const assignmentKeys = {
     all: ['assignments'] as const,
     leadHistory: (leadId: string) => [...assignmentKeys.all, 'lead', leadId] as const,
+    historyById: (id: string) => [...assignmentKeys.all, 'history', id] as const,
 };
 
 export function useLeadAssignmentHistory(leadId: string) {
@@ -14,6 +15,14 @@ export function useLeadAssignmentHistory(leadId: string) {
         queryKey: assignmentKeys.leadHistory(leadId),
         queryFn: () => assignmentService.getLeadHistory(leadId),
         enabled: !!leadId,
+    });
+}
+
+export function useAssignmentHistoryById(id: string) {
+    return useQuery({
+        queryKey: assignmentKeys.historyById(id),
+        queryFn: () => assignmentService.getHistoryById(id),
+        enabled: !!id,
     });
 }
 

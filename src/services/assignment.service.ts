@@ -12,6 +12,11 @@ export const assignmentService = {
         return response.data.data;
     },
 
+    async getHistoryById(id: string): Promise<AssignmentHistoryItem> {
+        const response = await api.get<AssignmentHistoryItem>(`/queues/assignment-history/${id}`);
+        return response.data;
+    },
+
     async addToQueue(data: CreateAssignmentDto): Promise<void> {
         const { queueId, leadId, note } = data;
         await api.post(`/queues/${queueId}/items`, { leadId, notes: note });

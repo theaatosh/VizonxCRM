@@ -46,6 +46,7 @@ interface VisaApplicationDialogProps {
     onOpenChange: (open: boolean) => void;
     studentId: string;
     courseApplications?: CourseApplication[];
+    defaultCountry?: string;
 }
 
 export const VisaApplicationDialog = ({
@@ -53,6 +54,7 @@ export const VisaApplicationDialog = ({
     onOpenChange,
     studentId,
     courseApplications = [],
+    defaultCountry,
 }: VisaApplicationDialogProps) => {
     const { data: visaTypesData, isLoading: isLoadingVisaTypes } = useVisaTypes({ limit: 100 });
     const { data: countriesData, isLoading: isLoadingCountries } = useCountries({ limit: 100 });
@@ -90,6 +92,17 @@ export const VisaApplicationDialog = ({
     }, [versions, form]);
 
     const countries = countriesData?.data || [];
+
+    useEffect(() => {
+        if (open) {
+            form.reset({
+                visaTypeId: '',
+                workflowVersionId: '',
+                courseApplicationId: '',
+                destinationCountry: defaultCountry || '',
+            });
+        }
+    }, [open, defaultCountry, form]);
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         createMutation.mutate({

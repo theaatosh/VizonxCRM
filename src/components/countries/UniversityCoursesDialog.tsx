@@ -139,18 +139,18 @@ export function UniversityCoursesDialog({
                                     courses.map((course) => (
                                         <TableRow key={course.id}>
                                             <TableCell>
-                                                <div className="font-medium">{course.name}</div>
+                                                    <div className="font-medium">{course.name}</div>
                                                 {course.department && (
                                                     <div className="text-xs text-muted-foreground">
-                                                        {course.department}
+                                                        {typeof course.department === 'string' ? course.department : JSON.stringify(course.department)}
                                                     </div>
                                                 )}
                                             </TableCell>
-                                            <TableCell>{course.level || '-'}</TableCell>
-                                            <TableCell>{course.duration || '-'}</TableCell>
+                                            <TableCell>{typeof course.level === 'string' ? course.level : '-'}</TableCell>
+                                            <TableCell>{typeof course.duration === 'string' ? course.duration : '-'}</TableCell>
                                             <TableCell>
                                                 {course.tuitionFee
-                                                    ? `${course.tuitionFee} ${course.currency}`
+                                                    ? `${typeof course.tuitionFee === 'string' ? course.tuitionFee : JSON.stringify(course.tuitionFee)} ${typeof course.currency === 'string' ? course.currency : ''}`
                                                     : '-'}
                                             </TableCell>
                                             <TableCell>

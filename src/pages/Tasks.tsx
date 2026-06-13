@@ -51,26 +51,31 @@ const Tasks = () => {
     }
   };
 
-  const { data: tasksResponse, isLoading } = useTasks({
-    page,
-    limit,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
-    search: searchTerm || undefined,
-    status: getStatusFromTab(activeTab)
-  });
+  const isOverdueTab = activeTab === 'overdue';
 
-  const { data: overdueTasksResponse, isLoading: isLoadingOverdue } = useOverdueTasks(
-    activeTab === 'overdue' ? {
+  const { data: tasksResponse, isLoading } = useTasks(
+    !isOverdueTab ? {
       page,
       limit,
-      sortBy: 'dueDate',
-      sortOrder: 'asc',
-      search: searchTerm || undefined
-    } : { limit: 1 } // Minimal fetch if not on tab
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+      search: searchTerm || undefined,
+      status: getStatusFromTab(activeTab)
+    } : { limit: 1 }
   );
 
-  const { data: statsData } = useTaskStats();
+  const { data: overdueTasksResponse, isLoading: isLoadingOverdue } = useOverdueTasks(
+    {
+      page: isOverdueTab ? page : 1,
+      limit: isOverdueTab ? limit : 1,
+      sortBy: 'dueDate',
+      sortOrder: 'asc',
+      search: searchTerm || undefined,
+    },
+    true
+  );
+
+  const { data: taskStats } = useTaskStats();
 
   const deleteTask = useDeleteTask();
   const updateTask = useUpdateTask();
@@ -92,13 +97,12 @@ const Tasks = () => {
   const displayTasks = tasks;
   const displayOverdueTasks = overdueTasks;
 
-  // Stats from the useTaskStats hook for global accuracy
+  // Stats derived from independent queries, available on every tab
+  const overdueTotal = overdueTasksResponse?.total || 0;
   const stats = {
-    pending: statsData?.totalPending || 0,
-    highPriority: statsData?.totalHighPriority || 0,
-    dueToday: statsData?.totalDueToday || 0,
-    completed: statsData?.totalCompleted || 0,
-    overdue: overdueTasksResponse?.total || 0 // Overdue total from the response
+    pending: (taskStats?.totalPending || 0) - overdueTotal,
+    completed: taskStats?.totalCompleted || 0,
+    overdue: overdueTotal,
   };
 
   const handleEdit = (task: Task) => {
@@ -222,8 +226,8 @@ const Tasks = () => {
 
   return (
     <DashboardLayout title="Tasks" subtitle="Manage team tasks and deadlines">
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-5 mb-6">
+      {/* Stats - derived from active tab responses, no extra API calls */}
+      <div className="grid gap-4 md:grid-cols-3 mb-6">
         <Card className="shadow-card">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -241,37 +245,11 @@ const Tasks = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-2xl font-bold">{stats.highPriority}</p>
-                <p className="text-sm text-muted-foreground">High Priority</p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
-                <Calendar className="h-5 w-5 text-destructive" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
                 <p className="text-2xl font-bold">{stats.overdue}</p>
                 <p className="text-sm text-muted-foreground">Overdue</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
                 <AlertCircle className="h-5 w-5 text-destructive" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="shadow-card">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl font-bold">{stats.dueToday}</p>
-                <p className="text-sm text-muted-foreground">Due Today</p>
-              </div>
-              <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center">
-                <Calendar className="h-5 w-5 text-warning" />
               </div>
             </div>
           </CardContent>
@@ -302,9 +280,7 @@ const Tasks = () => {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <TabsList>
             <TabsTrigger value="pending">Pending ({stats.pending})</TabsTrigger>
-            <TabsTrigger value="overdue">
-              Overdue ({stats.overdue})
-            </TabsTrigger>
+            <TabsTrigger value="overdue">Overdue ({stats.overdue})</TabsTrigger>
             <TabsTrigger value="completed">Completed ({stats.completed})</TabsTrigger>
             <TabsTrigger value="all">All Tasks</TabsTrigger>
           </TabsList>

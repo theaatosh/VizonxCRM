@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -64,7 +64,7 @@ import { WorkflowDetailModal } from '@/components/workflow/WorkflowDetailModal';
 import { AdvanceStepDialog } from '@/components/applicants/AdvanceStepDialog';
 import { Workflow } from '@/types/workflow.types';
 import { format } from 'date-fns';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { StudentStatus, StudentPriority } from '@/types/student.types';
 
 // Action colors
@@ -86,6 +86,7 @@ const priorityColors: Record<StudentPriority, string> = {
 const ApplicantDetail = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -120,6 +121,19 @@ const ApplicantDetail = () => {
     const getInitials = (firstName: string, lastName: string) => {
         return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
     };
+
+    // Auto-open new visa application from URL params
+    const defaultVisaCountry = searchParams.get('country') || '';
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        const openNewApp = searchParams.get('openNewApp');
+        if (tab === 'visa') {
+            setActiveTab('visa');
+        }
+        if (openNewApp === 'true' && applicant) {
+            setVisaApplicationDialogOpen(true);
+        }
+    }, [searchParams, applicant]);
 
     // Handle delete success
     const handleDeleteSuccess = () => {
@@ -710,7 +724,7 @@ const ApplicantDetail = () => {
                                 <div className="flex items-center justify-center py-8">
                                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                 </div>
-                            ) : !visaApplicationsData || visaApplicationsData.length === 0 ? (
+                            ) : !Array.isArray(visaApplicationsData) || visaApplicationsData.length === 0 ? (
                                 <div className="text-center py-12 border border-dashed rounded-xl bg-muted/20">
                                     <Globe className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
                                     <p className="text-muted-foreground text-sm">No visa applications found</p>
@@ -909,6 +923,7 @@ const ApplicantDetail = () => {
                 onOpenChange={setVisaApplicationDialogOpen}
                 studentId={id || ''}
                 courseApplications={applicant?.courseApplications}
+                defaultCountry={defaultVisaCountry}
             />
 
             <WorkflowDetailModal

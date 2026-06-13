@@ -63,12 +63,7 @@ export function useCreateUniversity() {
         mutationFn: (data: CreateUniversityDto) => universityService.createUniversity(data),
         onSuccess: (result) => {
             queryClient.invalidateQueries({ queryKey: universityKeys.lists() });
-            // Also invalidate country universities list
-            if (result.countryId) {
-                queryClient.invalidateQueries({
-                    queryKey: countryKeys.universities(result.countryId)
-                });
-            }
+            queryClient.invalidateQueries({ queryKey: countryKeys.all });
             toast.success('University created successfully');
         },
         onError: (error: Error) => {
@@ -89,6 +84,7 @@ export function useUpdateUniversity() {
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: universityKeys.lists() });
             queryClient.invalidateQueries({ queryKey: universityKeys.detail(variables.id) });
+            queryClient.invalidateQueries({ queryKey: countryKeys.all });
             toast.success('University updated successfully');
         },
         onError: (error: Error) => {
@@ -107,6 +103,7 @@ export function useDeleteUniversity() {
         mutationFn: (id: string) => universityService.deleteUniversity(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: universityKeys.lists() });
+            queryClient.invalidateQueries({ queryKey: countryKeys.all });
             toast.success('University deleted successfully');
         },
         onError: (error: Error) => {

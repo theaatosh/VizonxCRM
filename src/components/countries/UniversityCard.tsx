@@ -40,7 +40,7 @@ export function UniversityCard({ university, onEdit, onDelete }: UniversityCardP
         isExpanded ? university.id : ''
     );
 
-    const courseCount = courses?.length || 0;
+    const courseCount = university._count?.courses ?? courses?.length ?? 0;
 
     return (
         <Card className="shadow-card overflow-hidden transition-all duration-300 hover:shadow-card-hover group">

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -21,6 +21,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Plus, X } from 'lucide-react';
 import { useCreateCourse, useUpdateCourse } from '@/hooks/useUniversities';
 import type { Course, CreateCourseDto, UpdateCourseDto } from '@/types/university.types';
 
@@ -43,6 +44,28 @@ interface CourseFormDialogProps {
     universityId: string;
 }
 
+const parseList = (val: unknown): string[] => {
+    if (!val) return [''];
+    if (Array.isArray(val)) return val.length ? val : [''];
+    if (typeof val === 'string') {
+        try {
+            const parsed = JSON.parse(val);
+            if (Array.isArray(parsed)) return parsed.length ? parsed : [''];
+        } catch {}
+        return val.trim() ? val.split(',').map(s => s.trim()) : [''];
+    }
+    if (typeof val === 'object') {
+        const values = Object.values(val as Record<string, unknown>);
+        return values.length ? values.map(String) : [''];
+    }
+    return [''];
+};
+
+const formatList = (items: string[]): string => {
+    const filtered = items.filter(s => s.trim());
+    return filtered.length ? JSON.stringify(filtered) : '';
+};
+
 export function CourseFormDialog({
     open,
     onOpenChange,
@@ -53,6 +76,9 @@ export function CourseFormDialog({
 
     const createCourse = useCreateCourse();
     const updateCourse = useUpdateCourse();
+
+    const [intakeList, setIntakeList] = useState<string[]>(['']);
+    const [deadlineList, setDeadlineList] = useState<string[]>(['']);
 
     const form = useForm<CourseFormValues>({
         resolver: zodResolver(courseFormSchema),
@@ -66,17 +92,27 @@ export function CourseFormDialog({
         },
     });
 
+    const toString = (val: unknown): string => {
+        if (typeof val === 'string') return val;
+        if (val == null) return '';
+        return JSON.stringify(val);
+    };
+
     // Reset form when dialog opens/closes
     useEffect(() => {
         if (open && course) {
+            const rawIntake = course.intakePeriods;
+            const rawDeadlines = course.deadlines;
             form.reset({
                 name: course.name,
                 fees: typeof course.fees === 'string' ? parseFloat(course.fees) : course.fees,
-                duration: course.duration || '',
-                requirements: course.requirements || '',
-                intakePeriods: course.intakePeriods || '',
-                deadlines: course.deadlines || '',
+                duration: toString(course.duration),
+                requirements: toString(course.requirements),
+                intakePeriods: toString(rawIntake),
+                deadlines: toString(rawDeadlines),
             });
+            setIntakeList(parseList(rawIntake));
+            setDeadlineList(parseList(rawDeadlines));
         } else if (open && !course) {
             form.reset({
                 name: '',
@@ -86,43 +122,65 @@ export function CourseFormDialog({
                 intakePeriods: '',
                 deadlines: '',
             });
+            setIntakeList(['']);
+            setDeadlineList(['']);
         }
     }, [open, course, form]);
 
     const onSubmit = async (values: CourseFormValues) => {
         try {
+            const intakeStr = formatList(intakeList);
+            const deadlineStr = formatList(deadlineList);
+            const payload = {
+                name: values.name,
+                fees: values.fees,
+                duration: values.duration || undefined,
+                requirements: values.requirements || undefined,
+                intakePeriods: intakeStr || undefined,
+                deadlines: deadlineStr || undefined,
+            };
             if (isEditing && course) {
-                const updateData: UpdateCourseDto = {
-                    name: values.name,
-                    fees: values.fees,
-                    duration: values.duration || undefined,
-                    requirements: values.requirements || undefined,
-                    intakePeriods: values.intakePeriods || undefined,
-                    deadlines: values.deadlines || undefined,
-                };
                 await updateCourse.mutateAsync({
                     universityId,
                     courseId: course.id,
-                    data: updateData
+                    data: payload
                 });
             } else {
-                const createData: CreateCourseDto = {
-                    name: values.name,
-                    fees: values.fees,
-                    duration: values.duration || undefined,
-                    requirements: values.requirements || undefined,
-                    intakePeriods: values.intakePeriods || undefined,
-                    deadlines: values.deadlines || undefined,
-                };
                 await createCourse.mutateAsync({
                     universityId,
-                    data: createData
+                    data: payload
                 });
             }
             onOpenChange(false);
         } catch {
             // Error handling is done in hooks
         }
+    };
+
+    const handleIntakeChange = (index: number, value: string) => {
+        setIntakeList(prev => {
+            const next = [...prev];
+            next[index] = value;
+            return next;
+        });
+    };
+
+    const addIntake = () => setIntakeList(prev => [...prev, '']);
+    const removeIntake = (index: number) => {
+        setIntakeList(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleDeadlineChange = (index: number, value: string) => {
+        setDeadlineList(prev => {
+            const next = [...prev];
+            next[index] = value;
+            return next;
+        });
+    };
+
+    const addDeadline = () => setDeadlineList(prev => [...prev, '']);
+    const removeDeadline = (index: number) => {
+        setDeadlineList(prev => prev.filter((_, i) => i !== index));
     };
 
     const isLoading = createCourse.isPending || updateCourse.isPending;
@@ -209,33 +267,79 @@ export function CourseFormDialog({
                         />
 
                         <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="intakePeriods"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Intake Periods</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Fall, Spring" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <FormItem>
+                                <FormLabel>Intake Periods</FormLabel>
+                                <div className="space-y-2">
+                                    {intakeList.map((item, index) => (
+                                        <div key={index} className="flex items-center gap-1">
+                                            <Input
+                                                value={item}
+                                                onChange={(e) => handleIntakeChange(index, e.target.value)}
+                                                placeholder="e.g. Fall 2024"
+                                                className="flex-1"
+                                            />
+                                            {intakeList.length > 1 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                                                    onClick={() => removeIntake(index)}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full gap-1 text-xs"
+                                        onClick={addIntake}
+                                    >
+                                        <Plus className="h-3 w-3" />
+                                        Add Intake Period
+                                    </Button>
+                                </div>
+                            </FormItem>
 
-                            <FormField
-                                control={form.control}
-                                name="deadlines"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Deadlines</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="March 15, October 1" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            <FormItem>
+                                <FormLabel>Deadlines</FormLabel>
+                                <div className="space-y-2">
+                                    {deadlineList.map((item, index) => (
+                                        <div key={index} className="flex items-center gap-1">
+                                            <Input
+                                                value={item}
+                                                onChange={(e) => handleDeadlineChange(index, e.target.value)}
+                                                placeholder="e.g. March 15"
+                                                className="flex-1"
+                                            />
+                                            {deadlineList.length > 1 && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                                                    onClick={() => removeDeadline(index)}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full gap-1 text-xs"
+                                        onClick={addDeadline}
+                                    >
+                                        <Plus className="h-3 w-3" />
+                                        Add Deadline
+                                    </Button>
+                                </div>
+                            </FormItem>
                         </div>
 
                         <DialogFooter>

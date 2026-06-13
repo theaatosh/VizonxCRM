@@ -119,6 +119,11 @@ export const queueService = {
         const response = await api.get<PaginatedResponse<AssignmentHistoryItem>>(`${QUEUE_ENDPOINT}/leads/${leadId}/assignment-history`);
         return response.data.data;
     },
+
+    async getAssignmentHistoryById(id: string): Promise<AssignmentHistoryItem> {
+        const response = await api.get<AssignmentHistoryItem>(`${QUEUE_ENDPOINT}/assignment-history/${id}`);
+        return response.data;
+    },
 };
 
 export default queueService;

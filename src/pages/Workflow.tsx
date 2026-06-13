@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DataTablePagination } from '@/components/shared/DataTablePagination';
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import { EditWorkflowDialog } from "@/components/workflow/EditWorkflowDialog";
 import { WorkflowDetailModal } from "@/components/workflow/WorkflowDetailModal";
 import { Workflow as WorkflowType } from "@/types/workflow.types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const Workflow = () => {
   const [search, setSearch] = useState("");
@@ -29,6 +30,12 @@ const Workflow = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
+  const debouncedSearch = useDebounce(search, 400);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter]);
+
   const isActiveParam =
     statusFilter === "active" ? true :
     statusFilter === "inactive" ? false :
@@ -37,7 +44,7 @@ const Workflow = () => {
   const { data, isLoading, isError, error } = useWorkflows({
     page,
     limit,
-    search: search || undefined,
+    search: debouncedSearch || undefined,
     isActive: isActiveParam,
     sortBy: "createdAt",
     sortOrder: "desc",
@@ -88,10 +95,7 @@ const Workflow = () => {
               <Input
                 placeholder="Search workflows..."
                 value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
+                onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
               />
             </div>
@@ -101,7 +105,7 @@ const Workflow = () => {
 
         {/* Filters */}
         <div className="flex gap-2">
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v)}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>

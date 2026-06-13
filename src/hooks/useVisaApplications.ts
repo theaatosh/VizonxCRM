@@ -51,9 +51,13 @@ export function useStudentVisaApplications(
     params?: Omit<VisaApplicationQueryParams, 'studentId'>,
     options?: { enabled?: boolean }
 ) {
-    return useQuery({
+    return useQuery<VisaApplication[]>({
         queryKey: visaApplicationKeys.byStudent(studentId),
-        queryFn: () => visaApplicationService.getVisaApplications({ ...params, studentId }),
+        queryFn: async () => {
+            const response = await visaApplicationService.getVisaApplications({ ...params, studentId });
+            if (Array.isArray(response)) return response;
+            return (response as PaginatedResponse<VisaApplication>)?.data || [];
+        },
         enabled: (options?.enabled !== false) && !!studentId,
     });
 }

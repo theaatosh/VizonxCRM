@@ -11,10 +11,11 @@ export const useTasks = (params?: PaginationParams) => {
     });
 };
 
-export const useOverdueTasks = (params?: PaginationParams) => {
+export const useOverdueTasks = (params?: PaginationParams, enabled?: boolean) => {
     return useQuery({
         queryKey: ['overdue-tasks', params],
         queryFn: () => taskService.getOverdueTasks(params),
+        enabled: enabled ?? true,
     });
 };
 
@@ -33,7 +34,7 @@ export const useCreateTask = () => {
         mutationFn: (data: CreateTaskDto) => taskService.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
-            queryClient.invalidateQueries({ queryKey: ['task-stats'] });
+            queryClient.invalidateQueries({ queryKey: ['overdue-tasks'] });
             toast({
                 title: "Success",
                 description: "Task created successfully",
@@ -58,7 +59,7 @@ export const useUpdateTask = () => {
             taskService.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
-            queryClient.invalidateQueries({ queryKey: ['task-stats'] });
+            queryClient.invalidateQueries({ queryKey: ['overdue-tasks'] });
             toast({
                 title: "Success",
                 description: "Task updated successfully",
@@ -82,7 +83,7 @@ export const useDeleteTask = () => {
         mutationFn: (id: string) => taskService.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
-            queryClient.invalidateQueries({ queryKey: ['task-stats'] });
+            queryClient.invalidateQueries({ queryKey: ['overdue-tasks'] });
             toast({
                 title: "Success",
                 description: "Task deleted successfully",
